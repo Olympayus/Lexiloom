@@ -1,0 +1,40 @@
+# Lexiloom
+
+Personal vocabulary knowledge management desktop app.
+Tauri 2 + React + TypeScript + SQLite.
+
+## Quick Start
+```bash
+cd /e/Workspace/Projects/Lexiloom
+npm install
+npm run tauri dev
+```
+
+## Architecture
+- `src/types/` — shared TypeScript types (project data contracts)
+- `src/db/` — database access layer (words, fields, dictionary queries)
+- `src/providers/` — dictionary sources implementing DictionaryProvider
+- `src/stores/` — Zustand UI state
+- `src/routes/` — page components
+- `src/components/` — UI components
+
+## Key Types
+- `Word` (src/types/word.ts) — word identity
+- `FieldKey` (src/types/field.ts) — 7 built-in field keys (union literal type)
+- `BUILTIN_FIELDS` (src/types/field.ts) — field metadata constant
+- `FieldValue` (src/types/field.ts) — word + field value pair
+- `DictionaryEntry` (src/types/dictionary.ts)
+- `DictionaryProvider` (src/providers/types.ts) — must implement lookup(query)
+
+## Database
+5 tables via tauri-plugin-sql (TypeScript only, no Rust CRUD):
+words, field_definitions, field_values, dictionary_entries, dictionary_fields
+
+## Adding a New Built-in Field
+1. Add to `FieldKey` union in src/types/field.ts
+2. Add to `BUILTIN_FIELDS` constant
+3. Add seed INSERT in src/db/schema.ts
+
+## Layout
+IndexPage: dual-column (left=WordList, right=WordWorkbench)
+TopSearchBar always visible at top. react-router-dom for routing.
