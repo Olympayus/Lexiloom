@@ -10,12 +10,29 @@ export default function WordWorkbench() {
   const [defs, setDefs] = useState<FieldDefinition[]>([])
   const [editing, setEditing] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
+  const [saved, setSaved] = useState(false)
+  const [fadeIn, setFadeIn] = useState(true)
 
   const selectedWord = words.find(w => w.id === selectedWordId)
 
   useEffect(() => {
     getFieldDefinitions().then(r => r.ok && setDefs(r.data))
   }, [])
+
+  // Cleanup saved state after animation completes
+  useEffect(() => {
+    if (saved) {
+      const timer = setTimeout(() => setSaved(false), 500)
+      return () => clearTimeout(timer)
+    }
+  }, [saved])
+
+  // Fade-in on word switch
+  useEffect(() => {
+    setFadeIn(false)
+    const raf = requestAnimationFrame(() => setFadeIn(true))
+    return () => cancelAnimationFrame(raf)
+  }, [selectedWordId])
 
   if (!selectedWord) {
     return (
@@ -36,13 +53,35 @@ export default function WordWorkbench() {
       await updateFieldValue(def.key as FieldKey, editValue)
     }
     setEditing(null)
+    setSaved(true)
   }
 
   return (
-    <div className="h-full overflow-y-auto p-6">
+    <div style={{
+      opacity: fadeIn ? 1 : 0,
+      transition: 'opacity 100ms var(--ease-out-smooth)',
+      height: '100%',
+      overflowY: 'auto',
+      padding: '24px',
+    }}>
       {/* 单词标题 */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>{selectedWord.lemma}</h2>
+        <div className="flex items-center">
+          {saved && (
+            <div style={{
+              width: '4px',
+              height: '24px',
+              background: 'var(--color-brand)',
+              borderRadius: '2px',
+              animation: 'weave-pulse 500ms var(--ease-out-smooth)',
+              marginRight: '8px',
+              flexShrink: 0,
+              display: 'inline-block',
+              verticalAlign: 'middle',
+            }} />
+          )}
+          <h2 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>{selectedWord.lemma}</h2>
+        </div>
       </div>
 
       {/* 字段列表 */}

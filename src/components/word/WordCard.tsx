@@ -44,7 +44,7 @@ export default function WordCard({ word, isSelected, onClick, chineseDefinition,
         borderRadius: '999px',
         flexShrink: 0,
         background: hasCustomContent ? 'var(--color-brand)' : (isSelected ? 'var(--color-brand)' : 'var(--color-border)'),
-        transition: 'width var(--duration-fast) var(--ease-out-smooth), background var(--duration-normal) var(--ease-out-smooth)',
+        transition: 'width var(--duration-fast) var(--ease-out-smooth), background var(--duration-fast) var(--ease-out-smooth)',
       }} />
 
       {/* 内容 */}
