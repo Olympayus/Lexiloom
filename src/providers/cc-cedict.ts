@@ -19,7 +19,7 @@ export class CcCedictProvider implements DictionaryProvider {
     if (cached.length > 0) return this._hydrate(db, cached)
 
     // Load from file DB
-    const fileDb = await Database.load(`sqlite:${await invoke<string>('get_dictionary_path')}`)
+    const fileDb = await Database.load(`sqlite:///${await invoke<string>('get_dictionary_path')}`)
     const rows = await fileDb.select<{ word: string; chinese_definition: string }[]>(
       `SELECT word, chinese_definition FROM dictionary_index WHERE word LIKE ?1 LIMIT 20`, [q]
     )
