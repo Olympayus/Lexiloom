@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Word, WordWithPreview, FieldKey, FieldValue } from '../types'
-import * as wordsDb from '../db/words'
-import * as fieldsDb from '../db/fields'
+import * as wordService from '../services/wordService'
+import * as fieldService from '../services/fieldService'
 
 interface WordStore {
   words: (Word | WordWithPreview)[]
@@ -23,45 +23,37 @@ export const useWordStore = create<WordStore>((set, get) => ({
 
   loadWords: async () => {
     set({ loading: true })
-    const result = await wordsDb.getWordsWithPreviews()
-    if (result.ok) set({ words: result.data })
-    set({ loading: false })
+    const words = await wordService.getPreviews()
+    set({ words, loading: false })
   },
 
   selectWord: async (id) => {
     set({ selectedWordId: id, fieldValues: {} })
     if (!id) return
-    const result = await fieldsDb.getFieldValuesForWord(id)
-    if (result.ok) {
-      const map: Record<string, FieldValue | null> = {}
-      for (const fv of result.data) map[fv.fieldId] = fv
-      set({ fieldValues: map })
-    }
+    const map = await fieldService.getValues(id)
+    set({ fieldValues: map })
   },
 
   updateFieldValue: async (fieldKey, value) => {
     const { selectedWordId } = get()
     if (!selectedWordId) return
 
-    const defs = await fieldsDb.getFieldDefinitions()
-    if (!defs.ok) return
-    const def = defs.data.find(d => d.key === fieldKey)
+    const defs = await fieldService.getDefinitions()
+    const def = defs.find(d => d.key === fieldKey)
     if (!def) return
 
-    await fieldsDb.upsertFieldValue({
-      wordId: selectedWordId, fieldId: def.id,
-      value, source: 'user',
+    await fieldService.upsertValue({
+      wordId: selectedWordId,
+      fieldId: def.id,
+      value,
+      source: 'user',
     })
     await get().selectWord(selectedWordId)
   },
 
   addWord: async (lemma) => {
-    const existing = await wordsDb.getWordByLemma(lemma)
-    if (existing.ok && existing.data) return existing.data
-
-    const result = await wordsDb.createWord({ lemma })
-    if (!result.ok) return null
-    await get().loadWords()
-    return result.data
+    const word = await wordService.addWord(lemma)
+    if (word) await get().loadWords()
+    return word
   },
 }))
