@@ -1,15 +1,26 @@
-import { useState } from 'react'
+// TODO: 当词库超过 100 条时引入虚拟滚动（react-window），当前使用 overflow-y-auto
+import { useState, useEffect } from 'react'
 import { useWordStore } from '../../stores/wordStore'
 import WordCard from '../word/WordCard'
+import { vocabularySearch } from '../../lib/search'
 import type { WordWithPreview } from '../../types/word'
 
 export default function WordList() {
   const { words, selectedWordId, selectWord } = useWordStore()
   const [filter, setFilter] = useState('')
+  const [filtered, setFiltered] = useState<WordWithPreview[]>([])
+  const [searching, setSearching] = useState(false)
 
-  const filtered = words.filter(w =>
-    !filter || w.lemma.toLowerCase().includes(filter.toLowerCase())
-  )
+  useEffect(() => {
+    if (!filter.trim()) {
+      setFiltered(words as WordWithPreview[])
+      return
+    }
+    setSearching(true)
+    vocabularySearch(filter)
+      .then(results => setFiltered(results as WordWithPreview[]))
+      .finally(() => setSearching(false))
+  }, [filter, words])
 
   return (
     <div className="h-full flex flex-col">
@@ -27,7 +38,9 @@ export default function WordList() {
 
       {/* 词库列表 */}
       <div className="flex-1 overflow-y-auto">
-        {filtered.length === 0 ? (
+        {searching ? (
+          <div className="px-4 py-8 text-center text-sm text-[#7A7368]">搜索中…</div>
+        ) : filtered.length === 0 ? (
           <div className="px-4 py-8 text-center text-sm text-[#7A7368]">
             {words.length === 0 ? '词库为空，使用顶部搜索框添加单词' : '没有匹配的单词'}
           </div>
