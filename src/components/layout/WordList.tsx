@@ -25,14 +25,16 @@ export default function WordList() {
   return (
     <div className="h-full flex flex-col">
       {/* 内嵌小搜索 */}
-      <div className="px-4 py-3 border-b border-[#D9D4CE]">
+      <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
         <input
-          className="w-full px-3 py-1.5 rounded-md border border-[#D9D4CE] bg-white
-            text-sm text-[#1C1814] placeholder-[#7A7368] outline-none
-            focus:border-[#4A6FA5]"
+          className="w-full px-3 py-1.5 rounded-md bg-white
+            text-sm text-[#1C1814] placeholder-[#7A7368] outline-none"
+          style={{ border: '1px solid var(--color-border)' }}
           placeholder="在词库中筛选…"
           value={filter}
           onChange={e => setFilter(e.target.value)}
+          onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-brand)' }}
+          onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border)' }}
         />
       </div>
 
@@ -58,7 +60,7 @@ export default function WordList() {
         )}
       </div>
 
-      <div className="px-4 py-2 text-xs text-[#7A7368] border-t border-[#D9D4CE]">
+      <div className="px-4 py-2 text-xs text-[#7A7368]" style={{ borderTop: '1px solid var(--color-border)' }}>
         共 {words.length} 个单词
       </div>
     </div>

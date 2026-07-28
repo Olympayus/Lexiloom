@@ -22,8 +22,8 @@ export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTML
           e.currentTarget.style.borderColor = 'var(--color-border)'
           props.onBlur?.(e)
         }}
-        placeholder={props.placeholder || ''}
         {...props}
+        placeholder={props.placeholder || ''}
       />
     )
   }

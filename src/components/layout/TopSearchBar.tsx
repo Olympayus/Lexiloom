@@ -1,9 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Input } from '../ui/Input'
 import DictSearchResult from '../search/DictSearchResult'
-import { CcCedictProvider } from '../../providers/cc-cedict'
-
-const provider = new CcCedictProvider()
+import { searchDictionary } from '../../services/searchService'
 
 export default function TopSearchBar() {
   const [query, setQuery] = useState('')
@@ -15,7 +13,7 @@ export default function TopSearchBar() {
     if (!query.trim()) { setResults([]); return }
     clearTimeout(timer.current)
     timer.current = setTimeout(async () => {
-      const entries = await provider.lookup(query)
+      const entries = await searchDictionary(query)
       setResults(entries)
       setShowDropdown(true)
     }, 300)
@@ -23,7 +21,7 @@ export default function TopSearchBar() {
   }, [query])
 
   return (
-    <div className="relative px-6 py-3 border-b border-[#D9D4CE]">
+    <div className="relative px-6 py-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
       <Input
         placeholder="搜索词典添加新单词…"
         value={query}
@@ -33,7 +31,7 @@ export default function TopSearchBar() {
       {showDropdown && results.length > 0 && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setShowDropdown(false)} />
-          <div className="absolute left-6 right-6 top-full z-20 mt-1 bg-white border border-[#D9D4CE] rounded-lg shadow-lg max-h-80 overflow-y-auto">
+          <div className="absolute left-6 right-6 top-full z-20 mt-1 bg-white rounded-lg shadow-lg max-h-80 overflow-y-auto" style={{ border: '1px solid var(--color-border)' }}>
             <DictSearchResult results={results} query={query} onClose={() => setShowDropdown(false)} />
           </div>
         </>

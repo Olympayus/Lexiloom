@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useWordStore } from '../../stores/wordStore'
-import { getFieldDefinitions } from '../../db/fields'
+import { getDefinitions } from '../../services/fieldService'
 import { Button } from '../ui/Button'
 import EmptyState from '../ui/EmptyState'
 import type { FieldDefinition, FieldKey } from '../../types/field'
@@ -16,7 +16,7 @@ export default function WordWorkbench() {
   const selectedWord = words.find(w => w.id === selectedWordId)
 
   useEffect(() => {
-    getFieldDefinitions().then(r => r.ok && setDefs(r.data))
+    getDefinitions().then(defs => setDefs(defs))
   }, [])
 
   // Cleanup saved state after animation completes

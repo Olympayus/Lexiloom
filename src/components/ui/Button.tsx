@@ -5,7 +5,7 @@ export function Button({ variant = 'primary', className = '', ...props }: Props)
   const base = 'px-4 py-1.5 rounded text-sm font-medium'
   const styles = {
     primary: 'text-white',
-    secondary: 'text-[#1C1814]',
+    secondary: '',
   }
   return (
     <button
