@@ -1,24 +1,44 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# --- Dependencies ---
+node_modules/
+.pnp
+.pnp.js
 
-node_modules
-dist
-dist-ssr
-*.local
+# --- Build output ---
+dist/
+dist-ssr/
+src-tauri/target/
 
-# Editor directories and files
+# --- Environment ---
+.env
+.env.*
+!.env.example
+
+# --- IDE / Editor ---
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# --- Tooling metadata ---
+.superpowers/
+.claude/
+.tasks/
+
+# --- Temp / local ---
+*.local
+*.db

@@ -1,5 +1,4 @@
 import Database from '@tauri-apps/plugin-sql'
-import { invoke } from '@tauri-apps/api/core'
 import { getDb } from '../db/connection'
 import type { DictionaryProvider } from './types'
 import type { DictionaryEntry } from '../types/dictionary'
@@ -18,17 +17,19 @@ export class CcCedictProvider implements DictionaryProvider {
     )
     if (cached.length > 0) return this._hydrate(db, cached)
 
-    // Load from file DB
-    const fileDb = await Database.load(`sqlite:///${await invoke<string>('get_dictionary_path')}`)
+    // Load from file DB — search both Chinese word and English definition
+    const fileDb = await Database.load('sqlite:cc-cedict.db')
     const rows = await fileDb.select<{ word: string; chinese_definition: string }[]>(
-      `SELECT word, chinese_definition FROM dictionary_index WHERE word LIKE ?1 LIMIT 20`, [q]
+      `SELECT word, chinese_definition FROM dictionary_index WHERE word LIKE ?1 OR chinese_definition LIKE ?1 LIMIT 20`, [q]
     )
     if (rows.length === 0) return []
 
-    // Cache to main DB
+    // Cache to main DB and collect IDs for re-query
     const now = Date.now()
+    const entryIds: string[] = []
     for (const r of rows) {
       const id = crypto.randomUUID()
+      entryIds.push(id)
       await db.execute(
         `INSERT OR IGNORE INTO dictionary_entries VALUES(?1,?2,?3,'cc-cedict',?4,?5)`,
         [id, r.word, r.word.toLowerCase(), JSON.stringify({ d: r.chinese_definition }), now]
@@ -39,8 +40,10 @@ export class CcCedictProvider implements DictionaryProvider {
       )
     }
 
+    // Query back by IDs (not by word LIKE, since word is Chinese but query may be English)
+    const placeholders = entryIds.map(() => '?').join(',')
     return this._hydrate(db, await db.select<{ id: string; word: string; normalized_word: string }[]>(
-      `SELECT id, word, normalized_word FROM dictionary_entries WHERE word LIKE ?1 LIMIT 20`, [q]
+      `SELECT id, word, normalized_word FROM dictionary_entries WHERE id IN (${placeholders})`, entryIds
     ))
   }
 
