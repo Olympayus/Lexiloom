@@ -1,0 +1,24 @@
+:root {
+  /* ========== 01. Color System ========== */
+  --color-canvas: #F6F4EF;         /* 亚麻画布：主背景 */
+  --color-surface: #FFFFFF;        /* 纸张白：卡片/工作台背景 */
+  --color-surface-hover: #FAF9F6;  /* 微交互：悬停微泛黄 */
+
+  --color-text-primary: #1C1814;   /* 墨棕：主文字 */
+  --color-text-secondary: #7A7368; /* 羊毛灰：辅助信息 */
+
+  --color-brand: #4A6FA5;          /* 靛蓝：品牌色 */
+  --color-accent: #C17A4E;         /* 陶土橙：极少点缀，搜索高亮 */
+
+  --color-border: #E8E4DE;         /* 织纹灰：边框线（从 #D9D4CE 改浅） */
+
+  /* ========== 02. Typography ========== */
+  --font-word: 'Georgia', 'Times New Roman', serif;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --line-height-relaxed: 1.6;
+
+  /* ========== 03. Motion ========== */
+  --ease-out-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+}
