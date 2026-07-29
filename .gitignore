@@ -38,6 +38,7 @@ lerna-debug.log*
 .superpowers/
 .claude/
 .tasks/
+icons/
 
 # --- Temp / local ---
 *.local
