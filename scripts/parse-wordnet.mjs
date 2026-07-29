@@ -74,11 +74,12 @@ async function main() {
   db.run(`CREATE INDEX idx_wn_word ON wn_words(lemma)`)
 
   db.run(`CREATE TABLE wn_synsets (
-    synset_offset INTEGER PRIMARY KEY,
+    synset_offset INTEGER NOT NULL,
     pos TEXT NOT NULL,
     definition TEXT NOT NULL,
     examples TEXT,
-    words TEXT
+    words TEXT,
+    PRIMARY KEY (synset_offset, pos)
   )`)
 
   const wordInsert = db.prepare('INSERT INTO wn_words VALUES (?, ?, ?)')
