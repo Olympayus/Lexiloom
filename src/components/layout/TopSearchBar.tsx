@@ -19,6 +19,7 @@ export default function TopSearchBar() {
   const [detailResults, setDetailResults] = useState<DetailResult[]>([])
   const [loadingDetail, setLoadingDetail] = useState(false)
   const [searchError, setSearchError] = useState(false)
+  const [lookupError, setLookupError] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -53,11 +54,13 @@ export default function TopSearchBar() {
     setSelectedWord(word)
     setLoadingDetail(true)
     setDetailResults([])
+    setLookupError(false)
     try {
       const results = await lookupWord(word)
       setDetailResults(results)
     } catch (e) {
       console.error('Word lookup failed:', e)
+      setLookupError(true)
     }
     setLoadingDetail(false)
   }, [])
@@ -116,6 +119,10 @@ export default function TopSearchBar() {
           {loadingDetail ? (
             <div className="flex items-center justify-center py-8 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
               加载中…
+            </div>
+          ) : lookupError ? (
+            <div className="flex items-center justify-center py-8 text-sm" style={{ color: 'var(--color-accent)' }}>
+              词典查询出错，请确认词典文件是否存在
             </div>
           ) : detailResults.length === 0 ? (
             <div className="flex items-center justify-center py-8 text-sm" style={{ color: 'var(--color-text-secondary)' }}>

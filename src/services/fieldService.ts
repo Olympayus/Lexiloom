@@ -34,9 +34,9 @@ export async function insertValues(inputs: UpsertFieldValueInput[]): Promise<Fie
 }
 
 // Retained old interface (compatible with existing storage logic)
+// Used by user edit flow (WordWorkbench) — properly upserts by (wordId, fieldId)
 export async function upsertValue(input: UpsertFieldValueInput): Promise<FieldValue | null> {
-  // New logic: simply inserts; dedup is handled at the word service layer
-  const result = await fieldsDb.insertFieldValue(input)
+  const result = await fieldsDb.upsertFieldValue(input)
   return result.ok ? result.data : null
 }
 

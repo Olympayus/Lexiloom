@@ -74,9 +74,15 @@ export async function mergeFields(
   // Insert in order: parents first, then children with resolved parentId
   try {
     const parentIdMap = new Map<string, string>()
+    const parentKeyCounts = new Map<string, number>() // occurrence counter per field key
     for (const { key, input } of parentInputs) {
       const result = await fieldsDb.insertFieldValue(input)
       if (result.ok && result.data) {
+        const occ = parentKeyCounts.get(key) ?? 0
+        parentKeyCounts.set(key, occ + 1)
+        // Store with compound key (e.g. "english_definition::0") so children match the right parent
+        parentIdMap.set(`${key}::${occ}`, result.data.id)
+        // Also keep bare key for single-occurrence fields like "exchange"
         parentIdMap.set(key, result.data.id)
       }
     }

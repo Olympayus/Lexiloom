@@ -178,7 +178,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
           key: 'synonyms',
           value: def.synonyms.join(', '),
           source: source_ as FieldSource,
-          parentKey: 'english_definition',
+          parentKey: `english_definition::${defIdx}`,
         })
       }
 
@@ -189,7 +189,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
             key: 'example',
             value: def.examples[exIdx],
             source: source_ as FieldSource,
-            parentKey: 'english_definition',
+            parentKey: `english_definition::${defIdx}`,
           })
         }
       }

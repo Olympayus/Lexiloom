@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build:ecdict": "node scripts/build-ecdict.mjs",
-    "build:dictionaries": "npm run build:ecdict",
+    "build:wordnet": "node scripts/parse-wordnet.mjs",
+    "build:dictionaries": "npm run build:ecdict && npm run build:wordnet",
     "dev": "npm run build:dictionaries && tauri dev",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
