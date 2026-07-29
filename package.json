@@ -6,7 +6,7 @@
   "scripts": {
     "build:ecdict": "node scripts/build-ecdict.mjs",
     "build:wordnet": "node scripts/parse-wordnet.mjs",
-    "build:dictionaries": "npm run build:ecdict && npm run build:wordnet",
+    "build:dictionaries": "npm run build:ecdict && npm run build:wordnet && node scripts/copy-dbs.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
