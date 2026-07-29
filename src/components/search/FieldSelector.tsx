@@ -51,7 +51,7 @@ export default function FieldSelector() {
             wordId: word.id,
             fieldId: field.id,
             value: values[field.id].trim(),
-            source: field.key === 'chinese_definition' && values[field.id] === dictDefinition ? 'cc-cedict' : 'user',
+            source: ('user' as const),
           })
         }
       }
