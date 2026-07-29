@@ -3,7 +3,7 @@ import { useWordStore } from '../../stores/wordStore'
 import { getDefinitions } from '../../services/fieldService'
 import { Button } from '../ui/Button'
 import EmptyState from '../ui/EmptyState'
-import type { FieldDefinition, FieldKey } from '../../types/field'
+import type { FieldDefinition, FieldKey, FieldValue } from '../../types/field'
 
 export default function WordWorkbench() {
   const { words, selectedWordId, fieldValues, updateFieldValue } = useWordStore()
@@ -42,18 +42,130 @@ export default function WordWorkbench() {
     )
   }
 
-  const handleStartEdit = (fieldId: string, currentValue: string) => {
-    setEditing(fieldId)
+  const handleStartEdit = (fvId: string, currentValue: string) => {
+    setEditing(fvId)
     setEditValue(currentValue || '')
   }
 
-  const handleSave = async (fieldId: string) => {
-    const def = defs.find(d => d.id === fieldId)
+  // Recursively find a FieldValue by its id within the tree (root values + nested children)
+  const findFieldValueById = (id: string, values: FieldValue[] = fieldValues): FieldValue | undefined => {
+    for (const fv of values) {
+      if (fv.id === id) return fv
+      if (fv.children?.length) {
+        const found = findFieldValueById(id, fv.children)
+        if (found) return found
+      }
+    }
+    return undefined
+  }
+
+  const handleSave = async (fvId: string) => {
+    const fv = findFieldValueById(fvId)
+    if (!fv) return
+    const def = defs.find(d => d.id === fv.fieldId)
     if (def) {
       await updateFieldValue(def.key as FieldKey, editValue)
     }
     setEditing(null)
     setSaved(true)
+  }
+
+  const sortedFieldValues = [...fieldValues].sort((a, b) => a.displayOrder - b.displayOrder)
+
+  const renderField = (fv: FieldValue, depth: number = 0) => {
+    const def = defs.find(d => d.id === fv.fieldId)
+    if (!def) return null
+
+    const hasChildren = fv.children && fv.children.length > 0
+    const isContainer = hasChildren && !fv.value
+    const isEditing = editing === fv.id
+
+    return (
+      <div key={fv.id} className="pb-3"
+        style={{
+          borderBottom: depth === 0 ? '1px solid var(--color-border)' : 'none',
+          paddingLeft: depth * 20,
+          marginBottom: hasChildren ? '0' : '8px',
+        }}>
+        {depth === 0 && !isContainer && (
+          <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px', fontWeight: 500, marginBottom: '4px' }}>
+            {def.name}
+          </div>
+        )}
+        {isContainer && (
+          <div style={{
+            color: 'var(--color-text-secondary)',
+            fontSize: '14px',
+            fontWeight: 600,
+            padding: '8px 0',
+            marginBottom: '8px',
+          }}>
+            {def.name}
+          </div>
+        )}
+        {!isContainer && (
+          isEditing ? (
+            <div className="space-y-2">
+              {def.fieldType === 'multiline' ? (
+                <textarea
+                  className="w-full px-3 py-2 rounded text-sm outline-none resize-none min-h-[60px]"
+                  style={{
+                    border: '1px solid var(--color-brand)',
+                    color: 'var(--color-text-primary)',
+                    background: 'var(--color-surface)',
+                    transition: `transform var(--duration-fast) var(--ease-out-smooth)`,
+                    transform: 'scale(1.005)',
+                  }}
+                  value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                  autoFocus
+                />
+              ) : (
+                <input
+                  className="w-full px-3 py-1.5 rounded text-sm outline-none"
+                  style={{
+                    border: '1px solid var(--color-brand)',
+                    color: 'var(--color-text-primary)',
+                    background: 'var(--color-surface)',
+                    transition: `transform var(--duration-fast) var(--ease-out-smooth)`,
+                    transform: 'scale(1.005)',
+                  }}
+                  value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                  autoFocus
+                />
+              )}
+              <div className="flex gap-2">
+                <Button onClick={() => handleSave(fv.id)}>保存</Button>
+                <Button variant="secondary" onClick={() => setEditing(null)}>取消</Button>
+              </div>
+            </div>
+          ) : (
+            <div
+              onClick={() => handleStartEdit(fv.id, fv.value || '')}
+              style={{
+                padding: '10px 12px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                color: 'var(--color-text-primary)',
+                background: fv.source !== 'user' ? 'var(--color-canvas)' : 'var(--color-surface)',
+                border: `1px solid ${fv.source !== 'user' ? 'var(--color-border)' : 'var(--color-brand)'}`,
+                transition: 'all var(--duration-fast) var(--ease-out-smooth)',
+              }}
+            >
+              {fv.value}
+              {fv.source !== 'user' && (
+                <span style={{ marginLeft: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                  📖 {fv.source}
+                </span>
+              )}
+            </div>
+          )
+        )}
+        {hasChildren && fv.children!.map(child => renderField(child, depth + 1))}
+      </div>
+    )
   }
 
   return (
@@ -84,100 +196,9 @@ export default function WordWorkbench() {
         </div>
       </div>
 
-      {/* 字段列表 */}
+      {/* 层级字段展示 */}
       <div className="space-y-4">
-        {defs.map(def => {
-          const fv = fieldValues[def.id]
-          const hasValue = fv && fv.value?.trim()
-          const isEditing = editing === def.id
-
-          // Empty field: dashed border placeholder
-          if (!hasValue && !isEditing) {
-            return (
-              <div key={def.id} className="pb-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px', fontWeight: 500, marginBottom: '4px' }}>{def.name}</div>
-                <div
-                  onClick={() => handleStartEdit(def.id, '')}
-                  style={{
-                    border: '1px dashed var(--color-border)',
-                    borderRadius: '4px',
-                    padding: '10px 12px',
-                    cursor: 'pointer',
-                    color: 'var(--color-text-secondary)',
-                    fontSize: '13px',
-                    background: 'var(--color-surface)',
-                    transition: `border-color var(--duration-fast) var(--ease-out-smooth)`,
-                  }}
-                >
-                  点击添加…
-                </div>
-              </div>
-            )
-          }
-
-          // Has value or currently editing
-          return (
-            <div key={def.id} className="pb-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
-              <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px', fontWeight: 500, marginBottom: '4px' }}>{def.name}</div>
-              {isEditing ? (
-                <div className="space-y-2">
-                  {def.fieldType === 'multiline' ? (
-                    <textarea
-                      className="w-full px-3 py-2 rounded text-sm outline-none resize-none min-h-[60px]"
-                      style={{
-                        border: '1px solid var(--color-brand)',
-                        color: 'var(--color-text-primary)',
-                        background: 'var(--color-surface)',
-                        transition: `transform var(--duration-fast) var(--ease-out-smooth)`,
-                        transform: 'scale(1.005)',
-                      }}
-                      value={editValue}
-                      onChange={e => setEditValue(e.target.value)}
-                      autoFocus
-                    />
-                  ) : (
-                    <input
-                      className="w-full px-3 py-1.5 rounded text-sm outline-none"
-                      style={{
-                        border: '1px solid var(--color-brand)',
-                        color: 'var(--color-text-primary)',
-                        background: 'var(--color-surface)',
-                        transition: `transform var(--duration-fast) var(--ease-out-smooth)`,
-                        transform: 'scale(1.005)',
-                      }}
-                      value={editValue}
-                      onChange={e => setEditValue(e.target.value)}
-                      autoFocus
-                    />
-                  )}
-                  <div className="flex gap-2">
-                    <Button onClick={() => handleSave(def.id)}>保存</Button>
-                    <Button variant="secondary" onClick={() => setEditing(null)}>取消</Button>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  onClick={() => handleStartEdit(def.id, fv?.value || '')}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    color: 'var(--color-text-primary)',
-                    background: fv?.source === 'cc-cedict' ? 'var(--color-canvas)' : 'var(--color-surface)',
-                    border: `1px solid ${fv?.source === 'cc-cedict' ? 'var(--color-border)' : 'var(--color-brand)'}`,
-                    transition: `all var(--duration-fast) var(--ease-out-smooth)`,
-                  }}
-                >
-                  {fv?.value}
-                  {fv?.source === 'cc-cedict' && (
-                    <span style={{ marginLeft: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>📖 词典</span>
-                  )}
-                </div>
-              )}
-            </div>
-          )
-        })}
+        {sortedFieldValues.map(fv => renderField(fv, 0))}
       </div>
     </div>
   )
