@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Input } from '../ui/Input'
 import SearchSuggestions from '../search/SearchSuggestions'
+import DictDetailCard from '../search/DictDetailCard'
 import { searchLemmas, lookupWord } from '../../services/searchService'
 import type { DictionaryEntry } from '../../types/dictionary'
 
@@ -75,37 +76,6 @@ export default function TopSearchBar() {
     }
   }
 
-  const renderDetailCard = (result: DetailResult) => {
-    const isEcdict = result.source === 'ecdict'
-    const sourceColor = isEcdict ? 'var(--color-brand)' : '#5B8C5A'
-
-    return (
-      <div
-        key={result.source}
-        className="rounded-lg border overflow-hidden"
-        style={{
-          borderColor: isEcdict ? 'var(--color-brand)' : '#5B8C5A',
-          background: 'var(--color-surface)',
-        }}
-      >
-        <div
-          className="px-4 py-2.5"
-          style={{ background: `${sourceColor}10` }}
-        >
-          <span className="text-xs font-semibold uppercase" style={{ color: sourceColor }}>
-            {result.source.toUpperCase()}
-          </span>
-          <span className="text-lg font-bold ml-2" style={{ color: 'var(--color-text-primary)' }}>
-            {selectedWord}
-          </span>
-        </div>
-        <div className="px-4 py-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-          详细卡片将在下一阶段完成
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div style={{ borderBottom: '1px solid var(--color-border)' }}>
       <div className="relative px-6 py-3">
@@ -152,7 +122,14 @@ export default function TopSearchBar() {
               未找到 &ldquo;{selectedWord}&rdquo; 的词典结果
             </div>
           ) : (
-            detailResults.map(result => renderDetailCard(result))
+            detailResults.map(result => (
+              <DictDetailCard
+                key={result.source}
+                word={selectedWord!}
+                source={result.source}
+                entries={result.entries}
+              />
+            ))
           )}
         </div>
       )}
