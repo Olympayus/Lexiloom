@@ -7,19 +7,20 @@ interface WordStore {
   words: (Word | WordWithPreview)[]
   loading: boolean
   selectedWordId: string | null
-  fieldValues: Record<string, FieldValue | null>
+  fieldValues: FieldValue[]
 
   loadWords: () => Promise<void>
   selectWord: (id: string | null) => Promise<void>
   updateFieldValue: (fieldKey: FieldKey, value: string) => Promise<void>
   addWord: (lemma: string) => Promise<Word | null>
+  mergeWordFields: (wordId: string, fields: { key: string; value: string; source: 'ecdict' | 'wordnet' | 'user'; parentKey?: string }[]) => Promise<boolean>
 }
 
 export const useWordStore = create<WordStore>((set, get) => ({
   words: [],
   loading: false,
   selectedWordId: null,
-  fieldValues: {},
+  fieldValues: [],
 
   loadWords: async () => {
     set({ loading: true })
@@ -28,10 +29,10 @@ export const useWordStore = create<WordStore>((set, get) => ({
   },
 
   selectWord: async (id) => {
-    set({ selectedWordId: id, fieldValues: {} })
+    set({ selectedWordId: id, fieldValues: [] })
     if (!id) return
-    const map = await fieldService.getValues(id)
-    set({ fieldValues: map })
+    const values = await fieldService.getValues(id)
+    set({ fieldValues: values })
   },
 
   updateFieldValue: async (fieldKey, value) => {
@@ -55,5 +56,14 @@ export const useWordStore = create<WordStore>((set, get) => ({
     const word = await wordService.addWord(lemma)
     if (word) await get().loadWords()
     return word
+  },
+
+  mergeWordFields: async (wordId, fields) => {
+    const ok = await wordService.mergeFields(wordId, fields)
+    if (ok) {
+      const values = await fieldService.getValues(wordId)
+      set({ fieldValues: values })
+    }
+    return ok
   },
 }))

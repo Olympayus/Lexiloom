@@ -1,5 +1,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import type { DictionaryEntry } from '../../types/dictionary'
+import type { Word } from '../../types/word'
+import type { FieldSource } from '../../types/field'
+import { useWordStore } from '../../stores/wordStore'
 
 interface Props {
   word: string
@@ -79,11 +82,14 @@ function groupFields(entries: DictionaryEntry[]): {
   return result
 }
 
-export default function DictDetailCard({ word, source, entries }: Props) {
+export default function DictDetailCard({ word: word_, source: source_, entries }: Props) {
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set())
+  const [added, setAdded] = useState(false)
   const grouped = useMemo(() => groupFields(entries), [entries])
-  const sourceLabel = SOURCE_NAMES[source] || source
-  const accent = SOURCE_ACCENTS[source] || { color: '#666', bg: '#66666610', border: '#66666640', headerBorder: '#66666630' }
+  const sourceLabel = SOURCE_NAMES[source_] || source_
+  const accent = SOURCE_ACCENTS[source_] || { color: '#666', bg: '#66666610', border: '#66666640', headerBorder: '#66666630' }
+  const addWord = useWordStore(s => s.addWord)
+  const mergeWordFields = useWordStore(s => s.mergeWordFields)
 
   // 初始化默认全选（含子字段）
   useEffect(() => {
@@ -97,7 +103,7 @@ export default function DictDetailCard({ word, source, entries }: Props) {
     })
     grouped.exchangeItems.forEach((_, i) => allKeys.add(`exchange-${i}`))
     setSelectedFields(allKeys)
-  }, [word, source])
+  }, [word_, source_])
 
   const toggleField = (key: string) => {
     setSelectedFields(prev => {
@@ -129,6 +135,92 @@ export default function DictDetailCard({ word, source, entries }: Props) {
     })
   }
 
+  const handleAdd = async () => {
+    // 1. 确保词条存在（如不存在则创建）
+    let word = await addWord(word_)
+    if (!word) {
+      const existing = useWordStore.getState().words.find(w =>
+        (w as Word).lemma.toLowerCase() === word_.toLowerCase()
+      )
+      if (existing) word = existing as Word
+      else return
+    }
+
+    // 2. 收集选中的字段，构建 merge 输入
+    const selectedFieldInputs: { key: string; value: string; source: FieldSource; parentKey?: string }[] = []
+
+    // 音标
+    if (selectedFields.has('phonetic-0') && grouped.phonetic.length > 0) {
+      selectedFieldInputs.push({ key: 'phonetic', value: grouped.phonetic[0], source: source_ as FieldSource })
+    }
+
+    // 中文释义
+    for (let i = 0; i < grouped.chineseDefinitions.length; i++) {
+      if (selectedFields.has(`chinese-${i}`)) {
+        selectedFieldInputs.push({ key: 'chinese_definition', value: grouped.chineseDefinitions[i], source: source_ as FieldSource })
+      }
+    }
+
+    // 英文释义 + 近义词 + 例句
+    for (let defIdx = 0; defIdx < grouped.englishDefinitions.length; defIdx++) {
+      const def = grouped.englishDefinitions[defIdx]
+      if (!selectedFields.has(`english-${defIdx}`)) continue
+
+      selectedFieldInputs.push({
+        key: 'english_definition',
+        value: def.value,
+        source: source_ as FieldSource,
+      })
+
+      // 近义词
+      if (def.synonyms.length > 0 && selectedFields.has(`synonym-${defIdx}-0`)) {
+        selectedFieldInputs.push({
+          key: 'synonyms',
+          value: def.synonyms.join(', '),
+          source: source_ as FieldSource,
+          parentKey: 'english_definition',
+        })
+      }
+
+      // 例句
+      for (let exIdx = 0; exIdx < def.examples.length; exIdx++) {
+        if (selectedFields.has(`example-${defIdx}-${exIdx}`)) {
+          selectedFieldInputs.push({
+            key: 'example',
+            value: def.examples[exIdx],
+            source: source_ as FieldSource,
+            parentKey: 'english_definition',
+          })
+        }
+      }
+    }
+
+    // 词形变化
+    let hasExchange = false
+    for (let i = 0; i < grouped.exchangeItems.length; i++) {
+      if (selectedFields.has(`exchange-${i}`)) {
+        if (!hasExchange) {
+          // 先插入容器
+          selectedFieldInputs.push({ key: 'exchange', value: '', source: source_ as FieldSource })
+          hasExchange = true
+        }
+        const item = grouped.exchangeItems[i]
+        selectedFieldInputs.push({
+          key: 'exchange_item',
+          value: `${item.label}: ${item.value}`,
+          source: source_ as FieldSource,
+          parentKey: 'exchange',
+        })
+      }
+    }
+
+    // 3. 执行合并
+    await mergeWordFields(word.id, selectedFieldInputs)
+    // 4. 反馈：按钮状态变化
+    setAdded(true)
+    setTimeout(() => setAdded(false), 2000)
+  }
+
   return (
     <div className="rounded-lg border overflow-hidden"
       style={{
@@ -143,7 +235,7 @@ export default function DictDetailCard({ word, source, entries }: Props) {
           {sourceLabel}
         </span>
         <span className="text-lg font-bold" style={{ fontFamily: 'var(--font-word)' }}>
-          {word}
+          {word_}
         </span>
       </div>
 
@@ -270,9 +362,9 @@ export default function DictDetailCard({ word, source, entries }: Props) {
         <button
           className="px-4 py-1.5 rounded text-sm font-medium transition-opacity hover:opacity-90"
           style={{ background: accent.color, color: 'white' }}
-          onClick={() => {}}
+          onClick={handleAdd}
         >
-          添加到词库
+          {added ? '已添加' : '添加到词库'}
         </button>
       </div>
     </div>
