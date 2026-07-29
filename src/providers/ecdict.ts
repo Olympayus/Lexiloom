@@ -1,8 +1,18 @@
 import Database from '@tauri-apps/plugin-sql'
+import { resolveResource } from '@tauri-apps/api/path'
 import type { DictionaryProvider } from './types'
 import type { DictionaryEntry } from '../types/dictionary'
 
-const DB_PATH = 'sqlite:ecdict.db'
+let dbPromise: Promise<Database> | null = null
+async function getDb(): Promise<Database> {
+  if (!dbPromise) {
+    dbPromise = (async () => {
+      const path = await resolveResource('ecdict.db')
+      return Database.load(`sqlite:${path}`)
+    })()
+  }
+  return dbPromise
+}
 
 // exchange prefix mapping table
 const EXCHANGE_LABELS: Record<string, string> = {
@@ -33,7 +43,7 @@ export class EcdictProvider implements DictionaryProvider {
 
   async searchLemmas(query: string): Promise<string[]> {
     if (!query.trim()) return []
-    const db = await Database.load(DB_PATH)
+    const db = await getDb()
     const q = `${query.toLowerCase().trim()}%`
     const rows = await db.select<{ word: string }[]>(
       'SELECT word FROM lemmas WHERE word LIKE ?1 LIMIT 20',
@@ -45,7 +55,7 @@ export class EcdictProvider implements DictionaryProvider {
   async lookup(word: string): Promise<DictionaryEntry[]> {
     if (!word.trim()) return []
     const normalized = word.toLowerCase().trim()
-    const db = await Database.load(DB_PATH)
+    const db = await getDb()
     const rows = await db.select<Record<string, any>[]>(
       'SELECT * FROM entries WHERE word = ?1 LIMIT 1',
       [normalized]

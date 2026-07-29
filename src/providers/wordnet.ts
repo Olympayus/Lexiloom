@@ -1,15 +1,25 @@
 import Database from '@tauri-apps/plugin-sql'
+import { resolveResource } from '@tauri-apps/api/path'
 import type { DictionaryProvider } from './types'
 import type { DictionaryEntry } from '../types/dictionary'
 
-const DB_PATH = 'sqlite:wordnet.db'
+let dbPromise: Promise<Database> | null = null
+async function getDb(): Promise<Database> {
+  if (!dbPromise) {
+    dbPromise = (async () => {
+      const path = await resolveResource('wordnet.db')
+      return Database.load(`sqlite:${path}`)
+    })()
+  }
+  return dbPromise
+}
 
 export class WordNetProvider implements DictionaryProvider {
   readonly name = 'wordnet'
 
   async searchLemmas(query: string): Promise<string[]> {
     if (!query.trim()) return []
-    const db = await Database.load(DB_PATH)
+    const db = await getDb()
     const q = `${query.toLowerCase().trim()}%`
     const rows = await db.select<{ lemma: string }[]>(
       'SELECT DISTINCT lemma FROM wn_words WHERE lemma LIKE ?1 LIMIT 20',
@@ -21,7 +31,7 @@ export class WordNetProvider implements DictionaryProvider {
   async lookup(word: string): Promise<DictionaryEntry[]> {
     if (!word.trim()) return []
     const normalized = word.toLowerCase().trim()
-    const db = await Database.load(DB_PATH)
+    const db = await getDb()
 
     // Query all synsets for this word, joining on composite PK (synset_offset, pos)
     const rows = await db.select<Record<string, any>[]>(
