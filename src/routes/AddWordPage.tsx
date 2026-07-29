@@ -1,5 +1,4 @@
 import FieldSelector from '../components/search/FieldSelector'
-import type { FieldSource } from '../types/field'
 
 export default function AddWordPage() {
   return (
