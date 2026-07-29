@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import type { DictionaryEntry } from '../../types/dictionary'
 
 interface Props {
@@ -13,10 +13,10 @@ const SOURCE_NAMES: Record<string, string> = {
   wordnet: 'WordNet',
 }
 
-// 来源颜色
-const SOURCE_COLORS: Record<string, string> = {
-  ecdict: 'var(--color-brand)',
-  wordnet: '#5B8C5A',
+// 来源配色（含 alpha 变体 — 用 hex 硬编码避免 CSS var + alpha 拼接失效）
+const SOURCE_ACCENTS: Record<string, { color: string; bg: string; border: string; headerBorder: string }> = {
+  ecdict: { color: 'var(--color-brand)', bg: '#4A6FA510', border: '#4A6FA540', headerBorder: '#4A6FA530' },
+  wordnet: { color: '#5B8C5A', bg: '#5B8C5A10', border: '#5B8C5A40', headerBorder: '#5B8C5A30' },
 }
 
 // 按模板分组字段
@@ -83,15 +83,17 @@ export default function DictDetailCard({ word, source, entries }: Props) {
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set())
   const grouped = useMemo(() => groupFields(entries), [entries])
   const sourceLabel = SOURCE_NAMES[source] || source
-  const sourceColor = SOURCE_COLORS[source] || '#666'
+  const accent = SOURCE_ACCENTS[source] || { color: '#666', bg: '#66666610', border: '#66666640', headerBorder: '#66666630' }
 
-  // 初始化默认全选
-  useMemo(() => {
+  // 初始化默认全选（含子字段）
+  useEffect(() => {
     const allKeys = new Set<string>()
     grouped.phonetic.forEach((_, i) => allKeys.add(`phonetic-${i}`))
     grouped.chineseDefinitions.forEach((_, i) => allKeys.add(`chinese-${i}`))
-    grouped.englishDefinitions.forEach((_, defIdx) => {
+    grouped.englishDefinitions.forEach((def, defIdx) => {
       allKeys.add(`english-${defIdx}`)
+      def.synonyms.forEach((_, i) => allKeys.add(`synonym-${defIdx}-${i}`))
+      def.examples.forEach((_, i) => allKeys.add(`example-${defIdx}-${i}`))
     })
     grouped.exchangeItems.forEach((_, i) => allKeys.add(`exchange-${i}`))
     setSelectedFields(allKeys)
@@ -130,14 +132,14 @@ export default function DictDetailCard({ word, source, entries }: Props) {
   return (
     <div className="rounded-lg border overflow-hidden"
       style={{
-        borderColor: sourceColor + '40',
+        borderColor: accent.border,
         background: 'var(--color-surface)',
       }}>
       {/* 卡片头部 */}
       <div className="px-4 py-2.5 flex items-center justify-between"
-        style={{ background: sourceColor + '10', borderBottom: '1px solid ' + sourceColor + '30' }}>
+        style={{ background: accent.bg, borderBottom: '1px solid ' + accent.headerBorder }}>
         <span className="text-xs font-semibold uppercase tracking-wider"
-          style={{ color: sourceColor }}>
+          style={{ color: accent.color }}>
           {sourceLabel}
         </span>
         <span className="text-lg font-bold" style={{ fontFamily: 'var(--font-word)' }}>
@@ -267,7 +269,7 @@ export default function DictDetailCard({ word, source, entries }: Props) {
         style={{ borderTop: '1px solid var(--color-border)', background: 'var(--color-canvas)' }}>
         <button
           className="px-4 py-1.5 rounded text-sm font-medium transition-opacity hover:opacity-90"
-          style={{ background: sourceColor, color: 'white' }}
+          style={{ background: accent.color, color: 'white' }}
           onClick={() => {}}
         >
           添加到词库
