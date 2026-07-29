@@ -1,5 +1,5 @@
 import { getDb } from './connection'
-import type { FieldValue, UpsertFieldValueInput, FieldDefinition } from '../types/field'
+import type { FieldValue, UpsertFieldValueInput, FieldDefinition, FieldSource } from '../types/field'
 import type { DbResult } from './types'
 
 export async function getFieldDefinitions(): Promise<DbResult<FieldDefinition[]>> {
@@ -26,7 +26,7 @@ export async function getFieldDefinitions(): Promise<DbResult<FieldDefinition[]>
 export async function getFieldValuesForWord(wordId: string): Promise<DbResult<FieldValue[]>> {
   try {
     const rows = await getDb().select<Record<string, any>[]>(
-      'SELECT * FROM field_values WHERE word_id = ?1', [wordId]
+      'SELECT * FROM field_values WHERE word_id = ?1 ORDER BY display_order', [wordId]
     )
     return {
       ok: true,
@@ -36,6 +36,8 @@ export async function getFieldValuesForWord(wordId: string): Promise<DbResult<Fi
         fieldId: r.field_id,
         value: r.value,
         source: r.source,
+        displayOrder: r.display_order,
+        parentId: r.parent_id,
         createdAt: r.created_at,
         updatedAt: r.updated_at,
       })),
@@ -54,8 +56,8 @@ export async function upsertFieldValue(input: UpsertFieldValueInput): Promise<Db
     )
     if (existing.length > 0) {
       await getDb().execute(
-        'UPDATE field_values SET value = ?1, source = ?2, updated_at = ?3 WHERE id = ?4',
-        [input.value, input.source, now, existing[0].id]
+        `UPDATE field_values SET value = ?1, source = ?2, display_order = ?3, parent_id = ?4, updated_at = ?5 WHERE id = ?6`,
+        [input.value, input.source, input.displayOrder ?? 0, input.parentId ?? null, now, existing[0].id]
       )
       return {
         ok: true,
@@ -64,7 +66,9 @@ export async function upsertFieldValue(input: UpsertFieldValueInput): Promise<Db
           wordId: existing[0].word_id,
           fieldId: existing[0].field_id,
           value: input.value,
-          source: input.source as 'cc-cedict' | 'user',
+          source: input.source as FieldSource,
+          displayOrder: input.displayOrder ?? 0,
+          parentId: input.parentId ?? null,
           createdAt: existing[0].created_at,
           updatedAt: now,
         },
@@ -72,9 +76,10 @@ export async function upsertFieldValue(input: UpsertFieldValueInput): Promise<Db
     } else {
       const id = crypto.randomUUID()
       await getDb().execute(
-        `INSERT INTO field_values (id, word_id, field_id, value, source, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)`,
-        [id, input.wordId, input.fieldId, input.value, input.source, now]
+        `INSERT INTO field_values (id, word_id, field_id, value, source, display_order, parent_id, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8)`,
+        [id, input.wordId, input.fieldId, input.value, input.source,
+         input.displayOrder ?? 0, input.parentId ?? null, now]
       )
       return {
         ok: true,
@@ -83,7 +88,9 @@ export async function upsertFieldValue(input: UpsertFieldValueInput): Promise<Db
           wordId: input.wordId,
           fieldId: input.fieldId,
           value: input.value,
-          source: input.source as 'cc-cedict' | 'user',
+          source: input.source as FieldSource,
+          displayOrder: input.displayOrder ?? 0,
+          parentId: input.parentId ?? null,
           createdAt: now,
           updatedAt: now,
         },
@@ -94,11 +101,65 @@ export async function upsertFieldValue(input: UpsertFieldValueInput): Promise<Db
   }
 }
 
-export async function deleteFieldValue(wordId: string, fieldId: string): Promise<DbResult<void>> {
+export async function insertFieldValue(input: UpsertFieldValueInput): Promise<DbResult<FieldValue>> {
+  try {
+    const id = crypto.randomUUID()
+    const now = Date.now()
+    await getDb().execute(
+      `INSERT INTO field_values (id, word_id, field_id, value, source, display_order, parent_id, created_at, updated_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8)`,
+      [id, input.wordId, input.fieldId, input.value, input.source,
+       input.displayOrder ?? 0, input.parentId ?? null, now]
+    )
+    return {
+      ok: true,
+      data: {
+        id,
+        wordId: input.wordId,
+        fieldId: input.fieldId,
+        value: input.value,
+        source: input.source as FieldSource,
+        displayOrder: input.displayOrder ?? 0,
+        parentId: input.parentId ?? null,
+        createdAt: now,
+        updatedAt: now,
+      },
+    }
+  } catch (e: any) {
+    return { ok: false, error: e.toString() }
+  }
+}
+
+export async function getFieldValuesByParent(parentId: string): Promise<DbResult<FieldValue[]>> {
+  try {
+    const rows = await getDb().select<Record<string, any>[]>(
+      'SELECT * FROM field_values WHERE parent_id = ?1 ORDER BY display_order',
+      [parentId]
+    )
+    return {
+      ok: true,
+      data: rows.map(r => ({
+        id: r.id,
+        wordId: r.word_id,
+        fieldId: r.field_id,
+        value: r.value,
+        source: r.source,
+        displayOrder: r.display_order,
+        parentId: r.parent_id,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      })),
+    }
+  } catch (e: any) {
+    return { ok: false, error: e.toString() }
+  }
+}
+
+export async function deleteFieldValue(id: string): Promise<DbResult<void>> {
   try {
     await getDb().execute(
-      'DELETE FROM field_values WHERE word_id = ?1 AND field_id = ?2',
-      [wordId, fieldId]
+      'DELETE FROM field_values WHERE id = ?1',
+      [id]
     )
     return { ok: true, data: undefined }
   } catch (e: any) {

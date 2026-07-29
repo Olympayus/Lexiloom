@@ -6,6 +6,10 @@ export type FieldKey =
   | 'synonyms'
   | 'example_sentence'
   | 'usage_scenario'
+  | 'phonetic'
+  | 'exchange'
+  | 'exchange_item'
+  | 'example'
 
 export const BUILTIN_FIELDS: Record<FieldKey, {
   name: string
@@ -19,6 +23,10 @@ export const BUILTIN_FIELDS: Record<FieldKey, {
   synonyms:            { name: '近义词',   fieldType: 'text',      displayOrder: 5 },
   example_sentence:    { name: '例句',     fieldType: 'multiline', displayOrder: 6 },
   usage_scenario:      { name: '使用场景', fieldType: 'multiline', displayOrder: 7 },
+  phonetic:            { name: '音标',     fieldType: 'text',      displayOrder: 8 },
+  exchange:            { name: '词形变化', fieldType: 'text',      displayOrder: 9 },
+  exchange_item:       { name: '词形变化项', fieldType: 'text',    displayOrder: 10 },
+  example:             { name: '例句',     fieldType: 'text',      displayOrder: 11 },
 }
 
 export interface FieldDefinition {
@@ -30,12 +38,17 @@ export interface FieldDefinition {
   createdAt: number
 }
 
+export type FieldSource = 'ecdict' | 'wordnet' | 'user'
+
 export interface FieldValue {
   id: string
   wordId: string
   fieldId: string
   value: string
-  source: 'cc-cedict' | 'user'
+  source: FieldSource
+  displayOrder: number
+  parentId: string | null
+  children?: FieldValue[]
   createdAt: number
   updatedAt: number
 }
@@ -44,5 +57,7 @@ export interface UpsertFieldValueInput {
   wordId: string
   fieldId: string
   value: string
-  source: 'cc-cedict' | 'user'
+  source: FieldSource
+  displayOrder?: number
+  parentId?: string | null
 }

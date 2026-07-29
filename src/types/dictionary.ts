@@ -1,13 +1,16 @@
+import type { FieldSource } from './field'
+
 export interface DictionaryEntry {
   word: string
   normalizedWord: string
-  source: 'cc-cedict'
+  source: 'ecdict' | 'wordnet'
   fields: DictionaryField[]
 }
 
 export interface DictionaryField {
   key: string
   value: string
+  children?: DictionaryField[]
 }
 
 export interface PendingWord {
@@ -15,7 +18,9 @@ export interface PendingWord {
   fieldSelections: {
     fieldKey: string
     value: string
-    source: 'cc-cedict' | 'user'
+    source: FieldSource
     selected: boolean
+    parentFieldKey?: string
+    children?: PendingWord['fieldSelections']
   }[]
 }

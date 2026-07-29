@@ -25,9 +25,10 @@ export const SQL_CREATE_FIELD_VALUES = `CREATE TABLE IF NOT EXISTS field_values 
   field_id TEXT NOT NULL REFERENCES field_definitions(id) ON DELETE CASCADE,
   value TEXT,
   source TEXT NOT NULL DEFAULT 'user',
+  display_order INTEGER NOT NULL DEFAULT 0,
+  parent_id TEXT REFERENCES field_values(id) ON DELETE SET NULL,
   created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL,
-  UNIQUE(word_id, field_id)
+  updated_at INTEGER NOT NULL
 );`
 
 export const SQL_CREATE_DICTIONARY_ENTRIES = `CREATE TABLE IF NOT EXISTS dictionary_entries (
