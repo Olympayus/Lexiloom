@@ -6,7 +6,7 @@
   "scripts": {
     "build:ecdict": "node scripts/build-ecdict.mjs",
     "build:wordnet": "node scripts/parse-wordnet.mjs",
-    "build:dictionaries": "npm run build:ecdict && npm run build:wordnet && cp -u public/dictionaries/*.db src-tauri/",
+    "build:dictionaries": "npm run build:ecdict && npm run build:wordnet && node -e \"require('fs').cpSync('public/dictionaries/ecdict.db','src-tauri/ecdict.db',{force:true});require('fs').cpSync('public/dictionaries/wordnet.db','src-tauri/wordnet.db',{force:true});console.log('Copied to src-tauri/')\"",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
