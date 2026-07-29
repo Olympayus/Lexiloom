@@ -4,7 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "build:ecdict": "node scripts/build-ecdict.mjs",
+    "build:dictionaries": "npm run build:ecdict",
+    "dev": "npm run build:dictionaries && tauri dev",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
