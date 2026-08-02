@@ -3,10 +3,10 @@ import { useWordStore } from '../../stores/wordStore'
 import { getDefinitions } from '../../services/fieldService'
 import { Button } from '../ui/Button'
 import EmptyState from '../ui/EmptyState'
-import type { FieldDefinition, FieldKey, FieldValue } from '../../types/field'
+import type { FieldDefinition, FieldValue } from '../../types/field'
 
 export default function WordWorkbench() {
-  const { words, selectedWordId, fieldValues, updateFieldValue } = useWordStore()
+  const { words, selectedWordId, fieldValues, updateFieldValue, deleteWord } = useWordStore()
   const [defs, setDefs] = useState<FieldDefinition[]>([])
   const [editing, setEditing] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
@@ -62,12 +62,14 @@ export default function WordWorkbench() {
   const handleSave = async (fvId: string) => {
     const fv = findFieldValueById(fvId)
     if (!fv) return
-    const def = defs.find(d => d.id === fv.fieldId)
-    if (def) {
-      await updateFieldValue(def.key as FieldKey, editValue)
-    }
+    await updateFieldValue(fv.id, editValue)
     setEditing(null)
     setSaved(true)
+  }
+
+  const handleDelete = async () => {
+    if (!window.confirm(`确定删除单词“${selectedWord.lemma}”吗？此操作不可撤销。`)) return
+    await deleteWord(selectedWord.id)
   }
 
   const sortedFieldValues = [...fieldValues].sort((a, b) => a.displayOrder - b.displayOrder)
@@ -193,6 +195,25 @@ export default function WordWorkbench() {
             }} />
           )}
           <h2 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>{selectedWord.lemma}</h2>
+          <button
+            className="ml-auto"
+            onClick={handleDelete}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '6px',
+              fontSize: '13px',
+              color: 'var(--color-text-secondary)',
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-ui)',
+              transition: 'color var(--duration-fast) var(--ease-out-smooth), border-color var(--duration-fast) var(--ease-out-smooth)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-accent)'; e.currentTarget.style.borderColor = 'var(--color-accent)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-secondary)'; e.currentTarget.style.borderColor = 'var(--color-border)' }}
+          >
+            删除
+          </button>
         </div>
       </div>
 

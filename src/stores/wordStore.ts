@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Word, WordWithPreview, FieldKey, FieldValue } from '../types'
+import type { Word, WordWithPreview, FieldValue } from '../types'
 import * as wordService from '../services/wordService'
 import * as fieldService from '../services/fieldService'
 
@@ -11,9 +11,10 @@ interface WordStore {
 
   loadWords: () => Promise<void>
   selectWord: (id: string | null) => Promise<void>
-  updateFieldValue: (fieldKey: FieldKey, value: string) => Promise<void>
+  updateFieldValue: (fvId: string, value: string) => Promise<void>
   addWord: (lemma: string) => Promise<Word | null>
   mergeWordFields: (wordId: string, fields: { key: string; value: string; source: 'ecdict' | 'wordnet' | 'user'; parentKey?: string }[]) => Promise<boolean>
+  deleteWord: (id: string) => Promise<void>
 }
 
 export const useWordStore = create<WordStore>((set, get) => ({
@@ -35,21 +36,20 @@ export const useWordStore = create<WordStore>((set, get) => ({
     set({ fieldValues: values })
   },
 
-  updateFieldValue: async (fieldKey, value) => {
+  updateFieldValue: async (fvId, value) => {
     const { selectedWordId } = get()
     if (!selectedWordId) return
-
-    const defs = await fieldService.getDefinitions()
-    const def = defs.find(d => d.key === fieldKey)
-    if (!def) return
-
-    await fieldService.upsertValue({
-      wordId: selectedWordId,
-      fieldId: def.id,
-      value,
-      source: 'user',
-    })
+    await fieldService.updateValueById(fvId, value)
     await get().selectWord(selectedWordId)
+  },
+
+  deleteWord: async (id) => {
+    const ok = await wordService.deleteWord(id)
+    if (!ok) return
+    if (get().selectedWordId === id) {
+      set({ selectedWordId: null, fieldValues: [] })
+    }
+    await get().loadWords()
   },
 
   addWord: async (lemma) => {

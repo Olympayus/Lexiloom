@@ -40,6 +40,13 @@ export async function upsertValue(input: UpsertFieldValueInput): Promise<FieldVa
   return result.ok ? result.data : null
 }
 
+// Update an existing field_value row by its id (used by WordWorkbench user-edit flow).
+// Precise by-id targeting fixes editing the 2nd+ value of a multi-value field.
+export async function updateValueById(id: string, value: string): Promise<FieldValue | null> {
+  const result = await fieldsDb.updateFieldValueById(id, value)
+  return result.ok ? result.data : null
+}
+
 export async function getValues(wordId: string): Promise<FieldValue[]> {
   const result = await fieldsDb.getFieldValuesForWord(wordId)
   if (!result.ok) return []

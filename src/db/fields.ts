@@ -101,6 +101,40 @@ export async function upsertFieldValue(input: UpsertFieldValueInput): Promise<Db
   }
 }
 
+// Update one existing field_value row by its id (used by the WordWorkbench user-edit flow).
+// Unlike upsertFieldValue it targets the exact row, so editing the 2nd+ value of a
+// multi-value field no longer overwrites the first, and display_order / parent_id are preserved.
+export async function updateFieldValueById(id: string, value: string, source: FieldSource = 'user'): Promise<DbResult<FieldValue>> {
+  try {
+    const rows = await getDb().select<Record<string, any>[]>(
+      'SELECT * FROM field_values WHERE id = ?1', [id]
+    )
+    if (rows.length === 0) return { ok: false, error: `field_value not found: ${id}` }
+    const now = Date.now()
+    await getDb().execute(
+      `UPDATE field_values SET value = ?1, source = ?2, updated_at = ?3 WHERE id = ?4`,
+      [value, source, now, id]
+    )
+    const r = rows[0]
+    return {
+      ok: true,
+      data: {
+        id,
+        wordId: r.word_id,
+        fieldId: r.field_id,
+        value,
+        source,
+        displayOrder: r.display_order,
+        parentId: r.parent_id,
+        createdAt: r.created_at,
+        updatedAt: now,
+      },
+    }
+  } catch (e: any) {
+    return { ok: false, error: e.toString() }
+  }
+}
+
 export async function insertFieldValue(input: UpsertFieldValueInput): Promise<DbResult<FieldValue>> {
   try {
     const id = crypto.randomUUID()
