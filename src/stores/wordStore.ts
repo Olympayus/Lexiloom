@@ -4,7 +4,7 @@ import * as wordService from '../services/wordService'
 import * as fieldService from '../services/fieldService'
 
 interface WordStore {
-  words: (Word | WordWithPreview)[]
+  words: WordWithPreview[]
   loading: boolean
   selectedWordId: string | null
   fieldValues: FieldValue[]

@@ -13,12 +13,12 @@ export default function WordList() {
 
   useEffect(() => {
     if (!filter.trim()) {
-      setFiltered(words as WordWithPreview[])
+      setFiltered(words)
       return
     }
     setSearching(true)
     vocabularySearch(filter)
-      .then(results => setFiltered(results as WordWithPreview[]))
+      .then(results => setFiltered(results))
       .finally(() => setSearching(false))
   }, [filter, words])
 
