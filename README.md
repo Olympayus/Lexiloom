@@ -63,7 +63,7 @@ src/
 ├── db/             # Database layer (schema, connection, queries)
 ├── lib/            # Search library
 ├── providers/      # Dictionary providers (ECDICT, WordNet)
-├── routes/         # Page components (IndexPage, AddWordPage)
+├── routes/         # Page components (IndexPage)
 ├── services/       # Service layer (words, fields, search)
 ├── stores/         # Zustand state (wordStore)
 ├── types/          # TypeScript interfaces (word, field, dictionary)
