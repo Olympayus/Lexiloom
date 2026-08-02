@@ -47,63 +47,9 @@ export async function getFieldValuesForWord(wordId: string): Promise<DbResult<Fi
   }
 }
 
-export async function upsertFieldValue(input: UpsertFieldValueInput): Promise<DbResult<FieldValue>> {
-  try {
-    const now = Date.now()
-    const existing = await getDb().select<Record<string, any>[]>(
-      'SELECT * FROM field_values WHERE word_id = ?1 AND field_id = ?2',
-      [input.wordId, input.fieldId]
-    )
-    if (existing.length > 0) {
-      await getDb().execute(
-        `UPDATE field_values SET value = ?1, source = ?2, display_order = ?3, parent_id = ?4, updated_at = ?5 WHERE id = ?6`,
-        [input.value, input.source, input.displayOrder ?? 0, input.parentId ?? null, now, existing[0].id]
-      )
-      return {
-        ok: true,
-        data: {
-          id: existing[0].id,
-          wordId: existing[0].word_id,
-          fieldId: existing[0].field_id,
-          value: input.value,
-          source: input.source as FieldSource,
-          displayOrder: input.displayOrder ?? 0,
-          parentId: input.parentId ?? null,
-          createdAt: existing[0].created_at,
-          updatedAt: now,
-        },
-      }
-    } else {
-      const id = crypto.randomUUID()
-      await getDb().execute(
-        `INSERT INTO field_values (id, word_id, field_id, value, source, display_order, parent_id, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8)`,
-        [id, input.wordId, input.fieldId, input.value, input.source,
-         input.displayOrder ?? 0, input.parentId ?? null, now]
-      )
-      return {
-        ok: true,
-        data: {
-          id,
-          wordId: input.wordId,
-          fieldId: input.fieldId,
-          value: input.value,
-          source: input.source as FieldSource,
-          displayOrder: input.displayOrder ?? 0,
-          parentId: input.parentId ?? null,
-          createdAt: now,
-          updatedAt: now,
-        },
-      }
-    }
-  } catch (e: any) {
-    return { ok: false, error: e.toString() }
-  }
-}
-
 // Update one existing field_value row by its id (used by the WordWorkbench user-edit flow).
-// Unlike upsertFieldValue it targets the exact row, so editing the 2nd+ value of a
-// multi-value field no longer overwrites the first, and display_order / parent_id are preserved.
+// Targets the exact row, so editing the 2nd+ value of a multi-value field no longer
+// overwrites the first, and display_order / parent_id are preserved.
 export async function updateFieldValueById(id: string, value: string, source: FieldSource = 'user'): Promise<DbResult<FieldValue>> {
   try {
     const rows = await getDb().select<Record<string, any>[]>(

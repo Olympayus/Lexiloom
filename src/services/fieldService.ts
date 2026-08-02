@@ -33,13 +33,6 @@ export async function insertValues(inputs: UpsertFieldValueInput[]): Promise<Fie
   return results
 }
 
-// Retained old interface (compatible with existing storage logic)
-// Used by user edit flow (WordWorkbench) — properly upserts by (wordId, fieldId)
-export async function upsertValue(input: UpsertFieldValueInput): Promise<FieldValue | null> {
-  const result = await fieldsDb.upsertFieldValue(input)
-  return result.ok ? result.data : null
-}
-
 // Update an existing field_value row by its id (used by WordWorkbench user-edit flow).
 // Precise by-id targeting fixes editing the 2nd+ value of a multi-value field.
 export async function updateValueById(id: string, value: string): Promise<FieldValue | null> {
