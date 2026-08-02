@@ -38,43 +38,58 @@ export async function getAllWords(): Promise<DbResult<Word[]>> {
   }
 }
 
+// Shared preview query: single implementation for "all words" and "filtered".
+// (Deduplicates the former duplicate in src/lib/search.ts vocabularySearch.)
+async function queryWordPreviews(filter: string | null): Promise<WordWithPreview[]> {
+  const db = getDb()
+  const fieldDefs = await db.select<{ id: string; key: string }[]>(
+    `SELECT id, key FROM field_definitions WHERE key IN ('chinese_definition', 'part_of_speech')`
+  )
+  const defMap = new Map<string, string>()
+  fieldDefs.forEach(fd => defMap.set(fd.key, fd.id))
+  const chineseDefId = defMap.get('chinese_definition')
+  const posId = defMap.get('part_of_speech')
+
+  const filterParam = filter ? `%${filter}%` : null
+  const rows = await db.select<Record<string, any>[]>(
+    `SELECT w.*,
+            MAX(CASE WHEN fv.field_id = ?1 THEN fv.value END) as chinese_definition,
+            MAX(CASE WHEN fv.field_id = ?2 THEN fv.value END) as part_of_speech
+     FROM words w
+     LEFT JOIN field_values fv ON fv.word_id = w.id
+     ${filterParam ? 'WHERE w.lemma LIKE ?3 OR fv.value LIKE ?3' : ''}
+     GROUP BY w.id
+     ORDER BY w.updated_at DESC`,
+    filterParam
+      ? [chineseDefId || '', posId || '', filterParam]
+      : [chineseDefId || '', posId || '']
+  )
+  return rows.map(r => ({
+    id: r.id,
+    lemma: r.lemma,
+    normalizedLemma: r.normalized_lemma,
+    language: r.language,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+    chineseDefinition: r.chinese_definition || undefined,
+    partOfSpeech: r.part_of_speech || undefined,
+  }))
+}
+
 export async function getWordsWithPreviews(): Promise<DbResult<WordWithPreview[]>> {
   try {
-    const db = getDb()
-    // 1. Get field definition IDs for chinese_definition and part_of_speech
-    const fieldDefs = await db.select<{ id: string; key: string }[]>(
-      `SELECT id, key FROM field_definitions WHERE key IN ('chinese_definition', 'part_of_speech')`
-    )
-    const defMap = new Map<string, string>()
-    fieldDefs.forEach(fd => defMap.set(fd.key, fd.id))
-    const chineseDefId = defMap.get('chinese_definition')
-    const posId = defMap.get('part_of_speech')
+    const data = await queryWordPreviews(null)
+    return { ok: true, data }
+  } catch (e: any) {
+    return { ok: false, error: e.toString() }
+  }
+}
 
-    // 2. LEFT JOIN batch query
-    const rows = await db.select<Record<string, any>[]>(
-      `SELECT w.*,
-              MAX(CASE WHEN fv.field_id = ?1 THEN fv.value END) as chinese_definition,
-              MAX(CASE WHEN fv.field_id = ?2 THEN fv.value END) as part_of_speech
-       FROM words w
-       LEFT JOIN field_values fv ON fv.word_id = w.id
-       GROUP BY w.id
-       ORDER BY w.updated_at DESC`,
-      [chineseDefId || '', posId || '']
-    )
-
-    return {
-      ok: true,
-      data: rows.map(r => ({
-        id: r.id,
-        lemma: r.lemma,
-        normalizedLemma: r.normalized_lemma,
-        language: r.language,
-        createdAt: r.created_at,
-        updatedAt: r.updated_at,
-        chineseDefinition: r.chinese_definition || undefined,
-        partOfSpeech: r.part_of_speech || undefined,
-      })),
-    }
+export async function searchWords(query: string): Promise<DbResult<WordWithPreview[]>> {
+  try {
+    const filter = query.trim() ? query.toLowerCase().trim() : null
+    const data = await queryWordPreviews(filter)
+    return { ok: true, data }
   } catch (e: any) {
     return { ok: false, error: e.toString() }
   }
