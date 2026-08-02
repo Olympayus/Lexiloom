@@ -43,3 +43,6 @@ icons/
 # --- Temp / local ---
 *.local
 *.db
+
+# --- Docs (local planning notes, not committed) ---
+docs/

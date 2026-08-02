@@ -6,12 +6,16 @@ Lexiloom helps you build and manage your personal vocabulary collection. Search 
 
 Built with Tauri 2 + React + TypeScript + SQLite.
 
+## Status
+
+**v0.2.1** — ECDICT + WordNet two-dictionary search and hierarchical field editing are complete. Display control, Chinese↔English search, and cleanup hardening are in progress (work scope: `docs/v0.2.1-work.md`).
+
 ## Features
 
-- **Dictionary search** — Search English or Chinese words with CC-CEDICT support, with typeahead dropdown
-- **Word management** — Add words to your personal library, organize with structured fields
-- **7 built-in fields** — Chinese definition, English definition, part of speech, derivatives, synonyms, example sentences, usage scenarios
-- **Offline-first** — All dictionary data is bundled and runs locally, no internet required
+- **Dictionary search** — Two-phase English search across ECDICT + WordNet (typeahead suggestion → detail card), merge selected fields into your word bank
+- **Word management** — Add, edit, delete words; hierarchical fields with in-place editing
+- **11 built-in fields** — Chinese definition, English definition, part of speech, derivatives, synonyms, example sentences, usage scenarios, phonetic, word forms (exchange / exchange items), examples
+- **Offline-first** — All dictionary data runs locally, no internet required
 - **Cross-platform** — Windows, macOS, and Linux via Tauri 2
 
 ## Tech Stack
@@ -23,7 +27,7 @@ Built with Tauri 2 + React + TypeScript + SQLite.
 | Routing | react-router-dom |
 | Backend | Tauri 2 (Rust) |
 | Database | SQLite via tauri-plugin-sql |
-| Dictionary | CC-CEDICT (Chinese-English) |
+| Dictionary | ECDICT + WordNet (local SQLite) |
 
 ## Getting Started
 
@@ -37,10 +41,13 @@ Built with Tauri 2 + React + TypeScript + SQLite.
 
 ```bash
 npm install
+npm run build:dictionaries   # build local dictionary DBs (ecdict.db / wordnet.db)
 npm run tauri dev
 ```
 
 This starts the Tauri desktop app with Vite hot-reload for the frontend.
+
+> The dictionary `.db` files are gitignored and generated locally by `npm run build:dictionaries`; run it once on a fresh clone before `npm run tauri dev`.
 
 ### Build
 
@@ -55,7 +62,7 @@ src/
 ├── components/     # UI components (WordCard, WordWorkbench, search, layout, ui)
 ├── db/             # Database layer (schema, connection, queries)
 ├── lib/            # Search library
-├── providers/      # Dictionary providers (CC-CEDICT)
+├── providers/      # Dictionary providers (ECDICT, WordNet)
 ├── routes/         # Page components (IndexPage, AddWordPage)
 ├── services/       # Service layer (words, fields, search)
 ├── stores/         # Zustand state (wordStore)
