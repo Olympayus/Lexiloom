@@ -1,7 +1,7 @@
 import Database from '@tauri-apps/plugin-sql'
 import {
   SQL_CREATE_WORDS, SQL_CREATE_FIELD_DEFINITIONS, SQL_CREATE_FIELD_VALUES,
-  SQL_CREATE_DICTIONARY_ENTRIES, SQL_CREATE_DICTIONARY_FIELDS, SQL_CREATE_INDEXES,
+  SQL_CREATE_INDEXES,
   seedFieldDefinitionsSQL,
 } from './schema'
 
@@ -12,7 +12,6 @@ export async function initDatabase(): Promise<void> {
   db = await Database.load('sqlite:lexiloom.db')
   for (const sql of [
     SQL_CREATE_WORDS, SQL_CREATE_FIELD_DEFINITIONS, SQL_CREATE_FIELD_VALUES,
-    SQL_CREATE_DICTIONARY_ENTRIES, SQL_CREATE_DICTIONARY_FIELDS,
     SQL_CREATE_INDEXES, seedFieldDefinitionsSQL(),
   ]) {
     await db.execute(sql)

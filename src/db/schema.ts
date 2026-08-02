@@ -31,27 +31,8 @@ export const SQL_CREATE_FIELD_VALUES = `CREATE TABLE IF NOT EXISTS field_values 
   updated_at INTEGER NOT NULL
 );`
 
-export const SQL_CREATE_DICTIONARY_ENTRIES = `CREATE TABLE IF NOT EXISTS dictionary_entries (
-  id TEXT PRIMARY KEY,
-  word TEXT NOT NULL,
-  normalized_word TEXT NOT NULL,
-  source TEXT NOT NULL,
-  raw_data TEXT NOT NULL,
-  created_at INTEGER NOT NULL
-);`
-
-export const SQL_CREATE_DICTIONARY_FIELDS = `CREATE TABLE IF NOT EXISTS dictionary_fields (
-  id TEXT PRIMARY KEY,
-  entry_id TEXT NOT NULL REFERENCES dictionary_entries(id) ON DELETE CASCADE,
-  field_key TEXT NOT NULL,
-  field_value TEXT NOT NULL
-);`
-
 export const SQL_CREATE_INDEXES = `
   CREATE INDEX IF NOT EXISTS idx_fv_word_id ON field_values(word_id);
-  CREATE INDEX IF NOT EXISTS idx_df_entry_id ON dictionary_fields(entry_id);
-  CREATE INDEX IF NOT EXISTS idx_df_value ON dictionary_fields(field_value);
-  CREATE INDEX IF NOT EXISTS idx_de_word ON dictionary_entries(normalized_word);
 `
 
 export function seedFieldDefinitionsSQL(): string {
