@@ -1,15 +1,9 @@
 import { EcdictProvider } from '../providers/ecdict'
 import { WordNetProvider } from '../providers/wordnet'
 import type { DictionaryEntry } from '../types/dictionary'
-import { vocabularySearch } from '../lib/search'
-import type { Word } from '../types/word'
 
 const ecdict = new EcdictProvider()
 const wordnet = new WordNetProvider()
-
-export async function searchVocabulary(query: string): Promise<Word[]> {
-  return vocabularySearch(query)
-}
 
 // 阶段一：模糊匹配返回单词建议
 export async function searchLemmas(query: string): Promise<string[]> {
@@ -38,11 +32,4 @@ export async function lookupWord(word: string): Promise<{ source: string; entrie
   if (ecdictEntries.length > 0) results.push({ source: 'ecdict', entries: ecdictEntries })
   if (wordnetEntries.length > 0) results.push({ source: 'wordnet', entries: wordnetEntries })
   return results
-}
-
-// 过渡兼容：旧 TopSearchBar 仍引用 searchDictionary
-/** @deprecated Use lookupWord instead */
-export async function searchDictionary(query: string): Promise<DictionaryEntry[]> {
-  const results = await lookupWord(query)
-  return results.flatMap(r => r.entries)
 }

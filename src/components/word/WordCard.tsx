@@ -6,10 +6,9 @@ interface Props {
   onClick: () => void
   chineseDefinition?: string
   partOfSpeech?: string
-  hasCustomContent?: boolean
 }
 
-export default function WordCard({ word, isSelected, onClick, chineseDefinition, partOfSpeech, hasCustomContent }: Props) {
+export default function WordCard({ word, isSelected, onClick, chineseDefinition, partOfSpeech }: Props) {
   return (
     <button
       onClick={onClick}
@@ -43,7 +42,7 @@ export default function WordCard({ word, isSelected, onClick, chineseDefinition,
         width: isSelected ? '4px' : '3px',
         borderRadius: '999px',
         flexShrink: 0,
-        background: hasCustomContent ? 'var(--color-brand)' : (isSelected ? 'var(--color-brand)' : 'var(--color-border)'),
+        background: isSelected ? 'var(--color-brand)' : 'var(--color-border)',
         transition: 'width var(--duration-fast) var(--ease-out-smooth), background var(--duration-fast) var(--ease-out-smooth)',
       }} />
 
