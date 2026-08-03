@@ -44,3 +44,12 @@ export function seedFieldDefinitionsSQL(): string {
     }).join(',\n')
   return `INSERT OR IGNORE INTO field_definitions VALUES ${rows};`
 }
+
+// D4：PRAGMA user_version 驱动重建。P4/P5 变更 schema 时递增此值。
+export const SCHEMA_VERSION = 1
+
+export const SQL_DROP_TABLES: string[] = [
+  'DROP TABLE IF EXISTS field_values;',
+  'DROP TABLE IF EXISTS field_definitions;',
+  'DROP TABLE IF EXISTS words;',
+]
