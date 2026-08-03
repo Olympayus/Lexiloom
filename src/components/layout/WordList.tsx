@@ -23,7 +23,7 @@ export default function WordList() {
   }, [filter, words])
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex-1 flex flex-col min-h-0">
       {/* 内嵌小搜索 */}
       <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
         <input
@@ -58,10 +58,6 @@ export default function WordList() {
             />
           ))
         )}
-      </div>
-
-      <div className="px-4 py-2 text-xs text-[#7A7368]" style={{ borderTop: '1px solid var(--color-border)' }}>
-        共 {words.length} 个单词
       </div>
     </div>
   )
