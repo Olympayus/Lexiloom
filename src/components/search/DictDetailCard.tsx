@@ -269,7 +269,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
             />
             <div>
               <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>
-                中文释义{grouped.chineseDefinitions.length > 1 ? `①${i + 1}` : '①'}
+                中文释义{grouped.chineseDefinitions.length > 1 ? `(${i + 1})` : ''}
               </span>
               <div>{def}</div>
             </div>
@@ -288,7 +288,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
               />
               <div className="flex-1">
                 <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>
-                  英文释义{grouped.englishDefinitions.length > 1 ? `①${defIdx + 1}` : '①'}
+                  英文释义{grouped.englishDefinitions.length > 1 ? `(${defIdx + 1})` : ''}
                 </span>
                 <div>{def.value}</div>
               </div>

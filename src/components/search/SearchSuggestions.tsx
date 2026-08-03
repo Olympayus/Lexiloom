@@ -44,7 +44,6 @@ export default function SearchSuggestions({ suggestions, selectedIndex, onSelect
             padding: '10px 16px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
             border: 'none',
             background: i === selectedIndex ? 'var(--color-surface-hover)' : 'transparent',
             cursor: 'pointer',

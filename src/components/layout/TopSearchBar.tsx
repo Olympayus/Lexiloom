@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Input } from '../ui/Input'
+import { Button } from '../ui/Button'
 import SearchSuggestions from '../search/SearchSuggestions'
 import DictDetailCard from '../search/DictDetailCard'
 import { searchLemmas, lookupWord } from '../../services/searchService'
@@ -65,6 +66,24 @@ export default function TopSearchBar() {
     setLoadingDetail(false)
   }, [])
 
+  // 返回搜索初始态：清空详情与输入，聚焦搜索框
+  const handleBack = useCallback(() => {
+    setQuery('')
+    setSelectedWord(null)
+    setDetailResults([])
+    inputRef.current?.focus()
+  }, [])
+
+  // 详情打开时，Esc 亦可返回
+  useEffect(() => {
+    if (!selectedWord) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleBack()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [selectedWord, handleBack])
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!showSuggestions || suggestions.length === 0) return
     if (e.key === 'ArrowDown') {
@@ -116,6 +135,9 @@ export default function TopSearchBar() {
       {/* 阶段二：详情卡片区域 */}
       {selectedWord && (
         <div className="px-6 pb-4 space-y-4">
+          <div className="flex items-center">
+            <Button variant="secondary" onClick={handleBack}>← 返回</Button>
+          </div>
           {loadingDetail ? (
             <div className="flex items-center justify-center py-8 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
               加载中…
