@@ -22,7 +22,7 @@ export default function WordCard({ word, isSelected, onClick, chineseDefinition,
         border: 'none',
         background: isSelected ? 'var(--color-surface)' : 'transparent',
         cursor: 'pointer',
-        transition: 'background-color var(--duration-fast) var(--ease-out-smooth), transform var(--duration-fast) var(--ease-out-smooth)',
+        transition: 'background-color var(--duration-fast) var(--ease-smooth), transform var(--duration-fast) var(--ease-smooth)',
       }}
       onMouseEnter={e => {
         if (!isSelected) {
@@ -43,7 +43,7 @@ export default function WordCard({ word, isSelected, onClick, chineseDefinition,
         borderRadius: '999px',
         flexShrink: 0,
         background: isSelected ? 'var(--color-brand)' : 'var(--color-border)',
-        transition: 'width var(--duration-fast) var(--ease-out-smooth), background var(--duration-fast) var(--ease-out-smooth)',
+        transition: 'width var(--duration-fast) var(--ease-smooth), background var(--duration-fast) var(--ease-smooth)',
       }} />
 
       {/* 内容 */}
@@ -51,7 +51,7 @@ export default function WordCard({ word, isSelected, onClick, chineseDefinition,
         <div style={{
           color: 'var(--color-text-primary)',
           fontWeight: 500,
-          fontFamily: 'var(--font-word)',
+          fontFamily: 'var(--font-serif)',
           fontSize: '16px',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
@@ -62,7 +62,7 @@ export default function WordCard({ word, isSelected, onClick, chineseDefinition,
         <div style={{
           color: 'var(--color-text-secondary)',
           fontSize: '13px',
-          fontFamily: 'var(--font-ui)',
+          fontFamily: 'var(--font-sans)',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
@@ -76,7 +76,7 @@ export default function WordCard({ word, isSelected, onClick, chineseDefinition,
         display: 'flex',
         alignItems: 'center',
         opacity: isSelected ? 1 : 0,
-        transition: 'opacity var(--duration-fast) var(--ease-out-smooth)',
+        transition: 'opacity var(--duration-fast) var(--ease-smooth)',
         color: 'var(--color-text-secondary)',
         fontSize: '14px',
       }}>

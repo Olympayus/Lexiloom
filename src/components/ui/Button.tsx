@@ -12,11 +12,11 @@ export function Button({ variant = 'primary', className = '', ...props }: Props)
       className={`${base} ${styles[variant]} ${className}`}
       style={{
         background: variant === 'primary' ? 'var(--color-brand)' : 'var(--color-border)',
-        color: variant === 'primary' ? '#fff' : 'var(--color-text-primary)',
-        transition: `background-color var(--duration-fast) var(--ease-out-smooth)`,
+        color: variant === 'primary' ? 'var(--color-surface)' : 'var(--color-text-primary)',
+        transition: `background-color var(--duration-fast) var(--ease-smooth)`,
         border: 'none',
         cursor: 'pointer',
-        fontFamily: 'var(--font-ui)',
+        fontFamily: 'var(--font-sans)',
         fontSize: '14px',
         padding: '6px 20px',
         borderRadius: '6px',

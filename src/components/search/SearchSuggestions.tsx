@@ -30,7 +30,7 @@ export default function SearchSuggestions({ suggestions, selectedIndex, onSelect
         fontSize: '12px',
         color: 'var(--color-text-secondary)',
         fontWeight: 500,
-        fontFamily: 'var(--font-ui)',
+        fontFamily: 'var(--font-sans)',
       }}>
         单词建议
       </div>
@@ -48,10 +48,10 @@ export default function SearchSuggestions({ suggestions, selectedIndex, onSelect
             background: i === selectedIndex ? 'var(--color-surface-hover)' : 'transparent',
             cursor: 'pointer',
             textAlign: 'left',
-            fontFamily: 'var(--font-word)',
+            fontFamily: 'var(--font-serif)',
             fontSize: '15px',
             color: 'var(--color-text-primary)',
-            transition: 'background-color var(--duration-fast) var(--ease-out-smooth)',
+            transition: 'background-color var(--duration-fast) var(--ease-smooth)',
           }}
         >
           {highlightText(word, query)}

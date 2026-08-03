@@ -9,10 +9,10 @@ export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTML
         style={{
           border: '1px solid var(--color-border)',
           color: 'var(--color-text-primary)',
-          fontFamily: 'var(--font-ui)',
+          fontFamily: 'var(--font-sans)',
           fontSize: '14px',
           lineHeight: 1.5,
-          transition: `border-color var(--duration-fast) var(--ease-out-smooth)`,
+          transition: `border-color var(--duration-fast) var(--ease-smooth)`,
         }}
         onFocus={e => {
           e.currentTarget.style.borderColor = 'var(--color-brand)'

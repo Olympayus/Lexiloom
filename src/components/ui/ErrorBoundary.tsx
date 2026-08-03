@@ -39,12 +39,12 @@ export default class ErrorBoundary extends Component<Props, State> {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#F6F4EF',
+          background: 'var(--color-canvas)',
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
         }}>
           <div style={{
-            background: '#FFFFFF',
-            border: '1px solid #E8E4DE',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
             borderRadius: '12px',
             padding: '40px',
             maxWidth: '480px',
@@ -53,14 +53,14 @@ export default class ErrorBoundary extends Component<Props, State> {
             <h1 style={{
               fontSize: '20px',
               fontWeight: 600,
-              color: '#1C1814',
+              color: 'var(--color-text-primary)',
               margin: '0 0 8px',
             }}>
               出了点问题
             </h1>
             <p style={{
               fontSize: '14px',
-              color: '#7A7368',
+              color: 'var(--color-text-secondary)',
               margin: '0 0 24px',
               lineHeight: 1.6,
             }}>
@@ -73,8 +73,8 @@ export default class ErrorBoundary extends Component<Props, State> {
                   padding: '8px 20px',
                   borderRadius: '6px',
                   border: 'none',
-                  background: '#4A6FA5',
-                  color: '#fff',
+                  background: 'var(--color-brand)',
+                  color: 'var(--color-surface)',
                   fontSize: '14px',
                   fontWeight: 500,
                   cursor: 'pointer',
@@ -87,9 +87,9 @@ export default class ErrorBoundary extends Component<Props, State> {
                 style={{
                   padding: '8px 20px',
                   borderRadius: '6px',
-                  border: '1px solid #E8E4DE',
-                  background: '#fff',
-                  color: '#1C1814',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-text-primary)',
                   fontSize: '14px',
                   fontWeight: 500,
                   cursor: 'pointer',
@@ -105,7 +105,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               }}>
                 <summary style={{
                   fontSize: '12px',
-                  color: '#7A7368',
+                  color: 'var(--color-text-secondary)',
                   cursor: 'pointer',
                 }}>
                   错误详情
@@ -113,10 +113,10 @@ export default class ErrorBoundary extends Component<Props, State> {
                 <pre style={{
                   marginTop: '8px',
                   padding: '12px',
-                  background: '#F6F4EF',
+                  background: 'var(--color-canvas)',
                   borderRadius: '6px',
                   fontSize: '11px',
-                  color: '#C17A4E',
+                  color: 'var(--color-accent)',
                   overflowX: 'auto',
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-all',

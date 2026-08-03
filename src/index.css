@@ -1,18 +1,12 @@
 @import "tailwindcss";
 @import "./styles/tokens.css";
+@import "./styles/animations.css";
 
 body {
-  font-family: var(--font-ui);
-  line-height: var(--line-height-relaxed);
+  font-family: var(--font-sans);
+  line-height: var(--leading-relaxed);
   color: var(--color-text-primary);
   background: var(--color-canvas);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-@keyframes weave-pulse {
-  0%   { transform: scaleX(1); }
-  30%  { transform: scaleX(1.5); }
-  70%  { transform: scaleX(1); }
-  100% { transform: scaleX(1); }
 }

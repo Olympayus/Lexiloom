@@ -234,7 +234,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
           style={{ color: accent.color }}>
           {sourceLabel}
         </span>
-        <span className="text-lg font-bold" style={{ fontFamily: 'var(--font-word)' }}>
+        <span className="text-lg font-bold" style={{ fontFamily: 'var(--font-serif)' }}>
           {word_}
         </span>
       </div>
@@ -253,7 +253,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
             />
             <div>
               <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>音标</span>
-              <div style={{ fontFamily: 'var(--font-ui)' }}>{grouped.phonetic[0]}</div>
+              <div style={{ fontFamily: 'var(--font-sans)' }}>{grouped.phonetic[0]}</div>
             </div>
           </label>
         )}
@@ -348,7 +348,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
                 />
                 <div style={{ fontSize: '13px' }}>
                   <span style={{ color: 'var(--color-text-secondary)' }}>{item.label}:</span>{' '}
-                  <span style={{ fontFamily: 'var(--font-word)' }}>{item.value}</span>
+                  <span style={{ fontFamily: 'var(--font-serif)' }}>{item.value}</span>
                 </div>
               </label>
             ))}

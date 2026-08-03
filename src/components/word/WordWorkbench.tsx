@@ -115,7 +115,7 @@ export default function WordWorkbench() {
                     border: '1px solid var(--color-brand)',
                     color: 'var(--color-text-primary)',
                     background: 'var(--color-surface)',
-                    transition: `transform var(--duration-fast) var(--ease-out-smooth)`,
+                    transition: `transform var(--duration-fast) var(--ease-smooth)`,
                     transform: 'scale(1.005)',
                   }}
                   value={editValue}
@@ -129,7 +129,7 @@ export default function WordWorkbench() {
                     border: '1px solid var(--color-brand)',
                     color: 'var(--color-text-primary)',
                     background: 'var(--color-surface)',
-                    transition: `transform var(--duration-fast) var(--ease-out-smooth)`,
+                    transition: `transform var(--duration-fast) var(--ease-smooth)`,
                     transform: 'scale(1.005)',
                   }}
                   value={editValue}
@@ -153,7 +153,7 @@ export default function WordWorkbench() {
                 color: 'var(--color-text-primary)',
                 background: fv.source !== 'user' ? 'var(--color-canvas)' : 'var(--color-surface)',
                 border: `1px solid ${fv.source !== 'user' ? 'var(--color-border)' : 'var(--color-brand)'}`,
-                transition: 'all var(--duration-fast) var(--ease-out-smooth)',
+                transition: 'all var(--duration-fast) var(--ease-smooth)',
               }}
             >
               {fv.value}
@@ -173,7 +173,7 @@ export default function WordWorkbench() {
   return (
     <div style={{
       opacity: fadeIn ? 1 : 0,
-      transition: 'opacity 100ms var(--ease-out-smooth)',
+      transition: 'opacity 100ms var(--ease-smooth)',
       height: '100%',
       overflowY: 'auto',
       padding: '24px',
@@ -187,7 +187,7 @@ export default function WordWorkbench() {
               height: '24px',
               background: 'var(--color-brand)',
               borderRadius: '2px',
-              animation: 'weave-pulse 500ms var(--ease-out-smooth)',
+              animation: 'weave-pulse 500ms var(--ease-smooth)',
               marginRight: '8px',
               flexShrink: 0,
               display: 'inline-block',
@@ -206,8 +206,8 @@ export default function WordWorkbench() {
               background: 'var(--color-surface)',
               border: '1px solid var(--color-border)',
               cursor: 'pointer',
-              fontFamily: 'var(--font-ui)',
-              transition: 'color var(--duration-fast) var(--ease-out-smooth), border-color var(--duration-fast) var(--ease-out-smooth)',
+              fontFamily: 'var(--font-sans)',
+              transition: 'color var(--duration-fast) var(--ease-smooth), border-color var(--duration-fast) var(--ease-smooth)',
             }}
             onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-accent)'; e.currentTarget.style.borderColor = 'var(--color-accent)' }}
             onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-secondary)'; e.currentTarget.style.borderColor = 'var(--color-border)' }}
