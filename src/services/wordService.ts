@@ -31,7 +31,12 @@ export async function mergeFields(wordId: string, fields: MergeFieldInput[]): Pr
   if (!existingResult.ok) return false
 
   const existingSet = new Set<string>()
-  for (const fv of existingResult.data) existingSet.add(`${fv.fieldId}||${fv.value}`)
+  const existingIdMap = new Map<string, string>()
+  for (const fv of existingResult.data) {
+    const dedupKey = `${fv.fieldId}||${fv.value}`
+    existingSet.add(dedupKey)
+    existingIdMap.set(dedupKey, fv.id)
+  }
 
   const parentInputs: { tempId?: string; input: UpsertFieldValueInput }[] = []
   const childInputs: { parentTempId: string; input: UpsertFieldValueInput }[] = []
@@ -39,11 +44,21 @@ export async function mergeFields(wordId: string, fields: MergeFieldInput[]): Pr
   const maxOrder = existingResult.data.reduce((max, fv) => Math.max(max, fv.displayOrder || 0), 0)
   let nextOrder = maxOrder + 1
 
+  const tempIdMap = new Map<string, string>()
+
   for (const field of fields) {
     const def = defMap.get(field.key)
     if (!def) continue
     const dedupKey = `${def.id}||${field.value}`
-    if (existingSet.has(dedupKey)) continue
+    if (existingSet.has(dedupKey)) {
+      // Parent already exists: bind its tempId to the existing row so children
+      // referencing it still attach instead of becoming orphaned root rows.
+      if (!field.parentTempId && field.tempId) {
+        const existingId = existingIdMap.get(dedupKey)
+        if (existingId) tempIdMap.set(field.tempId, existingId)
+      }
+      continue
+    }
     if (field.parentTempId) {
       childInputs.push({ parentTempId: field.parentTempId, input: {
         wordId, fieldId: def.id, value: field.value, source: field.source, displayOrder: nextOrder++,
@@ -56,7 +71,6 @@ export async function mergeFields(wordId: string, fields: MergeFieldInput[]): Pr
   }
 
   try {
-    const tempIdMap = new Map<string, string>()
     for (const { tempId, input } of parentInputs) {
       const result = await fieldsDb.insertFieldValue(input)
       if (result.ok && result.data && tempId) tempIdMap.set(tempId, result.data.id)

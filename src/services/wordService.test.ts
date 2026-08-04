@@ -63,4 +63,30 @@ describe('wordService.mergeFields 显式父子匹配键', () => {
     if (!r.ok) throw new Error('getFieldValuesForWord failed')
     expect(r.data.filter(fv => fv.fieldId === 'f_phonetic')).toHaveLength(1)
   })
+
+  it('重复合并：父字段去重跳过时子字段仍挂到已存在父行', async () => {
+    const w = await wordsDb.createWord({ lemma: 'dedup-parent' })
+    if (!w.ok) throw new Error('createWord failed')
+
+    // 第一次合并：容器 + 一个 item
+    await mergeFields(w.data.id, [
+      { key: 'exchange', value: '', source: 'ecdict', tempId: 'p-exchange' },
+      { key: 'exchange_item', value: '过去式: observed', source: 'ecdict', parentTempId: 'p-exchange' },
+    ])
+
+    // 第二次合并：相同容器值（被去重跳过）+ 新的 item
+    await mergeFields(w.data.id, [
+      { key: 'exchange', value: '', source: 'ecdict', tempId: 'p-exchange' },
+      { key: 'exchange_item', value: '过去分词: observed', source: 'ecdict', parentTempId: 'p-exchange' },
+    ])
+
+    const r = await getFieldValuesForWord(w.data.id)
+    if (!r.ok) throw new Error('getFieldValuesForWord failed')
+    const containers = r.data.filter(fv => fv.fieldId === 'f_exchange')
+    const items = r.data.filter(fv => fv.fieldId === 'f_exchange_item')
+    expect(containers).toHaveLength(1)
+    expect(items).toHaveLength(2)
+    const containerId = containers[0].id
+    for (const item of items) expect(item.parentId).toBe(containerId)
+  })
 })
