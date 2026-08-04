@@ -4,7 +4,7 @@ Personal vocabulary knowledge management desktop app.
 Tauri 2 + React + TypeScript + SQLite.
 
 > **Status: v0.2.1** — ECDICT + WordNet two-dictionary search & hierarchical fields done.
-> **进行中：v0.3.0（分支）** — UI 重构。实施计划见 `docs/superpowers/plans/2026-08-03-v0.3-implementation-plan.md`（P1 已详细展开，续接从 §进度 定位）；模块蓝图见 `docs/superpowers/specs/2026-08-03-v0.3-module-plan-design.md`；规格见 `docs/Implementation_Spec.md`。
+> **进行中：v0.3.0（分支）** — UI 重构。实施计划见 `docs/superpowers/plans/2026-08-03-v0.3-implementation-plan.md`（P1/P4 已详细展开，续接从 §进度 定位）；模块蓝图见 `docs/superpowers/specs/2026-08-03-v0.3-module-plan-design.md`；规格见 `docs/Implementation_Spec.md`。
 
 ## Quick Start
 ```bash
