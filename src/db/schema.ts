@@ -25,6 +25,8 @@ export const SQL_CREATE_FIELD_VALUES = `CREATE TABLE IF NOT EXISTS field_values 
   field_id TEXT NOT NULL REFERENCES field_definitions(id) ON DELETE CASCADE,
   value TEXT,
   source TEXT NOT NULL DEFAULT 'user',
+  edited INTEGER NOT NULL DEFAULT 0,
+  original_value TEXT,
   display_order INTEGER NOT NULL DEFAULT 0,
   parent_id TEXT REFERENCES field_values(id) ON DELETE SET NULL,
   created_at INTEGER NOT NULL,
@@ -46,7 +48,7 @@ export function seedFieldDefinitionsSQL(): string {
 }
 
 // D4：PRAGMA user_version 驱动重建。P4/P5 变更 schema 时递增此值。
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 export const SQL_DROP_TABLES: string[] = [
   'DROP TABLE IF EXISTS field_values;',

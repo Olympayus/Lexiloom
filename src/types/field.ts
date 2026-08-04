@@ -46,6 +46,8 @@ export interface FieldValue {
   fieldId: string
   value: string
   source: FieldSource
+  edited: boolean
+  originalValue: string | null
   displayOrder: number
   parentId: string | null
   children?: FieldValue[]

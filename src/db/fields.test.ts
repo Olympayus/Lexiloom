@@ -67,4 +67,17 @@ describe('db/fields', () => {
     if (!vals.ok) throw new Error('getFieldValuesForWord failed')
     expect(vals.data.length).toBe(0)
   })
+
+  it('插入的 field_value 返回 edited=false 且 originalValue=null', async () => {
+    const wResult = await createWord({ lemma: 'edited-test' })
+    if (!wResult.ok) throw new Error('createWord failed')
+    const fvResult = await fieldsDb.insertFieldValue({ wordId: wResult.data.id, fieldId: 'f_phonetic', value: '/edit/', source: 'ecdict' })
+    if (!fvResult.ok) throw new Error('insertFieldValue failed')
+    expect(fvResult.data.edited).toBe(false)
+    expect(fvResult.data.originalValue).toBeNull()
+    const vals = await fieldsDb.getFieldValuesForWord(wResult.data.id)
+    if (!vals.ok) throw new Error('getFieldValuesForWord failed')
+    expect(vals.data[0].edited).toBe(false)
+    expect(vals.data[0].originalValue).toBeNull()
+  })
 })
