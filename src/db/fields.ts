@@ -57,6 +57,8 @@ export async function updateFieldValueById(id: string, input: FieldValueContentU
     if (input.edited !== undefined) { sets.push(`edited = ?${params.length + 1}`); params.push(input.edited ? 1 : 0) }
     if (input.originalValue !== undefined) { sets.push(`original_value = ?${params.length + 1}`); params.push(input.originalValue) }
     if (sets.length === 0) return { ok: false, error: 'no fields to update' }
+    sets.push(`updated_at = ?${params.length + 1}`)
+    params.push(Date.now())
     params.push(id)
     await getDb().execute(`UPDATE field_values SET ${sets.join(', ')} WHERE id = ?${params.length}`, params)
     const rows = await getDb().select<Record<string, any>[]>(
