@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { Word, WordWithPreview, FieldValue } from '../types'
+import type { FieldValueContentUpdate } from '../types/field'
 import * as wordService from '../services/wordService'
 import * as fieldService from '../services/fieldService'
 
@@ -11,7 +12,9 @@ interface WordStore {
 
   loadWords: () => Promise<void>
   selectWord: (id: string | null) => Promise<void>
-  updateFieldValue: (fvId: string, value: string) => Promise<void>
+  updateFieldValue: (fvId: string, input: FieldValueContentUpdate) => Promise<void>
+  restoreFieldValue: (fvId: string) => Promise<void>
+  reorderFieldValues: (entries: { id: string; displayOrder: number }[]) => Promise<void>
   addWord: (lemma: string) => Promise<Word | null>
   mergeWordFields: (wordId: string, fields: { key: string; value: string; source: 'ecdict' | 'wordnet' | 'user'; parentKey?: string }[]) => Promise<boolean>
   deleteWord: (id: string) => Promise<void>
@@ -36,10 +39,24 @@ export const useWordStore = create<WordStore>((set, get) => ({
     set({ fieldValues: values })
   },
 
-  updateFieldValue: async (fvId, value) => {
+  updateFieldValue: async (fvId, input) => {
     const { selectedWordId } = get()
     if (!selectedWordId) return
-    await fieldService.updateValueById(fvId, value)
+    await fieldService.updateValueById(fvId, input)
+    await get().selectWord(selectedWordId)
+  },
+
+  restoreFieldValue: async (fvId) => {
+    const { selectedWordId } = get()
+    if (!selectedWordId) return
+    await fieldService.restoreValue(fvId)
+    await get().selectWord(selectedWordId)
+  },
+
+  reorderFieldValues: async (entries) => {
+    const { selectedWordId } = get()
+    if (!selectedWordId) return
+    await fieldService.reorderValues(entries)
     await get().selectWord(selectedWordId)
   },
 

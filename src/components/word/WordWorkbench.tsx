@@ -62,7 +62,7 @@ export default function WordWorkbench() {
   const handleSave = async (fvId: string) => {
     const fv = findFieldValueById(fvId)
     if (!fv) return
-    await updateFieldValue(fv.id, editValue)
+    await updateFieldValue(fv.id, { value: editValue })
     setEditing(null)
     setSaved(true)
   }

@@ -47,12 +47,50 @@ describe('db/fields', () => {
     const fvResult = await fieldsDb.insertFieldValue({ wordId: w.id, fieldId: 'f_chinese_definition', value: '苹果', source: 'ecdict', displayOrder: 5 })
     if (!fvResult.ok) throw new Error('insertFieldValue failed')
     const fv = fvResult.data
-    const updated = await fieldsDb.updateFieldValueById(fv.id, '苹果（旧）', 'user')
+    const updated = await fieldsDb.updateFieldValueById(fv.id, { value: '苹果（旧）' })
     if (!updated.ok) throw new Error('updateFieldValueById failed')
     expect(updated.data.value).toBe('苹果（旧）')
     expect(updated.data.displayOrder).toBe(5)
-    const notFound = await fieldsDb.updateFieldValueById('nonexistent', 'x')
+    const notFound = await fieldsDb.updateFieldValueById('nonexistent', { value: 'x' })
     expect(notFound.ok).toBe(false)
+  })
+
+  it('updateFieldValueById 置 edited 且保留原 source（不改成 user）', async () => {
+    const wResult = await createWord({ lemma: 'source-keep' })
+    if (!wResult.ok) throw new Error('createWord failed')
+    const fvResult = await fieldsDb.insertFieldValue({ wordId: wResult.data.id, fieldId: 'f_chinese_definition', value: '苹果', source: 'ecdict' })
+    if (!fvResult.ok) throw new Error('insertFieldValue failed')
+    const updated = await fieldsDb.updateFieldValueById(fvResult.data.id, { value: '苹果（新）', edited: true, originalValue: '苹果' })
+    if (!updated.ok) throw new Error('updateFieldValueById failed')
+    expect(updated.data.value).toBe('苹果（新）')
+    expect(updated.data.source).toBe('ecdict')
+    expect(updated.data.edited).toBe(true)
+    expect(updated.data.originalValue).toBe('苹果')
+  })
+
+  it('restoreFieldValue 还原原始值并清除 edited', async () => {
+    const wResult = await createWord({ lemma: 'restore-test' })
+    if (!wResult.ok) throw new Error('createWord failed')
+    const fvResult = await fieldsDb.insertFieldValue({ wordId: wResult.data.id, fieldId: 'f_english_definition', value: 'original', source: 'wordnet' })
+    if (!fvResult.ok) throw new Error('insertFieldValue failed')
+    await fieldsDb.updateFieldValueById(fvResult.data.id, { value: 'changed', edited: true, originalValue: 'original' })
+    const restored = await fieldsDb.restoreFieldValue(fvResult.data.id)
+    if (!restored.ok) throw new Error('restoreFieldValue failed')
+    expect(restored.data.value).toBe('original')
+    expect(restored.data.edited).toBe(false)
+    expect(restored.data.originalValue).toBeNull()
+  })
+
+  it('reorderFieldValues 更新 display_order', async () => {
+    const wResult = await createWord({ lemma: 'reorder-test' })
+    if (!wResult.ok) throw new Error('createWord failed')
+    const a = await fieldsDb.insertFieldValue({ wordId: wResult.data.id, fieldId: 'f_phonetic', value: '/a/', source: 'ecdict', displayOrder: 0 })
+    const b = await fieldsDb.insertFieldValue({ wordId: wResult.data.id, fieldId: 'f_phonetic', value: '/b/', source: 'ecdict', displayOrder: 1 })
+    if (!a.ok || !b.ok) throw new Error('insertFieldValue failed')
+    await fieldsDb.reorderFieldValues([{ id: b.data.id, displayOrder: 0 }, { id: a.data.id, displayOrder: 1 }])
+    const vals = await fieldsDb.getFieldValuesForWord(wResult.data.id)
+    if (!vals.ok) throw new Error('getFieldValuesForWord failed')
+    expect(vals.data[0].id).toBe(b.data.id)
   })
 
   it('deleteFieldValue 删除字段', async () => {

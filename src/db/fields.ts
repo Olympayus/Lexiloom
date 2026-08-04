@@ -1,5 +1,5 @@
 import { getDb } from './connection'
-import type { FieldValue, UpsertFieldValueInput, FieldDefinition, FieldSource } from '../types/field'
+import type { FieldValue, UpsertFieldValueInput, FieldDefinition, FieldSource, FieldValueContentUpdate } from '../types/field'
 import type { DbResult } from './types'
 
 function mapFieldValueRow(r: Record<string, any>): FieldValue {
@@ -45,25 +45,59 @@ export async function getFieldValuesForWord(wordId: string): Promise<DbResult<Fi
   }
 }
 
-// Update one existing field_value row by its id (used by the WordWorkbench user-edit flow).
+// Update one existing field_value row by its id, setting only the provided columns.
 // Targets the exact row, so editing the 2nd+ value of a multi-value field no longer
-// overwrites the first, and display_order / parent_id are preserved.
-export async function updateFieldValueById(id: string, value: string, source: FieldSource = 'user'): Promise<DbResult<FieldValue>> {
+// overwrites the first. `source` is never touched here — a user edit must not re-label
+// a dictionary (ecdict/wordnet) field as 'user' (spec §5.3).
+export async function updateFieldValueById(id: string, input: FieldValueContentUpdate): Promise<DbResult<FieldValue>> {
+  try {
+    const sets: string[] = []
+    const params: unknown[] = []
+    if (input.value !== undefined) { sets.push(`value = ?${params.length + 1}`); params.push(input.value) }
+    if (input.edited !== undefined) { sets.push(`edited = ?${params.length + 1}`); params.push(input.edited ? 1 : 0) }
+    if (input.originalValue !== undefined) { sets.push(`original_value = ?${params.length + 1}`); params.push(input.originalValue) }
+    if (sets.length === 0) return { ok: false, error: 'no fields to update' }
+    params.push(id)
+    await getDb().execute(`UPDATE field_values SET ${sets.join(', ')} WHERE id = ?${params.length}`, params)
+    const rows = await getDb().select<Record<string, any>[]>(
+      'SELECT * FROM field_values WHERE id = ?1', [id]
+    )
+    if (rows.length === 0) return { ok: false, error: `field_value not found: ${id}` }
+    return { ok: true, data: mapFieldValueRow(rows[0]) }
+  } catch (e: any) {
+    return { ok: false, error: e.toString() }
+  }
+}
+
+// Revert a field_value to its pre-edit state (value back to original_value,
+// edited cleared, original_value nulled). No-op if there is nothing to restore.
+export async function restoreFieldValue(id: string): Promise<DbResult<FieldValue>> {
   try {
     const rows = await getDb().select<Record<string, any>[]>(
       'SELECT * FROM field_values WHERE id = ?1', [id]
     )
     if (rows.length === 0) return { ok: false, error: `field_value not found: ${id}` }
-    const now = Date.now()
+    if (rows[0].original_value == null) return { ok: false, error: 'no original_value to restore' }
     await getDb().execute(
-      `UPDATE field_values SET value = ?1, source = ?2, updated_at = ?3 WHERE id = ?4`,
-      [value, source, now, id]
+      `UPDATE field_values SET value = original_value, edited = 0, original_value = NULL, updated_at = ?1 WHERE id = ?2`,
+      [Date.now(), id]
     )
-    const r = rows[0]
-    return {
-      ok: true,
-      data: { ...mapFieldValueRow(r), value, source, updatedAt: now },
+    const after = await getDb().select<Record<string, any>[]>(
+      'SELECT * FROM field_values WHERE id = ?1', [id]
+    )
+    return { ok: true, data: mapFieldValueRow(after[0]) }
+  } catch (e: any) {
+    return { ok: false, error: e.toString() }
+  }
+}
+
+// Rewrite display_order for the given field_value ids (drag-to-reorder flow).
+export async function reorderFieldValues(entries: { id: string; displayOrder: number }[]): Promise<DbResult<void>> {
+  try {
+    for (const { id, displayOrder } of entries) {
+      await getDb().execute('UPDATE field_values SET display_order = ?1 WHERE id = ?2', [displayOrder, id])
     }
+    return { ok: true, data: undefined }
   } catch (e: any) {
     return { ok: false, error: e.toString() }
   }

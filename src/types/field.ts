@@ -63,3 +63,12 @@ export interface UpsertFieldValueInput {
   displayOrder?: number
   parentId?: string | null
 }
+
+// Partial content update for an existing field_value. `source` is intentionally
+// NOT part of this input — a user edit must never re-label a dictionary field
+// (ecdict/wordnet) as 'user'. Only the columns present are updated.
+export interface FieldValueContentUpdate {
+  value?: string
+  edited?: boolean
+  originalValue?: string | null
+}
