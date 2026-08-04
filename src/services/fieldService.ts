@@ -23,6 +23,11 @@ export async function insertValue(input: UpsertFieldValueInput): Promise<FieldVa
   return result.ok ? result.data : null
 }
 
+// Add a new empty user field_value for the given word + field (add-field flow).
+export async function addFieldValue(wordId: string, fieldId: string): Promise<FieldValue | null> {
+  return insertValue({ wordId, fieldId, value: '', source: 'user' })
+}
+
 // Batch insert multiple field values (used for dictionary imports)
 export async function insertValues(inputs: UpsertFieldValueInput[]): Promise<FieldValue[]> {
   const results: FieldValue[] = []

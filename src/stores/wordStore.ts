@@ -15,6 +15,7 @@ interface WordStore {
   selectWord: (id: string | null) => Promise<void>
   updateFieldValue: (fvId: string, input: FieldValueContentUpdate) => Promise<void>
   restoreFieldValue: (fvId: string) => Promise<void>
+  addFieldValue: (fieldId: string) => Promise<FieldValue | null>
   reorderFieldValues: (entries: { id: string; displayOrder: number }[]) => Promise<void>
   addWord: (lemma: string) => Promise<Word | null>
   mergeWordFields: (wordId: string, fields: MergeFieldInput[]) => Promise<boolean>
@@ -52,6 +53,14 @@ export const useWordStore = create<WordStore>((set, get) => ({
     if (!selectedWordId) return
     await fieldService.restoreValue(fvId)
     await get().selectWord(selectedWordId)
+  },
+
+  addFieldValue: async (fieldId) => {
+    const { selectedWordId } = get()
+    if (!selectedWordId) return null
+    const fv = await fieldService.addFieldValue(selectedWordId, fieldId)
+    await get().selectWord(selectedWordId)
+    return fv
   },
 
   reorderFieldValues: async (entries) => {

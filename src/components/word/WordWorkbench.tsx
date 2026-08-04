@@ -19,13 +19,14 @@ const FIELD_STYLES: Record<FieldState, CSSProperties> = {
 }
 
 export default function WordWorkbench() {
-  const { words, selectedWordId, fieldValues, updateFieldValue, restoreFieldValue, deleteWord } = useWordStore()
+  const { words, selectedWordId, fieldValues, updateFieldValue, restoreFieldValue, deleteWord, addFieldValue } = useWordStore()
   const [defs, setDefs] = useState<FieldDefinition[]>([])
   const [editorMode, setEditorMode] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [entryValue, setEntryValue] = useState('')  // 进入编辑时的值
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
+  const [addFieldOpen, setAddFieldOpen] = useState(false)
   const [saved, setSaved] = useState(false)
   const [fadeIn, setFadeIn] = useState(true)
 
@@ -100,6 +101,16 @@ export default function WordWorkbench() {
   const handleDelete = async () => {
     if (!window.confirm(`确定删除单词“${selectedWord.lemma}”吗？此操作不可撤销。`)) return
     await deleteWord(selectedWord.id)
+  }
+
+  // 添加字段：选择定义 → 新增空个人字段 → 自动进入编辑态
+  const handleAddField = async (def: FieldDefinition) => {
+    setAddFieldOpen(false)
+    const fv = await addFieldValue(def.id)
+    if (!fv) return
+    setEditingId(fv.id)
+    setEditValue('')
+    setEntryValue('')
   }
 
   // 头部音标/词性：从 fieldValues 经 defs 反查 key 提取（规格 §5.1）
@@ -383,25 +394,6 @@ export default function WordWorkbench() {
               >
                 <Icon name="plus" size={16} />
               </button>
-              {/* 删除按钮：暂留在标题区（Task 7 移到最下方） */}
-              <button
-                onClick={handleDelete}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  color: 'var(--color-text-secondary)',
-                  background: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-sans)',
-                  transition: 'color var(--duration-fast) var(--ease-smooth), border-color var(--duration-fast) var(--ease-smooth)',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-accent)'; e.currentTarget.style.borderColor = 'var(--color-accent)' }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-secondary)'; e.currentTarget.style.borderColor = 'var(--color-border)' }}
-              >
-                删除
-              </button>
             </div>
           </div>
         </div>
@@ -452,6 +444,122 @@ export default function WordWorkbench() {
         <div style={{ marginTop: '8px' }}>
           {sortedFieldValues.map(fv => renderField(fv, 0))}
         </div>
+
+        {/* 添加字段（规格 §5.6 + D3）：虚线按钮 + 定义选择器浮层 */}
+        <div style={{ position: 'relative', marginTop: '12px' }}>
+          <button
+            type="button"
+            onClick={() => setAddFieldOpen(!addFieldOpen)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              border: '1px dashed var(--color-border)',
+              borderRadius: 'var(--radius-md)',
+              background: 'transparent',
+              fontSize: 'var(--text-sm)',
+              color: 'var(--color-text-tertiary)',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-sans)',
+              transition: 'all var(--duration-fast) var(--ease-smooth)',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.color = 'var(--color-brand)'
+              e.currentTarget.style.borderColor = 'var(--color-brand)'
+              e.currentTarget.style.background = 'var(--color-brand-softer)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.color = 'var(--color-text-tertiary)'
+              e.currentTarget.style.borderColor = 'var(--color-border)'
+              e.currentTarget.style.background = 'transparent'
+            }}
+          >
+            <Icon name="plus" size={16} />
+            添加字段
+          </button>
+
+          {addFieldOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: 'calc(100% + 4px)',
+                maxHeight: '240px',
+                overflowY: 'auto',
+                padding: '4px',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-md)',
+                boxShadow: 'var(--shadow-overlay)',
+                zIndex: 'var(--z-dropdown)',
+              }}
+            >
+              {defs.map(def => (
+                <button
+                  key={def.id}
+                  type="button"
+                  onClick={() => handleAddField(def)}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '6px 10px',
+                    border: 'none',
+                    background: 'transparent',
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                    color: 'var(--color-text-primary)',
+                    fontSize: 'var(--text-sm)',
+                    fontFamily: 'var(--font-sans)',
+                    whiteSpace: 'nowrap',
+                    transition: 'background var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
+                >
+                  {def.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 删除单词（最底部，危险操作，低调次级钮） */}
+        <button
+          type="button"
+          onClick={handleDelete}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            margin: '24px auto 0',
+            padding: '6px 12px',
+            border: 'none',
+            background: 'transparent',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: 'var(--text-sm)',
+            color: 'var(--color-text-tertiary)',
+            cursor: 'pointer',
+            fontFamily: 'var(--font-sans)',
+            transition: 'color var(--duration-fast) var(--ease-smooth), background var(--duration-fast) var(--ease-smooth)',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.color = 'var(--color-danger)'
+            e.currentTarget.style.background = 'rgba(184,84,80,0.08)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.color = 'var(--color-text-tertiary)'
+            e.currentTarget.style.background = 'transparent'
+          }}
+        >
+          <Icon name="trash" size={16} />
+          删除单词
+        </button>
       </div>
     </div>
   )
