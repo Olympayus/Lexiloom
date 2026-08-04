@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type CSSProperties } from 'react'
 import { useWordStore } from '../../stores/wordStore'
 import { getDefinitions } from '../../services/fieldService'
 import { Button } from '../ui/Button'
@@ -8,11 +8,24 @@ import CategoryCapsule from './CategoryCapsule'
 import type { FieldDefinition, FieldValue } from '../../types/field'
 import type { Category } from '../../types/category'
 
+type FieldState = 'original' | 'edited' | 'personal'
+const fieldState = (fv: FieldValue): FieldState =>
+  fv.edited ? 'edited' : (fv.source === 'user' ? 'personal' : 'original')
+
+const FIELD_STYLES: Record<FieldState, CSSProperties> = {
+  original: { background: 'var(--color-surface-sunken)', border: '1px solid var(--color-border)', borderLeft: '3px solid var(--color-weave-original)' },
+  edited:   { background: 'var(--color-brand-softer)',  border: '1px solid var(--color-brand-soft)',  borderLeft: '3px solid var(--color-weave-edited)' },
+  personal: { background: 'var(--color-accent-soft)',   border: '1px solid rgba(193,122,78,0.2)',      borderLeft: '3px solid var(--color-weave-personal)' },
+}
+
 export default function WordWorkbench() {
-  const { words, selectedWordId, fieldValues, updateFieldValue, deleteWord } = useWordStore()
+  const { words, selectedWordId, fieldValues, updateFieldValue, restoreFieldValue, deleteWord } = useWordStore()
   const [defs, setDefs] = useState<FieldDefinition[]>([])
-  const [editing, setEditing] = useState<string | null>(null)
+  const [editorMode, setEditorMode] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
+  const [entryValue, setEntryValue] = useState('')  // 进入编辑时的值
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [fadeIn, setFadeIn] = useState(true)
 
@@ -48,9 +61,10 @@ export default function WordWorkbench() {
     )
   }
 
-  const handleStartEdit = (fvId: string, currentValue: string) => {
-    setEditing(fvId)
-    setEditValue(currentValue || '')
+  const handleStartEdit = (fv: FieldValue) => {
+    setEditingId(fv.id)
+    setEditValue(fv.value || '')
+    setEntryValue(fv.value || '')
   }
 
   // Recursively find a FieldValue by its id within the tree (root values + nested children)
@@ -65,11 +79,21 @@ export default function WordWorkbench() {
     return undefined
   }
 
-  const handleSave = async (fvId: string) => {
-    const fv = findFieldValueById(fvId)
+  const handleSave = async () => {
+    if (!editingId) return
+    const fv = findFieldValueById(editingId)
     if (!fv) return
-    await updateFieldValue(fv.id, { value: editValue })
-    setEditing(null)
+    if (editValue === entryValue) { setEditingId(null); return }  // 未真实修改：不置位
+    if (fv.source === 'user') {
+      await updateFieldValue(fv.id, { value: editValue })  // 个人字段保持 personal
+    } else {
+      await updateFieldValue(fv.id, {
+        value: editValue,
+        edited: true,
+        originalValue: fv.originalValue ?? entryValue,  // 保留既有 original_value
+      })
+    }
+    setEditingId(null)
     setSaved(true)
   }
 
@@ -96,21 +120,33 @@ export default function WordWorkbench() {
 
     const hasChildren = fv.children && fv.children.length > 0
     const isContainer = hasChildren && !fv.value
-    const isEditing = editing === fv.id
+    const isEditing = editingId === fv.id
     const isLevel1 = depth === 0
     const isPhonetic = def.key === 'phonetic'
+    const state = fieldState(fv)
 
     return (
       <div
         key={fv.id}
-        style={{
-          background: isLevel1 ? 'var(--color-surface-raised)' : 'transparent',
-          border: isLevel1 ? '1px solid var(--color-border)' : 'none',
-          borderRadius: 'var(--radius-md)',
-          padding: isLevel1 ? '12px' : '10px 12px',
-          marginBottom: isLevel1 ? '2px' : '0',
-          transition: 'all 200ms var(--ease-smooth)',
-        }}
+        className="group"
+        style={
+          editorMode
+            ? {
+                ...FIELD_STYLES[state],
+                borderRadius: 'var(--radius-md)',
+                padding: '12px',
+                marginBottom: '2px',
+                transition: 'all 200ms var(--ease-smooth)',
+              }
+            : {
+                background: isLevel1 ? 'var(--color-surface-raised)' : 'transparent',
+                border: isLevel1 ? '1px solid var(--color-border)' : 'none',
+                borderRadius: 'var(--radius-md)',
+                padding: isLevel1 ? '12px' : '10px 12px',
+                marginBottom: isLevel1 ? '2px' : '0',
+                transition: 'all 200ms var(--ease-smooth)',
+              }
+        }
       >
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
           <span
@@ -130,7 +166,7 @@ export default function WordWorkbench() {
               style={{
                 flex: 1,
                 fontSize: isLevel1 ? 'var(--text-base)' : 'var(--text-sm)',
-                color: 'var(--color-text-primary)',
+                color: editorMode && state === 'original' ? 'var(--color-text-secondary)' : 'var(--color-text-primary)',
                 lineHeight: isLevel1 ? 'var(--leading-relaxed)' : undefined,
                 fontFamily: isPhonetic ? 'var(--font-phonetic)' : undefined,
               }}
@@ -167,13 +203,93 @@ export default function WordWorkbench() {
                     />
                   )}
                   <div className="flex gap-2">
-                    <Button onClick={() => handleSave(fv.id)}>保存</Button>
-                    <Button variant="secondary" onClick={() => setEditing(null)}>取消</Button>
+                    <Button onClick={handleSave}>保存</Button>
+                    <Button variant="secondary" onClick={() => setEditingId(null)}>取消</Button>
                   </div>
                 </div>
               ) : (
-                <div onClick={() => handleStartEdit(fv.id, fv.value || '')} style={{ cursor: 'pointer' }}>
+                <div onClick={() => handleStartEdit(fv)} style={{ cursor: 'pointer' }}>
                   {fv.value}
+                </div>
+              )}
+            </div>
+          )}
+          {editorMode && state !== 'original' && (
+            <span
+              style={{
+                flexShrink: 0,
+                fontSize: 'var(--text-xs)',
+                padding: '2px 8px',
+                borderRadius: 'var(--radius-sm)',
+                background: state === 'edited' ? 'var(--color-brand-soft)' : 'rgba(193,122,78,0.15)',
+                color: state === 'edited' ? 'var(--color-brand)' : 'var(--color-accent)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {state === 'edited' ? '已编辑' : '个人'}
+            </span>
+          )}
+          {state === 'edited' && (
+            <div style={{ position: 'relative', flexShrink: 0, alignSelf: 'center' }}>
+              <button
+                type="button"
+                title="更多操作"
+                onClick={() => setMenuOpenId(menuOpenId === fv.id ? null : fv.id)}
+                className="opacity-0 group-hover:opacity-100"
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: 'none',
+                  background: 'transparent',
+                  borderRadius: 'var(--radius-sm)',
+                  cursor: 'pointer',
+                  color: 'var(--color-text-tertiary)',
+                  transition: 'opacity var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
+                }}
+              >
+                <Icon name="more" size={16} />
+              </button>
+              {menuOpenId === fv.id && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 'calc(100% + 4px)',
+                    minWidth: '120px',
+                    padding: '4px',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-md)',
+                    boxShadow: 'var(--shadow-overlay)',
+                    zIndex: 'var(--z-dropdown)',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => { setMenuOpenId(null); restoreFieldValue(fv.id) }}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      textAlign: 'left',
+                      padding: '6px 10px',
+                      border: 'none',
+                      background: 'transparent',
+                      borderRadius: 'var(--radius-sm)',
+                      cursor: 'pointer',
+                      color: 'var(--color-text-primary)',
+                      fontSize: 'var(--text-sm)',
+                      fontFamily: 'var(--font-sans)',
+                      whiteSpace: 'nowrap',
+                      transition: 'background var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
+                  >
+                    还原原始值
+                  </button>
                 </div>
               )}
             </div>
@@ -293,21 +409,29 @@ export default function WordWorkbench() {
         {/* 分割线 */}
         <div style={{ height: '1px', background: 'var(--color-border-strong)', margin: '16px 0' }} />
 
-        {/* 工具栏：编者模式开关（规格 §5.2，三态逻辑 Task 6 接入） */}
+        {/* 工具栏：编者模式开关（规格 §5.2，交互 Task 6 接入） */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '8px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
             <span>编者模式</span>
-            <div
+            <button
+              type="button"
+              role="switch"
+              aria-checked={editorMode}
+              onClick={() => { setEditorMode(!editorMode); setMenuOpenId(null) }}
               style={{
                 width: '36px',
                 height: '20px',
-                background: 'var(--color-border-strong)',
+                background: editorMode ? 'var(--color-brand)' : 'var(--color-border-strong)',
                 borderRadius: 'var(--radius-full)',
                 position: 'relative',
                 flexShrink: 0,
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                transition: 'background var(--duration-fast) var(--ease-smooth)',
               }}
             >
-              <div
+              <span
                 style={{
                   position: 'absolute',
                   top: '2px',
@@ -317,9 +441,10 @@ export default function WordWorkbench() {
                   background: '#FFFFFF',
                   borderRadius: '50%',
                   transition: 'transform var(--duration-fast) var(--ease-smooth)',
+                  transform: editorMode ? 'translateX(16px)' : 'translateX(0)',
                 }}
               />
-            </div>
+            </button>
           </div>
         </div>
 
