@@ -3,6 +3,7 @@ import type { DictionaryEntry } from '../../types/dictionary'
 import type { Word } from '../../types/word'
 import type { FieldSource } from '../../types/field'
 import { useWordStore } from '../../stores/wordStore'
+import type { MergeFieldInput } from '../../services/wordService'
 
 interface Props {
   word: string
@@ -147,17 +148,17 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
     }
 
     // 2. 收集选中的字段，构建 merge 输入
-    const selectedFieldInputs: { key: string; value: string; source: FieldSource; parentKey?: string }[] = []
+    const selectedFieldInputs: MergeFieldInput[] = []
 
     // 音标
     if (selectedFields.has('phonetic-0') && grouped.phonetic.length > 0) {
-      selectedFieldInputs.push({ key: 'phonetic', value: grouped.phonetic[0], source: source_ as FieldSource })
+      selectedFieldInputs.push({ key: 'phonetic', value: grouped.phonetic[0], source: source_ as FieldSource, tempId: 'p-phonetic' })
     }
 
     // 中文释义
     for (let i = 0; i < grouped.chineseDefinitions.length; i++) {
       if (selectedFields.has(`chinese-${i}`)) {
-        selectedFieldInputs.push({ key: 'chinese_definition', value: grouped.chineseDefinitions[i], source: source_ as FieldSource })
+        selectedFieldInputs.push({ key: 'chinese_definition', value: grouped.chineseDefinitions[i], source: source_ as FieldSource, tempId: `p-chinese-${i}` })
       }
     }
 
@@ -170,6 +171,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
         key: 'english_definition',
         value: def.value,
         source: source_ as FieldSource,
+        tempId: `p-english-${defIdx}`,
       })
 
       // 近义词
@@ -178,7 +180,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
           key: 'synonyms',
           value: def.synonyms.join(', '),
           source: source_ as FieldSource,
-          parentKey: `english_definition::${defIdx}`,
+          parentTempId: `p-english-${defIdx}`,
         })
       }
 
@@ -189,7 +191,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
             key: 'example',
             value: def.examples[exIdx],
             source: source_ as FieldSource,
-            parentKey: `english_definition::${defIdx}`,
+            parentTempId: `p-english-${defIdx}`,
           })
         }
       }
@@ -201,7 +203,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
       if (selectedFields.has(`exchange-${i}`)) {
         if (!hasExchange) {
           // 先插入容器
-          selectedFieldInputs.push({ key: 'exchange', value: '', source: source_ as FieldSource })
+          selectedFieldInputs.push({ key: 'exchange', value: '', source: source_ as FieldSource, tempId: 'p-exchange' })
           hasExchange = true
         }
         const item = grouped.exchangeItems[i]
@@ -209,7 +211,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
           key: 'exchange_item',
           value: `${item.label}: ${item.value}`,
           source: source_ as FieldSource,
-          parentKey: 'exchange',
+          parentTempId: 'p-exchange',
         })
       }
     }

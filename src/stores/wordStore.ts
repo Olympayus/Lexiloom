@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { Word, WordWithPreview, FieldValue } from '../types'
 import type { FieldValueContentUpdate } from '../types/field'
 import * as wordService from '../services/wordService'
+import type { MergeFieldInput } from '../services/wordService'
 import * as fieldService from '../services/fieldService'
 
 interface WordStore {
@@ -16,7 +17,7 @@ interface WordStore {
   restoreFieldValue: (fvId: string) => Promise<void>
   reorderFieldValues: (entries: { id: string; displayOrder: number }[]) => Promise<void>
   addWord: (lemma: string) => Promise<Word | null>
-  mergeWordFields: (wordId: string, fields: { key: string; value: string; source: 'ecdict' | 'wordnet' | 'user'; parentKey?: string }[]) => Promise<boolean>
+  mergeWordFields: (wordId: string, fields: MergeFieldInput[]) => Promise<boolean>
   deleteWord: (id: string) => Promise<void>
 }
 
