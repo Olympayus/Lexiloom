@@ -112,7 +112,7 @@ export default function WordList({
         return next
       })
     }
-  }, [selectedWordId, groups, collapsedGroups])
+  }, [selectedWordId, groups])
 
   // 滚动到选中行：虚拟列表用 scrollToIndex，普通列表用 scrollIntoView
   useEffect(() => {
