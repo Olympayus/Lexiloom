@@ -35,7 +35,9 @@ export const useWordStore = create<WordStore>((set, get) => ({
   },
 
   selectWord: async (id) => {
-    set({ selectedWordId: id, fieldValues: [] })
+    // 仅切换单词时清空（加载态）；同名刷新（拖拽重排/编辑保存/还原/添加字段）保留列表，
+    // 避免字段列表先坍缩再重取导致滚动容器 scrollTop 被钳到顶部（跳顶）。
+    if (id !== get().selectedWordId) set({ selectedWordId: id, fieldValues: [] })
     if (!id) return
     const values = await fieldService.getValues(id)
     set({ fieldValues: values })
