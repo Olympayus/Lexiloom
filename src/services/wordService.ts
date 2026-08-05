@@ -4,12 +4,16 @@ import type { Word, WordWithPreview } from '../types/word'
 import type { UpsertFieldValueInput } from '../types/field'
 import { getFieldValuesForWord } from '../db/fields'
 import { getDefinitions } from './fieldService'
+import { assignDefaultToWord } from './categoryService'
 
 export async function addWord(lemma: string): Promise<Word | null> {
   const existing = await wordsDb.getWordByLemma(lemma)
   if (existing.ok && existing.data) return existing.data
 
   const result = await wordsDb.createWord({ lemma })
+  if (result.ok && result.data) {
+    await assignDefaultToWord(result.data.id)
+  }
   return result.ok ? result.data : null
 }
 
