@@ -101,6 +101,8 @@ export default function WordList({
     overscan: 6,
   })
 
+  // 边栏筛选生效时（filter 非空），新添加的词不在 filtered 内，
+  // 因此下方两个定位 effect 均无操作，待筛选清空后才生效（Task-5 验收的已知边界）
   // 定位选中词（P2「添加成功后定位新词」）：若所在分组折叠则先展开
   useEffect(() => {
     if (!selectedWordId) return

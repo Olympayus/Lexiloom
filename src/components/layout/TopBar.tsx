@@ -15,7 +15,6 @@ export default function TopBar() {
   const showDict = useViewStore(s => s.showDict)
   const showWorkbench = useViewStore(s => s.showWorkbench)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const inputRef = useRef<HTMLInputElement>(null)
 
   // 阶段一：防抖搜索建议（300ms），仅词典（searchLemmas 不查词库，D2）
   useEffect(() => {
@@ -102,9 +101,8 @@ export default function TopBar() {
             <Icon name="search" size={20} />
           </span>
           <input
-            ref={inputRef}
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={e => { setQuery(e.target.value); setSelectedIndex(-1) }}
             onFocus={() => { setFocused(true); if (suggestions.length > 0) setShowSuggestions(true) }}
             onBlur={() => setFocused(false)}
             onKeyDown={handleKeyDown}
