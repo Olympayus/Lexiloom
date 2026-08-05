@@ -22,7 +22,7 @@ function hexToRgb(hex: string): string {
 export default function WordListItem({ word, categories, selected, collapsed, mode, onClick }: Props) {
   // 音标释义行（规格 §4.2）：{音标} · {词性} {首释义}，· 仅在两者都存在时显示
   const hasMeta = Boolean(word.phonetic || word.partOfSpeech || word.chineseDefinition)
-  const collapsedDots = categories.slice(0, 3)   // 收起态色圈，限 3 个匹配 D1 的 40px 预留
+  const collapsedDots = categories.slice(0, 3)   // 收起态色圈限 3 个：匹配 COLLAPSED_CHROME_ALPHABET 的 3 色圈宽度（27px）
   const lineRef = useRef<HTMLDivElement>(null)
 
   const containerStyle: CSSProperties = {
