@@ -3,7 +3,9 @@ import TopBar from './TopBar'
 import WordList from './WordList'
 import SidebarFooter from './SidebarFooter'
 import WordWorkbench from '../word/WordWorkbench'
+import DictDetailPanel from '../search/DictDetailPanel'
 import { useWordStore } from '../../stores/wordStore'
+import { useViewStore } from '../../stores/viewStore'
 import { fitCollapsedWidth, measureMaxWordWidth, resolveSidebarWordFont, COLLAPSED_CHROME_ALPHABET, COLLAPSED_CHROME_CATEGORY, type SidebarMode } from '../../lib/sidebar'
 
 // 规格 §2：侧边栏展开宽度 300px；收起宽度内容自适应（D1）
@@ -11,6 +13,8 @@ const SIDEBAR_EXPANDED_WIDTH = 300
 
 export default function AppShell() {
   const words = useWordStore(s => s.words)
+  const activeView = useViewStore(s => s.activeView)
+  const dictWord = useViewStore(s => s.dictWord)
   const [collapsed, setCollapsed] = useState(false)
   const [mode, setMode] = useState<SidebarMode>('alphabet')
 
@@ -50,9 +54,11 @@ export default function AppShell() {
           <SidebarFooter collapsed={collapsed} />
         </aside>
 
-        {/* 右侧区域：词编辑视图（词典详情视图在 P2 加入双视图切换） */}
+        {/* 右侧区域：词编辑视图 ↔ 词典详情视图（规格 §2，同一时刻仅其一；D2 替换显示） */}
         <main className="flex-1 overflow-hidden">
-          <WordWorkbench />
+          {activeView === 'dict' && dictWord
+            ? <DictDetailPanel word={dictWord} />
+            : <WordWorkbench />}
         </main>
       </div>
     </div>
