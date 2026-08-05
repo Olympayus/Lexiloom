@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import DictDetailCard from './DictDetailCard'
 import { lookupWord } from '../../services/searchService'
 import { useViewStore } from '../../stores/viewStore'
+import { useWordStore } from '../../stores/wordStore'
 import type { DictionaryEntry } from '../../types/dictionary'
 import Icon from '../icons'
 
@@ -20,6 +21,13 @@ export default function DictDetailPanel({ word }: Props) {
   const [loading, setLoading] = useState(true)
   const [lookupError, setLookupError] = useState(false)
   const showWorkbench = useViewStore(s => s.showWorkbench)
+  const selectWord = useWordStore(s => s.selectWord)
+
+  // 添加成功后：先选中新词，再回编辑视图（P2 验收「自动回编辑视图并选中新词」）
+  const handleAdded = (wordId: string) => {
+    selectWord(wordId)
+    showWorkbench()
+  }
 
   // 阶段二：精确查询词典详情（两个词典源堆叠）
   useEffect(() => {
@@ -91,6 +99,7 @@ export default function DictDetailPanel({ word }: Props) {
                 word={word}
                 source={result.source}
                 entries={result.entries}
+                onAdded={handleAdded}
               />
             ))}
           </div>

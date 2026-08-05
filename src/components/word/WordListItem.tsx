@@ -43,6 +43,7 @@ export default function WordListItem({ word, categories, selected, collapsed, mo
     <div
       role="button"
       tabIndex={0}
+      data-word-id={word.id}
       className="group"
       onClick={onClick}
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }}

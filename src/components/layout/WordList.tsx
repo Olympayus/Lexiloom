@@ -101,6 +101,31 @@ export default function WordList({
     overscan: 6,
   })
 
+  // 定位选中词（P2「添加成功后定位新词」）：若所在分组折叠则先展开
+  useEffect(() => {
+    if (!selectedWordId) return
+    const group = groups.find(g => g.words.some(w => w.id === selectedWordId))
+    if (group && collapsedGroups.has(group.key)) {
+      setCollapsedGroups(prev => {
+        const next = new Set(prev)
+        next.delete(group.key)
+        return next
+      })
+    }
+  }, [selectedWordId, groups, collapsedGroups])
+
+  // 滚动到选中行：虚拟列表用 scrollToIndex，普通列表用 scrollIntoView
+  useEffect(() => {
+    if (!selectedWordId) return
+    const idx = rows.findIndex(r => r.kind === 'item' && r.word.id === selectedWordId)
+    if (idx < 0) return
+    if (shouldVirtualize) {
+      virtualizer.scrollToIndex(idx, { align: 'auto' })
+    } else {
+      parentRef.current?.querySelector(`[data-word-id="${CSS.escape(selectedWordId)}"]`)?.scrollIntoView({ block: 'nearest' })
+    }
+  }, [selectedWordId, rows, shouldVirtualize])
+
   const toggleGroup = useCallback((key: string) => {
     setCollapsedGroups(prev => {
       const next = new Set(prev)

@@ -9,6 +9,7 @@ interface Props {
   word: string
   source: string
   entries: DictionaryEntry[]
+  onAdded: (wordId: string) => void
 }
 
 // 来源名称映射
@@ -83,9 +84,8 @@ function groupFields(entries: DictionaryEntry[]): {
   return result
 }
 
-export default function DictDetailCard({ word: word_, source: source_, entries }: Props) {
+export default function DictDetailCard({ word: word_, source: source_, entries, onAdded }: Props) {
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set())
-  const [added, setAdded] = useState(false)
   const grouped = useMemo(() => groupFields(entries), [entries])
   const sourceLabel = SOURCE_NAMES[source_] || source_
   const accent = SOURCE_ACCENTS[source_] || { color: '#666', bg: '#66666610', border: '#66666640', headerBorder: '#66666630' }
@@ -217,10 +217,9 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
     }
 
     // 3. 执行合并
-    await mergeWordFields(word.id, selectedFieldInputs)
-    // 4. 反馈：按钮状态变化
-    setAdded(true)
-    setTimeout(() => setAdded(false), 2000)
+    const ok = await mergeWordFields(word.id, selectedFieldInputs)
+    // 4. 成功 → 通知面板回编辑视图并定位新词（D2）
+    if (ok) onAdded(word.id)
   }
 
   return (
@@ -366,7 +365,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
           style={{ background: accent.color, color: 'white' }}
           onClick={handleAdd}
         >
-          {added ? '已添加' : '添加到词库'}
+          添加到词库
         </button>
       </div>
     </div>
