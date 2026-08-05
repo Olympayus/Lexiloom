@@ -150,7 +150,26 @@ export default function CategoryEditorModal({ open, category, wordId, onClose, o
               >
                 从此单词移除
               </button>
-              <Button variant="secondary" onClick={handleDelete} style={{ color: 'var(--color-cat-6)', borderColor: 'var(--color-border)', background: 'var(--color-surface)' }}>删除分类</Button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                style={{
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-danger)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '6px',
+                  padding: '6px 20px',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '14px',
+                  lineHeight: 1.5,
+                  transition: 'background-color var(--duration-fast) var(--ease-smooth)',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(184,84,80,0.08)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-surface)' }}
+              >
+                删除分类
+              </button>
             </>
           )}
           <Button variant="secondary" onClick={onClose}>取消</Button>
