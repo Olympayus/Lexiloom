@@ -19,6 +19,13 @@ function hexToRgb(hex: string): string {
   return `${r}, ${g}, ${b}`
 }
 
+// 音标两侧加斜杠（值本身已含斜杠则不重复加），如 bru: → /bru:/
+function formatPhonetic(value: string): string {
+  const trimmed = value.trim()
+  if (trimmed.startsWith('/') && trimmed.endsWith('/')) return trimmed
+  return `/${trimmed}/`
+}
+
 export default function WordListItem({ word, categories, selected, collapsed, mode, onClick }: Props) {
   // 音标释义行（规格 §4.2）：{音标} · {词性} {首释义}，· 仅在两者都存在时显示
   const hasMeta = Boolean(word.phonetic || word.partOfSpeech || word.chineseDefinition)
@@ -108,7 +115,7 @@ export default function WordListItem({ word, categories, selected, collapsed, mo
             </div>
             {hasMeta && (
               <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {word.phonetic && <span style={{ fontFamily: 'var(--font-phonetic)' }}>{word.phonetic}</span>}
+                {word.phonetic && <span style={{ fontFamily: 'var(--font-phonetic)' }}>{formatPhonetic(word.phonetic)}</span>}
                 {word.phonetic && (word.partOfSpeech || word.chineseDefinition) && <span> · </span>}
                 {word.partOfSpeech && <span>{word.partOfSpeech}</span>}
                 {word.partOfSpeech && word.chineseDefinition && <span> </span>}
