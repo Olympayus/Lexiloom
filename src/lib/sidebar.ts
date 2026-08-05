@@ -47,15 +47,32 @@ export function groupByCategory(
   return nonEmpty
 }
 
-// 收起态列表项固定 chrome（镜像 WordListItem 收起态布局）：
-// 字母模式：padding 20 + 编织线 3 + gap 20 + 色圈(≤3) 27 = 70px
-// 分类模式：padding 16 + 编织线 3 + gap 10 = 29px（居中单词名，无色圈）
-export const COLLAPSED_CHROME_ALPHABET = 70
-export const COLLAPSED_CHROME_CATEGORY = 29
+// 收起态单词两侧的固定 chrome（镜像布局全链：WordList 滚动容器 padding + WordListItem 收起态样式）：
+// 字母模式：容器 padding 16 + 项 padding 20 + 编织线 3 + gap 20 + 色圈(≤3) 27 = 86px
+// 分类模式：容器 padding 16 + 项 padding 16 + 编织线 3 + gap 10 = 45px（居中单词名，无色圈）
+export const COLLAPSED_CHROME_ALPHABET = 86
+export const COLLAPSED_CHROME_CATEGORY = 45
 
 // D1：收起宽度 = clamp(最长单词渲染宽度 + 实际 chrome, 120px, 240px)
 export function fitCollapsedWidth(maxWordWidthPx: number, chromePx: number): number {
   return Math.min(240, Math.max(120, maxWordWidthPx + chromePx))
+}
+
+// 解析收起态单词名的实际渲染字体（computed font），canvas measureText 必须与 DOM 渲染用同一字体，
+// 避免手工拼 CSS 变量串被 canvas 解析失败而静默回退默认字体导致测量偏小。
+export function resolveSidebarWordFont(): string {
+  if (typeof document === 'undefined') return '600 13px serif'
+  const probe = document.createElement('span')
+  probe.style.position = 'fixed'
+  probe.style.visibility = 'hidden'
+  probe.style.left = '-9999px'
+  probe.style.fontFamily = 'var(--font-serif)'
+  probe.style.fontSize = 'var(--text-sm)'
+  probe.style.fontWeight = 'var(--weight-semibold)'
+  document.body.appendChild(probe)
+  const font = getComputedStyle(probe).font
+  probe.remove()
+  return font
 }
 
 // 用 canvas measureText 测量一组单词的最宽渲染宽度（浏览器环境）

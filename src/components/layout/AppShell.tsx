@@ -4,7 +4,7 @@ import WordList from './WordList'
 import SidebarFooter from './SidebarFooter'
 import WordWorkbench from '../word/WordWorkbench'
 import { useWordStore } from '../../stores/wordStore'
-import { fitCollapsedWidth, measureMaxWordWidth, COLLAPSED_CHROME_ALPHABET, COLLAPSED_CHROME_CATEGORY, type SidebarMode } from '../../lib/sidebar'
+import { fitCollapsedWidth, measureMaxWordWidth, resolveSidebarWordFont, COLLAPSED_CHROME_ALPHABET, COLLAPSED_CHROME_CATEGORY, type SidebarMode } from '../../lib/sidebar'
 
 // 规格 §2：侧边栏展开宽度 300px；收起宽度内容自适应（D1）
 const SIDEBAR_EXPANDED_WIDTH = 300
@@ -17,11 +17,8 @@ export default function AppShell() {
   // D1：收起宽度 = clamp(最长单词渲染宽度 + 实际 chrome, 120px, 240px)，加词/删词重算，150ms 过渡
   const sidebarWidth = useMemo(() => {
     if (!collapsed) return SIDEBAR_EXPANDED_WIDTH
-    const serif = typeof document !== 'undefined'
-      ? getComputedStyle(document.documentElement).getPropertyValue('--font-serif').trim()
-      : 'serif'
     const chrome = mode === 'alphabet' ? COLLAPSED_CHROME_ALPHABET : COLLAPSED_CHROME_CATEGORY
-    const max = measureMaxWordWidth(words.map(w => w.lemma), `600 13px ${serif}`)  // 600 字重与渲染一致
+    const max = measureMaxWordWidth(words.map(w => w.lemma), resolveSidebarWordFont())  // 与渲染同一字体
     return fitCollapsedWidth(max, chrome)
   }, [collapsed, words, mode])
 
