@@ -1,4 +1,6 @@
+import { useRef } from 'react'
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { useWordStore } from '../../stores/wordStore'
 import { useCategoryStore } from '../../stores/categoryStore'
 import SidebarToolbar from './SidebarToolbar'
@@ -77,6 +79,19 @@ export default function WordList({ collapsed = false, onToggleCollapse = () => {
     }
     return rs
   }, [groups, collapsedGroups, wordCategoryMap, categoryById])
+
+  const parentRef = useRef<HTMLDivElement>(null)
+  const shouldVirtualize = rows.length > 100
+  const virtualizer = useVirtualizer({
+    count: shouldVirtualize ? rows.length : 0,
+    getScrollElement: () => parentRef.current,
+    estimateSize: (i) => {
+      const r = rows[i]
+      if (r.kind === 'item') return collapsed ? 32 : 76
+      return 28
+    },
+    overscan: 6,
+  })
 
   const toggleGroup = useCallback((key: string) => {
     setCollapsedGroups(prev => {
@@ -161,12 +176,25 @@ export default function WordList({ collapsed = false, onToggleCollapse = () => {
         onToggleMode={() => setMode(m => (m === 'alphabet' ? 'category' : 'alphabet'))}
         onToggleCollapse={onToggleCollapse}
       />
-      <div className="flex-1 overflow-y-auto" style={{ padding: '8px' }}>
+      <div ref={parentRef} className="flex-1 overflow-y-auto" style={{ padding: '8px' }}>
         {searching ? (
           <div className="px-4 py-8 text-center text-sm" style={{ color: 'var(--color-text-tertiary)' }}>搜索中…</div>
         ) : rows.length === 0 ? (
           <div className="px-4 py-8 text-center text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
             {words.length === 0 ? '词库为空，使用顶部搜索框添加单词' : '没有匹配的单词'}
+          </div>
+        ) : shouldVirtualize ? (
+          <div style={{ height: virtualizer.getTotalSize(), width: '100%', position: 'relative' }}>
+            {virtualizer.getVirtualItems().map(vr => (
+              <div
+                key={rows[vr.index].key}
+                data-index={vr.index}
+                ref={virtualizer.measureElement}
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${vr.start}px)` }}
+              >
+                {renderRow(rows[vr.index])}
+              </div>
+            ))}
           </div>
         ) : (
           rows.map(renderRow)
