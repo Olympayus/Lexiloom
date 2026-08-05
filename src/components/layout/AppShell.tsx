@@ -4,7 +4,7 @@ import WordList from './WordList'
 import SidebarFooter from './SidebarFooter'
 import WordWorkbench from '../word/WordWorkbench'
 import { useWordStore } from '../../stores/wordStore'
-import { fitCollapsedWidth, measureMaxWordWidth } from '../../lib/sidebar'
+import { fitCollapsedWidth, measureMaxWordWidth, COLLAPSED_CHROME_ALPHABET, COLLAPSED_CHROME_CATEGORY, type SidebarMode } from '../../lib/sidebar'
 
 // 规格 §2：侧边栏展开宽度 300px；收起宽度内容自适应（D1）
 const SIDEBAR_EXPANDED_WIDTH = 300
@@ -12,16 +12,18 @@ const SIDEBAR_EXPANDED_WIDTH = 300
 export default function AppShell() {
   const words = useWordStore(s => s.words)
   const [collapsed, setCollapsed] = useState(false)
+  const [mode, setMode] = useState<SidebarMode>('alphabet')
 
-  // D1：收起宽度 = clamp(最长单词渲染宽度 + 40px, 120px, 240px)，加词/删词重算，150ms 过渡
+  // D1：收起宽度 = clamp(最长单词渲染宽度 + 实际 chrome, 120px, 240px)，加词/删词重算，150ms 过渡
   const sidebarWidth = useMemo(() => {
     if (!collapsed) return SIDEBAR_EXPANDED_WIDTH
     const serif = typeof document !== 'undefined'
       ? getComputedStyle(document.documentElement).getPropertyValue('--font-serif').trim()
       : 'serif'
-    const max = measureMaxWordWidth(words.map(w => w.lemma), `13px ${serif}`)
-    return fitCollapsedWidth(max)
-  }, [collapsed, words])
+    const chrome = mode === 'alphabet' ? COLLAPSED_CHROME_ALPHABET : COLLAPSED_CHROME_CATEGORY
+    const max = measureMaxWordWidth(words.map(w => w.lemma), `600 13px ${serif}`)  // 600 字重与渲染一致
+    return fitCollapsedWidth(max, chrome)
+  }, [collapsed, words, mode])
 
   return (
     <div className="h-screen flex flex-col" style={{ background: 'var(--color-canvas)' }}>
@@ -42,7 +44,12 @@ export default function AppShell() {
             overflow: 'hidden',
           }}
         >
-          <WordList collapsed={collapsed} onToggleCollapse={() => setCollapsed(c => !c)} />
+          <WordList
+            collapsed={collapsed}
+            onToggleCollapse={() => setCollapsed(c => !c)}
+            mode={mode}
+            onToggleMode={() => setMode(m => (m === 'alphabet' ? 'category' : 'alphabet'))}
+          />
           <SidebarFooter collapsed={collapsed} />
         </aside>
 

@@ -29,11 +29,19 @@ interface ItemRow {
 }
 type Row = HeaderRow | ItemRow
 
-// Props 设为可选（默认展开/空操作）：AppShell 收起态在 Task 9 接入；在此之前保持旧行为不破坏编译
-export default function WordList({ collapsed = false, onToggleCollapse = () => {} }: { collapsed?: boolean; onToggleCollapse?: () => void }) {
+export default function WordList({
+  collapsed,
+  onToggleCollapse,
+  mode,
+  onToggleMode,
+}: {
+  collapsed: boolean
+  onToggleCollapse: () => void
+  mode: SidebarMode
+  onToggleMode: () => void
+}) {
   const { words, selectedWordId, selectWord } = useWordStore()
   const { categories, wordCategoryMap } = useCategoryStore()
-  const [mode, setMode] = useState<SidebarMode>('alphabet')
   const [filter, setFilter] = useState('')
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const [searching, setSearching] = useState(false)
@@ -73,7 +81,7 @@ export default function WordList({ collapsed = false, onToggleCollapse = () => {
       if (!folded) {
         for (const w of g.words) {
           const cats = (wordCategoryMap[w.id] || []).map(id => categoryById.get(id)).filter((c): c is Category => Boolean(c))
-          rs.push({ kind: 'item', key: w.id, word: w, categories: cats })
+          rs.push({ kind: 'item', key: `${g.key}:${w.id}`, word: w, categories: cats })
         }
       }
     }
@@ -173,7 +181,7 @@ export default function WordList({ collapsed = false, onToggleCollapse = () => {
         collapsed={collapsed}
         filter={filter}
         onFilterChange={setFilter}
-        onToggleMode={() => setMode(m => (m === 'alphabet' ? 'category' : 'alphabet'))}
+        onToggleMode={onToggleMode}
         onToggleCollapse={onToggleCollapse}
       />
       <div ref={parentRef} className="flex-1 overflow-y-auto" style={{ padding: '8px' }}>

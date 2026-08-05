@@ -47,9 +47,15 @@ export function groupByCategory(
   return nonEmpty
 }
 
-// D1：收起宽度 = clamp(最长单词渲染宽度 + 色圈预留 40px, 120px, 240px)
-export function fitCollapsedWidth(maxWordWidthPx: number): number {
-  return Math.min(240, Math.max(120, maxWordWidthPx + 40))
+// 收起态列表项固定 chrome（镜像 WordListItem 收起态布局）：
+// 字母模式：padding 20 + 编织线 3 + gap 20 + 色圈(≤3) 27 = 70px
+// 分类模式：padding 16 + 编织线 3 + gap 10 = 29px（居中单词名，无色圈）
+export const COLLAPSED_CHROME_ALPHABET = 70
+export const COLLAPSED_CHROME_CATEGORY = 29
+
+// D1：收起宽度 = clamp(最长单词渲染宽度 + 实际 chrome, 120px, 240px)
+export function fitCollapsedWidth(maxWordWidthPx: number, chromePx: number): number {
+  return Math.min(240, Math.max(120, maxWordWidthPx + chromePx))
 }
 
 // 用 canvas measureText 测量一组单词的最宽渲染宽度（浏览器环境）

@@ -37,8 +37,8 @@ describe('sidebar 分组', () => {
 
 describe('sidebar 收起宽度（D1）', () => {
   it('fitCollapsedWidth clamp 到 120-240', () => {
-    expect(fitCollapsedWidth(0)).toBe(120)
-    expect(fitCollapsedWidth(90)).toBe(130)
-    expect(fitCollapsedWidth(300)).toBe(240)
+    expect(fitCollapsedWidth(0, 40)).toBe(120)
+    expect(fitCollapsedWidth(90, 40)).toBe(130)
+    expect(fitCollapsedWidth(300, 40)).toBe(240)
   })
 })

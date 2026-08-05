@@ -4,6 +4,7 @@ import type { FieldValueContentUpdate } from '../types/field'
 import * as wordService from '../services/wordService'
 import type { MergeFieldInput } from '../services/wordService'
 import * as fieldService from '../services/fieldService'
+import { useCategoryStore } from './categoryStore'
 
 interface WordStore {
   words: WordWithPreview[]
@@ -83,7 +84,10 @@ export const useWordStore = create<WordStore>((set, get) => ({
 
   addWord: async (lemma) => {
     const word = await wordService.addWord(lemma)
-    if (word) await get().loadWords()
+    if (word) {
+      await get().loadWords()
+      await useCategoryStore.getState().loadWordCategoryMap()  // 新词默认分类即时进入侧边栏分组
+    }
     return word
   },
 
