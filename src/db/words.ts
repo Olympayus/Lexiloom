@@ -52,13 +52,18 @@ async function queryWordPreviews(filter: string | null): Promise<WordWithPreview
   const phoneticId = defMap.get('phonetic')
 
   const filterParam = filter ? `%${filter}%` : null
+  // 每个 (word_id, field_id) 组取 display_order 最小者（首条）作为预览，与工作台展示顺序一致；
+  // 不能用 MAX(value)——多值时按字典序取会选错「首释义」。
   const rows = await db.select<Record<string, any>[]>(
     `SELECT w.*,
-            MAX(CASE WHEN fv.field_id = ?1 THEN fv.value END) as chinese_definition,
-            MAX(CASE WHEN fv.field_id = ?2 THEN fv.value END) as part_of_speech,
-            MAX(CASE WHEN fv.field_id = ?3 THEN fv.value END) as phonetic
+            MAX(CASE WHEN fv.field_id = ?1 AND fv.rn = 1 THEN fv.value END) as chinese_definition,
+            MAX(CASE WHEN fv.field_id = ?2 AND fv.rn = 1 THEN fv.value END) as part_of_speech,
+            MAX(CASE WHEN fv.field_id = ?3 AND fv.rn = 1 THEN fv.value END) as phonetic
      FROM words w
-     LEFT JOIN field_values fv ON fv.word_id = w.id
+     LEFT JOIN (
+       SELECT fv2.*, ROW_NUMBER() OVER (PARTITION BY fv2.word_id, fv2.field_id ORDER BY fv2.display_order, fv2.id) AS rn
+       FROM field_values fv2
+     ) fv ON fv.word_id = w.id
      ${filterParam ? 'WHERE w.lemma LIKE ?4 OR fv.value LIKE ?4' : ''}
      GROUP BY w.id
      ORDER BY w.updated_at DESC`,

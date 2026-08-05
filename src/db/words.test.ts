@@ -67,4 +67,15 @@ describe('db/words', () => {
     const p = r.data.find(x => x.id === w.data.id)!
     expect(p.phonetic).toBe('/əbˈzɜːv/')
   })
+
+  it('多中文释义取 display_order 最小者（首释义，非 MAX 字典序）', async () => {
+    const w = await wordsDb.createWord({ lemma: 'atmosphere' })
+    if (!w.ok) throw new Error('createWord failed')
+    await fieldsDb.insertFieldValue({ wordId: w.data.id, fieldId: 'f_chinese_definition', value: '大气', source: 'ecdict', displayOrder: 0 })
+    await fieldsDb.insertFieldValue({ wordId: w.data.id, fieldId: 'f_chinese_definition', value: '气氛', source: 'wordnet', displayOrder: 1 })
+    const r = await wordsDb.getWordsWithPreviews()
+    if (!r.ok) throw new Error('getWordsWithPreviews failed')
+    const p = r.data.find(x => x.id === w.data.id)!
+    expect(p.chineseDefinition).toBe('大气')
+  })
 })
