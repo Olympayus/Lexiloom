@@ -6,8 +6,10 @@ import { useWordStore } from './wordStore'
 interface CategoryStore {
   categories: Category[]
   wordCategoryIds: string[]
+  wordCategoryMap: Record<string, string[]>
   loading: boolean
   loadCategories: () => Promise<void>
+  loadWordCategoryMap: () => Promise<void>
   loadWordCategories: (wordId: string) => Promise<void>
   createCategory: (input: CategoryInput) => Promise<Category | null>
   updateCategory: (id: string, update: CategoryUpdate) => Promise<void>
@@ -20,12 +22,18 @@ interface CategoryStore {
 export const useCategoryStore = create<CategoryStore>((set, get) => ({
   categories: [],
   wordCategoryIds: [],
+  wordCategoryMap: {},
   loading: false,
 
   loadCategories: async () => {
     set({ loading: true })
     const categories = await categoryService.getCategories()
     set({ categories, loading: false })
+  },
+
+  loadWordCategoryMap: async () => {
+    const wordCategoryMap = await categoryService.getWordCategoryMap()
+    set({ wordCategoryMap })
   },
 
   // 切换单词先清空，避免闪现上一个单词的分类胶囊
@@ -52,16 +60,19 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
     await categoryService.deleteCategory(id)
     await get().loadCategories()
     await get().refreshWordCategories()
+    await get().loadWordCategoryMap()
   },
 
   assignToWord: async (wordId, categoryId) => {
     await categoryService.assignCategoryToWord(wordId, categoryId)
     await get().loadWordCategories(wordId)
+    await get().loadWordCategoryMap()
   },
 
   removeFromWord: async (wordId, categoryId) => {
     await categoryService.unassignCategoryFromWord(wordId, categoryId)
     await get().loadWordCategories(wordId)
+    await get().loadWordCategoryMap()
   },
 
   refreshWordCategories: async () => {

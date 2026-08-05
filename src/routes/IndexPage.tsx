@@ -5,12 +5,13 @@ import { useCategoryStore } from '../stores/categoryStore'
 
 export default function IndexPage() {
   const { loadWords } = useWordStore()
-  const { loadCategories } = useCategoryStore()
+  const { loadCategories, loadWordCategoryMap } = useCategoryStore()
 
   useEffect(() => {
     loadWords()
     loadCategories()
-  }, [loadWords, loadCategories])
+    loadWordCategoryMap()
+  }, [loadWords, loadCategories, loadWordCategoryMap])
 
   return <AppShell />
 }

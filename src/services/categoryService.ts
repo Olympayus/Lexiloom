@@ -43,3 +43,8 @@ export async function assignDefaultToWord(wordId: string): Promise<void> {
   if (!result.ok || !result.data) return
   await categoriesDb.assignCategoryToWord(wordId, result.data.id)
 }
+
+export async function getWordCategoryMap(): Promise<Record<string, string[]>> {
+  const result = await categoriesDb.getAllWordCategoryMap()
+  return result.ok ? result.data : {}
+}

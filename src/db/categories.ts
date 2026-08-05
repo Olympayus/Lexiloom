@@ -137,3 +137,20 @@ export async function unassignCategoryFromWord(wordId: string, categoryId: strin
     return { ok: false, error: e.toString() }
   }
 }
+
+// 全量 word_id → category_ids 映射（侧边栏分类分组 / 列表项胶囊用）
+export async function getAllWordCategoryMap(): Promise<DbResult<Record<string, string[]>>> {
+  try {
+    const rows = await getDb().select<{ word_id: string; category_id: string }[]>(
+      'SELECT word_id, category_id FROM word_categories'
+    )
+    const map: Record<string, string[]> = {}
+    for (const r of rows) {
+      if (!map[r.word_id]) map[r.word_id] = []
+      map[r.word_id].push(r.category_id)
+    }
+    return { ok: true, data: map }
+  } catch (e: any) {
+    return { ok: false, error: e.toString() }
+  }
+}
