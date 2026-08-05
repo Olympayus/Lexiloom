@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-export type IconName = 'plus' | 'grip' | 'more' | 'trash'
+export type IconName = 'plus' | 'grip' | 'more' | 'trash' | 'search' | 'swap' | 'chevron' | 'arrow-right' | 'chevron-left'
 
 const PATHS: Record<IconName, ReactNode> = {
   plus: <path d="M12 5v14M5 12h14" />,
@@ -22,6 +22,28 @@ const PATHS: Record<IconName, ReactNode> = {
       <path d="M6 7l1-3h10l1 3" /><path d="M8 7v14h8V7" />
     </>
   ),
+  search: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.35-4.35" />
+    </>
+  ),
+  swap: (
+    <>
+      <path d="M16 3l4 4-4 4" />
+      <path d="M20 7H4" />
+      <path d="M8 21l-4-4 4-4" />
+      <path d="M4 17h16" />
+    </>
+  ),
+  chevron: <path d="M6 9l6 6 6-6" />,
+  'arrow-right': (
+    <>
+      <path d="M5 12h14" />
+      <path d="M12 5l7 7-7 7" />
+    </>
+  ),
+  'chevron-left': <path d="M15 18l-6-6 6-6" />,
 }
 
 export default function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
