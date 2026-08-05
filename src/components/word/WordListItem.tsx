@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { useRef, type CSSProperties } from 'react'
 import type { WordWithPreview } from '../../types/word'
 import type { Category } from '../../types/category'
 import type { SidebarMode } from '../../lib/sidebar'
@@ -23,6 +23,7 @@ export default function WordListItem({ word, categories, selected, collapsed, mo
   // 音标释义行（规格 §4.2）：{音标} · {词性} {首释义}，· 仅在两者都存在时显示
   const hasMeta = Boolean(word.phonetic || word.partOfSpeech || word.chineseDefinition)
   const collapsedDots = categories.slice(0, 3)   // 收起态色圈，限 3 个匹配 D1 的 40px 预留
+  const lineRef = useRef<HTMLDivElement>(null)
 
   const containerStyle: CSSProperties = {
     display: 'flex',
@@ -49,15 +50,23 @@ export default function WordListItem({ word, categories, selected, collapsed, mo
         const el = e.currentTarget as HTMLElement
         if (!selected) el.style.background = 'var(--color-surface-hover)'
         el.style.transform = collapsed ? 'translateX(0)' : 'translateX(2px)'
+        if (!selected && lineRef.current) {
+          lineRef.current.style.background = 'var(--color-text-secondary)'
+          lineRef.current.style.opacity = '1'
+        }
       }}
       onMouseLeave={e => {
         const el = e.currentTarget as HTMLElement
         el.style.background = selected ? 'var(--color-surface)' : 'transparent'
         el.style.transform = 'translateX(0)'
+        if (lineRef.current) {
+          lineRef.current.style.background = selected ? 'var(--color-brand)' : 'var(--color-border)'
+          lineRef.current.style.opacity = selected ? '1' : '0.5'
+        }
       }}
     >
       {/* 编织线（规格 §4.4）：默认 3px 50% 透明，悬停 text-secondary 实色，选中 brand 4px */}
-      <div style={{
+      <div ref={lineRef} style={{
         width: selected ? '4px' : '3px',
         alignSelf: 'stretch',
         background: selected ? 'var(--color-brand)' : 'var(--color-border)',
