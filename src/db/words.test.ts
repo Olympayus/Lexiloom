@@ -57,4 +57,14 @@ describe('db/words', () => {
     if (!vals.ok) throw new Error('getFieldValuesForWord failed')
     expect(vals.data.length).toBe(0)
   })
+
+  it('getWordsWithPreviews 聚合音标', async () => {
+    const w = await wordsDb.createWord({ lemma: 'observe' })
+    if (!w.ok) throw new Error('createWord failed')
+    await fieldsDb.insertFieldValue({ wordId: w.data.id, fieldId: 'f_phonetic', value: '/əbˈzɜːv/', source: 'ecdict' })
+    const r = await wordsDb.getWordsWithPreviews()
+    if (!r.ok) throw new Error('getWordsWithPreviews failed')
+    const p = r.data.find(x => x.id === w.data.id)!
+    expect(p.phonetic).toBe('/əbˈzɜːv/')
+  })
 })
