@@ -2,6 +2,7 @@ import { useRef, type CSSProperties } from 'react'
 import type { WordWithPreview } from '../../types/word'
 import type { Category } from '../../types/category'
 import type { SidebarMode } from '../../lib/sidebar'
+import { formatPhonetic } from '../../lib/phonetic'
 import Icon from '../icons'
 
 interface Props {
@@ -17,13 +18,6 @@ function hexToRgb(hex: string): string {
   const m = hex.replace('#', '')
   const r = parseInt(m.slice(0, 2), 16), g = parseInt(m.slice(2, 4), 16), b = parseInt(m.slice(4, 6), 16)
   return `${r}, ${g}, ${b}`
-}
-
-// 音标两侧加斜杠（值本身已含斜杠则不重复加），如 bru: → /bru:/
-function formatPhonetic(value: string): string {
-  const trimmed = value.trim()
-  if (trimmed.startsWith('/') && trimmed.endsWith('/')) return trimmed
-  return `/${trimmed}/`
 }
 
 export default function WordListItem({ word, categories, selected, collapsed, mode, onClick }: Props) {

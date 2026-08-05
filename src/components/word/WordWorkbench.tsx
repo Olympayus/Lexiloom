@@ -9,6 +9,7 @@ import {
 } from '@dnd-kit/core'
 import { useWordStore } from '../../stores/wordStore'
 import { getDefinitions } from '../../services/fieldService'
+import { formatPhonetic } from '../../lib/phonetic'
 import { Button } from '../ui/Button'
 import EmptyState from '../ui/EmptyState'
 import Icon from '../icons'
@@ -525,7 +526,7 @@ export default function WordWorkbench() {
               </div>
               {showPhoneticRow && (
                 <div style={{ fontSize: 'var(--text-base)', color: 'var(--color-text-secondary)' }}>
-                  {phonetic && <span style={{ fontFamily: 'var(--font-phonetic)' }}>{phonetic}</span>}
+                  {phonetic && <span style={{ fontFamily: 'var(--font-phonetic)' }}>{formatPhonetic(phonetic)}</span>}
                   {phonetic && posText && <span> · </span>}
                   {posText && <span>{posText}</span>}
                 </div>
