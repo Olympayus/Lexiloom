@@ -39,7 +39,7 @@ export default function AppShell() {
           className="flex flex-col shrink-0"
           style={{
             width: sidebarWidth,
-            background: 'var(--color-surface)',
+            background: 'var(--color-canvas)',
             borderRight: '1px solid var(--color-border)',
             transition: 'width 150ms var(--ease-smooth)',
             overflow: 'hidden',
