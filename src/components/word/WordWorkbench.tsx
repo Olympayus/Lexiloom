@@ -572,6 +572,7 @@ export default function WordWorkbench() {
               ))}
               {/* 「+」虚线圆钮：新建/选择分类（规格 §5.1） */}
               <button
+                type="button"
                 title="添加分类"
                 onClick={() => { setAssignOpen(true); setCapsuleExpanded(false) }}
                 style={{

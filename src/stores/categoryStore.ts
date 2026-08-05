@@ -32,7 +32,9 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
   loadWordCategories: async (wordId) => {
     set({ wordCategoryIds: [] })
     const cats = await categoryService.getWordCategories(wordId)
-    set({ wordCategoryIds: cats.map(c => c.id) })
+    if (useWordStore.getState().selectedWordId === wordId) {
+      set({ wordCategoryIds: cats.map(c => c.id) })
+    }
   },
 
   createCategory: async (input) => {
