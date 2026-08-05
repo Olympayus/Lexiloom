@@ -13,6 +13,9 @@ import { Button } from '../ui/Button'
 import EmptyState from '../ui/EmptyState'
 import Icon from '../icons'
 import CategoryCapsule from './CategoryCapsule'
+import CategoryEditorModal from './CategoryEditorModal'
+import CategoryAssignModal from './CategoryAssignModal'
+import { useCategoryStore } from '../../stores/categoryStore'
 import type { FieldDefinition, FieldValue } from '../../types/field'
 import type { Category } from '../../types/category'
 
@@ -310,15 +313,23 @@ export default function WordWorkbench() {
   const [saved, setSaved] = useState(false)
   const [fadeIn, setFadeIn] = useState(true)
   const [insertIndicator, setInsertIndicator] = useState<InsertIndicator | null>(null)
+  const [editorOpen, setEditorOpen] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [assignOpen, setAssignOpen] = useState(false)
+  const [capsuleExpanded, setCapsuleExpanded] = useState(false)
 
-  // P4：分类数据为空（P5 接入真实数据）；胶囊区与「+」按钮仍渲染
-  const categories: Category[] = []
+  const { categories, wordCategoryIds, loadWordCategories } = useCategoryStore()
 
   const selectedWord = words.find(w => w.id === selectedWordId)
 
   useEffect(() => {
     getDefinitions().then(defs => setDefs(defs))
   }, [])
+
+  // 切换单词自动加载该词分类（规格 §5.1）
+  useEffect(() => {
+    if (selectedWordId) loadWordCategories(selectedWordId)
+  }, [selectedWordId])
 
   // Cleanup saved state after animation completes
   useEffect(() => {
@@ -452,6 +463,11 @@ export default function WordWorkbench() {
 
   const sortedFieldValues = [...fieldValues].sort((a, b) => a.displayOrder - b.displayOrder)
 
+  const wordCapsules = categories.filter(c => wordCategoryIds.includes(c.id))
+  const showMoreCapsules = wordCapsules.length > 4
+  const shownCapsules = showMoreCapsules ? wordCapsules.slice(0, 3) : wordCapsules
+  const extraCapsules = showMoreCapsules ? wordCapsules.slice(3) : []
+
   const cardProps: Omit<FieldCardProps, 'fv' | 'depth'> = {
     defs,
     editorMode,
@@ -516,12 +532,48 @@ export default function WordWorkbench() {
               )}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              {categories.map(cat => (
-                <CategoryCapsule key={cat.id} category={cat} />
+              {shownCapsules.map(cat => (
+                <CategoryCapsule
+                  key={cat.id}
+                  category={cat}
+                  onClick={() => { setEditingCategory(cat); setEditorOpen(true) }}
+                />
               ))}
-              {/* 「+」虚线圆钮：P4 仅视觉，P5 接入新建/选择分类 */}
+              {showMoreCapsules && (
+                <button
+                  type="button"
+                  title={capsuleExpanded ? '收起分类' : '展开更多分类'}
+                  onClick={() => setCapsuleExpanded(v => !v)}
+                  style={{
+                    height: '24px', padding: '0 10px', borderRadius: 'var(--radius-full)',
+                    border: '1px dashed var(--color-border-strong)', background: 'transparent',
+                    fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)',
+                    cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                    transition: 'all var(--duration-fast) var(--ease-smooth)',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.color = 'var(--color-brand)'
+                    e.currentTarget.style.borderColor = 'var(--color-brand)'
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.color = 'var(--color-text-tertiary)'
+                    e.currentTarget.style.borderColor = 'var(--color-border-strong)'
+                  }}
+                >
+                  {capsuleExpanded ? '收起' : `+${extraCapsules.length}`}
+                </button>
+              )}
+              {showMoreCapsules && capsuleExpanded && extraCapsules.map(cat => (
+                <CategoryCapsule
+                  key={cat.id}
+                  category={cat}
+                  onClick={() => { setEditingCategory(cat); setEditorOpen(true) }}
+                />
+              ))}
+              {/* 「+」虚线圆钮：新建/选择分类（规格 §5.1） */}
               <button
                 title="添加分类"
+                onClick={() => { setAssignOpen(true); setCapsuleExpanded(false) }}
                 style={{
                   width: '24px',
                   height: '24px',
@@ -722,6 +774,20 @@ export default function WordWorkbench() {
           <Icon name="trash" size={16} />
           删除单词
         </button>
+
+        <CategoryAssignModal
+          open={assignOpen}
+          wordId={selectedWord.id}
+          onClose={() => setAssignOpen(false)}
+          onCreateNew={() => { setAssignOpen(false); setEditingCategory(null); setEditorOpen(true) }}
+        />
+        <CategoryEditorModal
+          open={editorOpen}
+          category={editingCategory}
+          wordId={selectedWord.id}
+          onClose={() => setEditorOpen(false)}
+          onSaved={() => setCapsuleExpanded(false)}
+        />
       </div>
     </div>
   )
