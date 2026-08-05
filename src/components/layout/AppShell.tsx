@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import TopSearchBar from './TopSearchBar'
+import TopBar from './TopBar'
 import WordList from './WordList'
 import SidebarFooter from './SidebarFooter'
 import WordWorkbench from '../word/WordWorkbench'
@@ -26,7 +26,7 @@ export default function AppShell() {
     <div className="h-screen flex flex-col" style={{ background: 'var(--color-canvas)' }}>
       {/* 全局顶栏：始终可见，不随侧边栏折叠（规格 §2） */}
       <header className="shrink-0">
-        <TopSearchBar />
+        <TopBar />
       </header>
 
       <div className="flex-1 flex overflow-hidden">

@@ -22,8 +22,14 @@ export default function SearchSuggestions({ suggestions, selectedIndex, onSelect
 
   return (
     <div
-      className="absolute left-6 right-6 top-full z-20 mt-1 bg-white rounded-lg max-h-80 overflow-y-auto"
-      style={{ border: '1px solid var(--color-border)' }}
+      className="absolute top-full left-0 right-0 mt-1 max-h-80 overflow-y-auto"
+      style={{
+        zIndex: 'var(--z-dropdown)',
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-lg)',
+        boxShadow: 'var(--shadow-overlay)',
+      }}
     >
       <div style={{
         padding: '8px 16px',
