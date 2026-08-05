@@ -33,8 +33,26 @@ export const SQL_CREATE_FIELD_VALUES = `CREATE TABLE IF NOT EXISTS field_values 
   updated_at INTEGER NOT NULL
 );`
 
+export const SQL_CREATE_CATEGORIES = `CREATE TABLE IF NOT EXISTS categories (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  color TEXT NOT NULL,
+  description TEXT,
+  is_default INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);`
+
+export const SQL_CREATE_WORD_CATEGORIES = `CREATE TABLE IF NOT EXISTS word_categories (
+  word_id TEXT NOT NULL REFERENCES words(id) ON DELETE CASCADE,
+  category_id TEXT NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+  PRIMARY KEY (word_id, category_id)
+);`
+
 export const SQL_CREATE_INDEXES = `
   CREATE INDEX IF NOT EXISTS idx_fv_word_id ON field_values(word_id);
+  CREATE INDEX IF NOT EXISTS idx_wc_word_id ON word_categories(word_id);
+  CREATE INDEX IF NOT EXISTS idx_wc_category_id ON word_categories(category_id);
 `
 
 export function seedFieldDefinitionsSQL(): string {
@@ -48,9 +66,11 @@ export function seedFieldDefinitionsSQL(): string {
 }
 
 // D4：PRAGMA user_version 驱动重建。P4/P5 变更 schema 时递增此值。
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 export const SQL_DROP_TABLES: string[] = [
+  'DROP TABLE IF EXISTS word_categories;',
+  'DROP TABLE IF EXISTS categories;',
   'DROP TABLE IF EXISTS field_values;',
   'DROP TABLE IF EXISTS field_definitions;',
   'DROP TABLE IF EXISTS words;',

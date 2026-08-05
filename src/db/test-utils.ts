@@ -1,6 +1,7 @@
 import initSqlJs from 'sql.js'
 import {
   SQL_CREATE_WORDS, SQL_CREATE_FIELD_DEFINITIONS, SQL_CREATE_FIELD_VALUES,
+  SQL_CREATE_CATEGORIES, SQL_CREATE_WORD_CATEGORIES,
   SQL_CREATE_INDEXES, seedFieldDefinitionsSQL,
 } from './schema'
 
@@ -37,6 +38,7 @@ export async function createTestDb(): Promise<DbLike> {
   const { adapter } = await createRawTestDb()
   for (const sql of [
     SQL_CREATE_WORDS, SQL_CREATE_FIELD_DEFINITIONS, SQL_CREATE_FIELD_VALUES,
+    SQL_CREATE_CATEGORIES, SQL_CREATE_WORD_CATEGORIES,
     SQL_CREATE_INDEXES, seedFieldDefinitionsSQL(),
   ]) {
     await adapter.execute(sql)

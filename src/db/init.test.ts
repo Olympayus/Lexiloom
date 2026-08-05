@@ -8,9 +8,9 @@ describe('db/init ensureSchema', () => {
     const { adapter } = await createRawTestDb()
     await ensureSchema(adapter)
     const tables = await adapter.select<{ name: string }>(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('words','field_definitions','field_values')"
+      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('words','field_definitions','field_values','categories','word_categories')"
     )
-    expect(tables.length).toBe(3)
+    expect(tables.length).toBe(5)
     const v = await adapter.select<{ user_version: number }>('SELECT user_version FROM pragma_user_version')
     expect(v[0].user_version).toBe(SCHEMA_VERSION)
   })

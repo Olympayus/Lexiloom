@@ -1,5 +1,6 @@
 import {
   SQL_CREATE_WORDS, SQL_CREATE_FIELD_DEFINITIONS, SQL_CREATE_FIELD_VALUES,
+  SQL_CREATE_CATEGORIES, SQL_CREATE_WORD_CATEGORIES,
   SQL_CREATE_INDEXES, seedFieldDefinitionsSQL, SCHEMA_VERSION, SQL_DROP_TABLES,
 } from './schema'
 
@@ -16,6 +17,7 @@ export async function ensureSchema(db: DbHandle): Promise<void> {
   for (const sql of SQL_DROP_TABLES) await db.execute(sql)
   for (const sql of [
     SQL_CREATE_WORDS, SQL_CREATE_FIELD_DEFINITIONS, SQL_CREATE_FIELD_VALUES,
+    SQL_CREATE_CATEGORIES, SQL_CREATE_WORD_CATEGORIES,
     SQL_CREATE_INDEXES, seedFieldDefinitionsSQL(),
   ]) {
     await db.execute(sql)
