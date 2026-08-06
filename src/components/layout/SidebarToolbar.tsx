@@ -37,7 +37,7 @@ export default function SidebarToolbar({ collapsed, filter, onFilterChange, onTo
             onFocus={e => { e.currentTarget.parentElement!.style.borderColor = 'var(--color-brand)' }}
             onBlur={e => { e.currentTarget.parentElement!.style.borderColor = 'var(--color-border)' }}
             style={{
-              flex: 1, minWidth: 0, border: 'none', background: 'transparent',
+              flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent',
               fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)',
             }}
           />
