@@ -153,7 +153,7 @@ export default function TopBar() {
           border: 'none', background: 'transparent', borderRadius: 'var(--radius-md)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
           color: 'var(--color-text-secondary)',
-          transition: 'all var(--duration-fast) var(--ease-smooth)',
+          transition: 'background-color var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
         }}
         onMouseEnter={e => {
           e.currentTarget.style.background = 'var(--color-surface-hover)'

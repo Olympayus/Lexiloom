@@ -59,7 +59,7 @@ export default function CategoryAssignModal({ open, wordId, onClose, onCreateNew
               border: 'none', background: 'transparent', cursor: 'pointer',
               fontSize: 'var(--text-sm)', color: 'var(--color-brand)',
               fontFamily: 'var(--font-sans)', padding: '6px 8px', borderRadius: 'var(--radius-sm)',
-              transition: 'background var(--duration-fast) var(--ease-smooth)',
+              transition: 'background-color var(--duration-fast) var(--ease-smooth)',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-brand-softer)' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}

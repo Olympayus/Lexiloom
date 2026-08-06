@@ -23,7 +23,7 @@ export default function CategoryCapsule({ category, isSelected = false, onClick 
       style={{
         background: isSelected ? category.color : `rgba(${rgb}, 0.12)`,
         color: isSelected ? '#FFFFFF' : category.color,
-        transition: 'all 150ms var(--ease-smooth)',
+        transition: 'background-color 150ms var(--ease-smooth), color 150ms var(--ease-smooth)',
       }}
       onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = `rgba(${rgb}, 0.18)` }}
       onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = `rgba(${rgb}, 0.12)` }}

@@ -22,7 +22,7 @@ export default function SidebarToolbar({ collapsed, filter, onFilterChange, onTo
           borderRadius: 'var(--radius-md)',
           justifyContent: collapsed ? 'center' : undefined,
           padding: collapsed ? 0 : undefined,
-          transition: 'all var(--duration-fast) var(--ease-smooth)',
+          transition: 'background-color var(--duration-fast) var(--ease-smooth), border-color var(--duration-fast) var(--ease-smooth)',
         }}
         onMouseEnter={e => { if (collapsed) e.currentTarget.style.background = 'var(--color-surface-hover)' }}
         onMouseLeave={e => { if (collapsed) e.currentTarget.style.background = 'transparent' }}
@@ -54,7 +54,7 @@ export default function SidebarToolbar({ collapsed, filter, onFilterChange, onTo
           style={{
             border: 'none', background: 'transparent', borderRadius: 'var(--radius-md)',
             cursor: 'pointer', color: 'var(--color-text-secondary)', flexShrink: 0,
-            transition: 'all var(--duration-fast) var(--ease-smooth)',
+            transition: 'background-color var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
           }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-secondary)' }}
@@ -72,7 +72,7 @@ export default function SidebarToolbar({ collapsed, filter, onFilterChange, onTo
         style={{
           border: 'none', background: 'transparent', borderRadius: 'var(--radius-md)',
           cursor: 'pointer', color: 'var(--color-text-secondary)', flexShrink: 0,
-          transition: 'all var(--duration-fast) var(--ease-smooth)',
+          transition: 'background-color var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
         }}
         onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
         onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-secondary)' }}

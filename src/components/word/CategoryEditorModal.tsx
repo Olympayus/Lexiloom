@@ -108,7 +108,7 @@ export default function CategoryEditorModal({ open, category, wordId, onClose, o
                 style={{
                   width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer',
                   border: `2px solid ${c === color ? 'var(--color-text-primary)' : 'transparent'}`,
-                  background: c, transition: 'all var(--duration-fast) var(--ease-smooth)',
+                  background: c, transition: 'border-color var(--duration-fast) var(--ease-smooth), background-color var(--duration-fast) var(--ease-smooth)',
                 }}
               />
             ))}

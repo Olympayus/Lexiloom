@@ -87,7 +87,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
               borderRadius: 'var(--radius-md)',
               padding: '12px',
               marginBottom: '2px',
-              transition: 'all 200ms var(--ease-smooth)',
+              transition: 'background-color 200ms var(--ease-smooth), border-color 200ms var(--ease-smooth)',
               position: 'relative',
               ...draggingStyle,
             }
@@ -97,7 +97,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
               borderRadius: 'var(--radius-md)',
               padding: isLevel1 ? '12px' : '10px 12px',
               marginBottom: isLevel1 ? '2px' : '0',
-              transition: 'all 200ms var(--ease-smooth)',
+              transition: 'background-color 200ms var(--ease-smooth), border-color 200ms var(--ease-smooth)',
               position: 'relative',
               ...draggingStyle,
             }
@@ -279,7 +279,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
                     fontSize: 'var(--text-sm)',
                     fontFamily: 'var(--font-sans)',
                     whiteSpace: 'nowrap',
-                    transition: 'background var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
+                    transition: 'background-color var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
                   }}
                   onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
@@ -550,7 +550,7 @@ export default function WordWorkbench() {
                     border: '1px dashed var(--color-border-strong)', background: 'transparent',
                     fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)',
                     cursor: 'pointer', fontFamily: 'var(--font-sans)',
-                    transition: 'all var(--duration-fast) var(--ease-smooth)',
+                    transition: 'color var(--duration-fast) var(--ease-smooth), border-color var(--duration-fast) var(--ease-smooth)',
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.color = 'var(--color-brand)'
@@ -587,7 +587,7 @@ export default function WordWorkbench() {
                   justifyContent: 'center',
                   cursor: 'pointer',
                   color: 'var(--color-text-tertiary)',
-                  transition: 'all var(--duration-fast) var(--ease-smooth)',
+                  transition: 'color var(--duration-fast) var(--ease-smooth), border-color var(--duration-fast) var(--ease-smooth)',
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.color = 'var(--color-brand)'
@@ -626,7 +626,7 @@ export default function WordWorkbench() {
                 border: 'none',
                 padding: 0,
                 cursor: 'pointer',
-                transition: 'background var(--duration-fast) var(--ease-smooth)',
+                transition: 'background-color var(--duration-fast) var(--ease-smooth)',
               }}
             >
               <span
@@ -680,7 +680,7 @@ export default function WordWorkbench() {
               color: 'var(--color-text-tertiary)',
               cursor: 'pointer',
               fontFamily: 'var(--font-sans)',
-              transition: 'all var(--duration-fast) var(--ease-smooth)',
+              transition: 'color var(--duration-fast) var(--ease-smooth), border-color var(--duration-fast) var(--ease-smooth), background-color var(--duration-fast) var(--ease-smooth)',
             }}
             onMouseEnter={e => {
               e.currentTarget.style.color = 'var(--color-brand)'
@@ -732,7 +732,7 @@ export default function WordWorkbench() {
                     fontSize: 'var(--text-sm)',
                     fontFamily: 'var(--font-sans)',
                     whiteSpace: 'nowrap',
-                    transition: 'background var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
+                    transition: 'background-color var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
                   }}
                   onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}

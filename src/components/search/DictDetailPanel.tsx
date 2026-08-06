@@ -63,7 +63,7 @@ export default function DictDetailPanel({ word }: Props) {
               border: 'none', background: 'transparent', cursor: 'pointer',
               fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)',
               color: 'var(--color-text-secondary)', padding: '6px 8px', borderRadius: 'var(--radius-sm)',
-              transition: 'all var(--duration-fast) var(--ease-smooth)',
+              transition: 'color var(--duration-fast) var(--ease-smooth)',
             }}
             onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-primary)' }}
             onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-secondary)' }}

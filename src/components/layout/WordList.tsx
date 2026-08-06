@@ -162,7 +162,7 @@ export default function WordList({
         style={{
           gap: '6px',
           padding: collapsed ? (row.type === 'category' ? '8px 6px' : '8px 12px 4px') : '8px 12px 4px',
-          transition: 'background var(--duration-fast) var(--ease-smooth)',
+          transition: 'background-color var(--duration-fast) var(--ease-smooth)',
           borderRadius: 'var(--radius-md)',
         }}
       >

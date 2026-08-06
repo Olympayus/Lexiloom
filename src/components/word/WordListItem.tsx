@@ -35,7 +35,7 @@ export default function WordListItem({ word, categories, selected, collapsed, mo
     cursor: 'pointer',
     position: 'relative',
     background: selected ? 'var(--color-surface)' : 'transparent',
-    transition: 'all var(--duration-fast) var(--ease-smooth)',
+    transition: 'background-color var(--duration-fast) var(--ease-smooth), transform var(--duration-fast) var(--ease-smooth)',
     justifyContent: collapsed && mode === 'category' ? 'center' : undefined,
   }
 
@@ -75,7 +75,7 @@ export default function WordListItem({ word, categories, selected, collapsed, mo
         borderRadius: 'var(--radius-full)',
         opacity: selected ? 1 : 0.5,
         flexShrink: 0,
-        transition: 'all var(--duration-fast) var(--ease-smooth)',
+        transition: 'background-color var(--duration-fast) var(--ease-smooth), opacity var(--duration-fast) var(--ease-smooth)',
       }} />
 
       {collapsed ? (
