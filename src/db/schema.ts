@@ -75,3 +75,10 @@ export const SQL_DROP_TABLES: string[] = [
   'DROP TABLE IF EXISTS field_definitions;',
   'DROP TABLE IF EXISTS words;',
 ]
+
+// 建表 + seed 全量语句（init 与测试基建共享，避免两处漂移）
+export const SCHEMA_SEED_STATEMENTS: string[] = [
+  SQL_CREATE_WORDS, SQL_CREATE_FIELD_DEFINITIONS, SQL_CREATE_FIELD_VALUES,
+  SQL_CREATE_CATEGORIES, SQL_CREATE_WORD_CATEGORIES,
+  SQL_CREATE_INDEXES, seedFieldDefinitionsSQL(),
+]
