@@ -28,8 +28,6 @@ export default function SettingsPanel() {
     return () => window.removeEventListener('keydown', onKeyDown, true)
   }, [open, closeSettings])
 
-  if (!open) return null
-
   const navStyle = (isActive: boolean): React.CSSProperties => ({
     width: '100%', display: 'block', textAlign: 'left', cursor: 'pointer',
     padding: '10px 20px', fontSize: 'var(--text-sm)',
@@ -44,17 +42,30 @@ export default function SettingsPanel() {
 
   return (
     <>
-      {/* 覆盖层 */}
+      {/* 覆盖层：点击关闭；透明度随 open 过渡（规格 §7.1：200ms） */}
       <div
         onClick={closeSettings}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(28,24,20,0.3)', zIndex: 'var(--z-overlay)' }}
+        aria-hidden={!open}
+        style={{
+          position: 'fixed', inset: 0, background: 'rgba(28,24,20,0.3)', zIndex: 'var(--z-overlay)',
+          opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none',
+          transition: 'opacity 200ms var(--ease-smooth)',
+        }}
       />
-      {/* 抽屉 */}
-      <div style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0, width: '480px',
-        background: 'var(--color-surface)', borderLeft: '1px solid var(--color-border)',
-        zIndex: 'var(--z-modal)', display: 'flex',
-      }}>
+      {/* 抽屉：480px，translateX 滑入/滑出（规格 §7.1：200ms） */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-hidden={!open}
+        inert={!open}
+        style={{
+          position: 'fixed', top: 0, right: 0, bottom: 0, width: '480px',
+          background: 'var(--color-surface)', borderLeft: '1px solid var(--color-border)',
+          zIndex: 'var(--z-modal)', display: 'flex',
+          transform: open ? 'translateX(0)' : 'translateX(100%)',
+          transition: 'transform 200ms var(--ease-smooth)',
+        }}
+      >
         <nav style={{
           width: '160px', flexShrink: 0, background: 'var(--color-canvas)',
           borderRight: '1px solid var(--color-border)', padding: '16px 0',
