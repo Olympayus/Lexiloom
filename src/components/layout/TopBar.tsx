@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import SearchSuggestions from '../search/SearchSuggestions'
 import { searchLemmas } from '../../services/searchService'
 import { useViewStore } from '../../stores/viewStore'
+import { useSettingsStore } from '../../stores/settingsStore'
 import Icon from '../icons'
 
 // 全局顶栏（规格 §3）：Logo 32×32 / 主搜索框 40px / 设置按钮；建议下拉 → 词典详情视图（D2）
@@ -14,6 +15,7 @@ export default function TopBar() {
   const [focused, setFocused] = useState(false)
   const showDict = useViewStore(s => s.showDict)
   const showWorkbench = useViewStore(s => s.showWorkbench)
+  const openSettings = useSettingsStore(s => s.openSettings)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   // 阶段一：防抖搜索建议（300ms），仅词典（searchLemmas 不查词库，D2）
@@ -139,11 +141,12 @@ export default function TopBar() {
         )}
       </div>
 
-      {/* 设置按钮：齿轮 20px（规格 §3）；点击打开设置面板为 P6 职责，本模块仅占位渲染 */}
+      {/* 设置按钮：齿轮 20px，点击打开设置面板（规格 §3、§7.1） */}
       <button
         type="button"
         aria-label="设置"
         title="设置"
+        onClick={openSettings}
         style={{
           width: '36px', height: '36px', marginLeft: 'auto', flexShrink: 0,
           border: 'none', background: 'transparent', borderRadius: 'var(--radius-md)',

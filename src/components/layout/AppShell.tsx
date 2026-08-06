@@ -6,7 +6,9 @@ import WordWorkbench from '../word/WordWorkbench'
 import DictDetailPanel from '../search/DictDetailPanel'
 import { useWordStore } from '../../stores/wordStore'
 import { useViewStore } from '../../stores/viewStore'
-import { fitCollapsedWidth, measureMaxWordWidth, resolveSidebarWordFont, COLLAPSED_CHROME_ALPHABET, COLLAPSED_CHROME_CATEGORY, type SidebarMode } from '../../lib/sidebar'
+import SettingsPanel from '../settings/SettingsPanel'
+import { useSettingsStore } from '../../stores/settingsStore'
+import { fitCollapsedWidth, measureMaxWordWidth, resolveSidebarWordFont, COLLAPSED_CHROME_ALPHABET, COLLAPSED_CHROME_CATEGORY } from '../../lib/sidebar'
 
 // 规格 §2：侧边栏展开宽度 300px；收起宽度内容自适应（D1）
 const SIDEBAR_EXPANDED_WIDTH = 300
@@ -16,7 +18,7 @@ export default function AppShell() {
   const activeView = useViewStore(s => s.activeView)
   const dictWord = useViewStore(s => s.dictWord)
   const [collapsed, setCollapsed] = useState(false)
-  const [mode, setMode] = useState<SidebarMode>('alphabet')
+  const mode = useSettingsStore(s => s.sidebarMode)
 
   // D1：收起宽度 = clamp(最长单词渲染宽度 + 实际 chrome, 120px, 240px)，加词/删词重算，150ms 过渡
   const sidebarWidth = useMemo(() => {
@@ -49,7 +51,7 @@ export default function AppShell() {
             collapsed={collapsed}
             onToggleCollapse={() => setCollapsed(c => !c)}
             mode={mode}
-            onToggleMode={() => setMode(m => (m === 'alphabet' ? 'category' : 'alphabet'))}
+            onToggleMode={() => useSettingsStore.getState().setSidebarMode(mode === 'alphabet' ? 'category' : 'alphabet')}
           />
           <SidebarFooter collapsed={collapsed} />
         </aside>
@@ -61,6 +63,8 @@ export default function AppShell() {
             : <WordWorkbench />}
         </main>
       </div>
+
+      <SettingsPanel />
     </div>
   )
 }
