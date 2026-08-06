@@ -32,6 +32,14 @@ export default function CategoryEditorModal({ open, category, wordId, onClose, o
     setError('')
   }, [open, category])
 
+  // Esc 关闭（§11 a11y 键盘可达；模态仅在 workbench 视图渲染，无与词典详情 Esc 冲突）
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [open, onClose])
+
   if (!open) return null
 
   const handleSave = async () => {

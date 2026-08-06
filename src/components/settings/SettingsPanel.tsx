@@ -18,6 +18,7 @@ export default function SettingsPanel() {
   const closeSettings = useSettingsStore(s => s.closeSettings)
   const [active, setActive] = useState<SectionKey>('search')
   const closeBtnRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
 
   // Esc 关闭：capture 阶段拦截并 stopPropagation，避免穿透到词典详情的 bubble Esc（§7.1）
   useEffect(() => {
@@ -28,6 +29,30 @@ export default function SettingsPanel() {
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
   }, [open, closeSettings])
+
+  // 完整 Tab 陷阱：抽屉打开时 Tab/Shift+Tab 在抽屉内循环（a11y；P6 遗留）
+  useEffect(() => {
+    if (!open) return
+    const panel = panelRef.current
+    if (!panel) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return
+      const focusables = Array.from(
+        panel.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+      ).filter(el => !el.hasAttribute('disabled') && el.offsetParent !== null)
+      if (focusables.length === 0) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      const active = document.activeElement
+      if (e.shiftKey) {
+        if (active === first || !panel.contains(active)) { e.preventDefault(); last.focus() }
+      } else {
+        if (active === last || !panel.contains(active)) { e.preventDefault(); first.focus() }
+      }
+    }
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [open])
 
   // 焦点管理：打开时聚焦关闭按钮；关闭时归还焦点到顶栏齿轮（a11y）
   useEffect(() => {
@@ -64,6 +89,7 @@ export default function SettingsPanel() {
       />
       {/* 抽屉：480px，translateX 滑入/滑出（规格 §7.1：200ms） */}
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-hidden={!open}

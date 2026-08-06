@@ -19,10 +19,12 @@ describe('viewStore 双视图切换（D2）', () => {
     expect(s.dictWord).toBe('observe')
   })
 
-  it('showWorkbench 回到词编辑视图', () => {
+  it('showWorkbench 回到词编辑视图并清空 dictWord', () => {
     useViewStore.getState().showDict('observe')
     useViewStore.getState().showWorkbench()
-    expect(useViewStore.getState().activeView).toBe('workbench')
+    const s = useViewStore.getState()
+    expect(s.activeView).toBe('workbench')
+    expect(s.dictWord).toBeNull()
   })
 
   it('showDict 连续替换词典单词', () => {

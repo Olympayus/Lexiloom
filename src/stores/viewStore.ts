@@ -12,6 +12,6 @@ interface ViewStore {
 export const useViewStore = create<ViewStore>((set) => ({
   activeView: 'workbench',
   dictWord: null,
-  showWorkbench: () => set({ activeView: 'workbench' }),
+  showWorkbench: () => set({ activeView: 'workbench', dictWord: null }),
   showDict: (word) => set({ activeView: 'dict', dictWord: word }),
 }))
