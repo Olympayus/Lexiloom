@@ -1,7 +1,7 @@
 {
   "name": "lexiloom",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "build:ecdict": "node scripts/build-ecdict.mjs",
@@ -11,9 +11,12 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@tanstack/react-virtual": "^3.14.9",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-sql": "^2.4.0",
     "react": "^19.2.7",
@@ -27,6 +30,7 @@
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@types/sql.js": "^1.4.11",
     "@vitejs/plugin-react": "^6.0.3",
     "ecdict": "^0.0.4",
     "oxlint": "^1.71.0",
@@ -34,6 +38,7 @@
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
+    "vitest": "^4.1.10",
     "wordnet-db": "^3.1.14"
   }
 }

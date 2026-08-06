@@ -3,11 +3,14 @@ import type { DictionaryEntry } from '../../types/dictionary'
 import type { Word } from '../../types/word'
 import type { FieldSource } from '../../types/field'
 import { useWordStore } from '../../stores/wordStore'
+import { useSettingsStore } from '../../stores/settingsStore'
+import type { MergeFieldInput } from '../../services/wordService'
 
 interface Props {
   word: string
   source: string
   entries: DictionaryEntry[]
+  onAdded: (wordId: string) => void
 }
 
 // 来源名称映射
@@ -16,10 +19,20 @@ const SOURCE_NAMES: Record<string, string> = {
   wordnet: 'WordNet',
 }
 
-// 来源配色（含 alpha 变体 — 用 hex 硬编码避免 CSS var + alpha 拼接失效）
+// 来源配色：颜色走 --color-* 变量；alpha 变体用 color-mix 生成（避免硬编码 hex，§11 视觉第 8 项）
 const SOURCE_ACCENTS: Record<string, { color: string; bg: string; border: string; headerBorder: string }> = {
-  ecdict: { color: 'var(--color-brand)', bg: '#4A6FA510', border: '#4A6FA540', headerBorder: '#4A6FA530' },
-  wordnet: { color: '#5B8C5A', bg: '#5B8C5A10', border: '#5B8C5A40', headerBorder: '#5B8C5A30' },
+  ecdict: {
+    color: 'var(--color-brand)',
+    bg: 'color-mix(in srgb, var(--color-brand) 6%, transparent)',
+    border: 'color-mix(in srgb, var(--color-brand) 25%, transparent)',
+    headerBorder: 'color-mix(in srgb, var(--color-brand) 19%, transparent)',
+  },
+  wordnet: {
+    color: 'var(--color-wordnet)',
+    bg: 'color-mix(in srgb, var(--color-wordnet) 6%, transparent)',
+    border: 'color-mix(in srgb, var(--color-wordnet) 25%, transparent)',
+    headerBorder: 'color-mix(in srgb, var(--color-wordnet) 19%, transparent)',
+  },
 }
 
 // 按模板分组字段
@@ -82,14 +95,19 @@ function groupFields(entries: DictionaryEntry[]): {
   return result
 }
 
-export default function DictDetailCard({ word: word_, source: source_, entries }: Props) {
+export default function DictDetailCard({ word: word_, source: source_, entries, onAdded }: Props) {
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set())
-  const [added, setAdded] = useState(false)
   const grouped = useMemo(() => groupFields(entries), [entries])
   const sourceLabel = SOURCE_NAMES[source_] || source_
-  const accent = SOURCE_ACCENTS[source_] || { color: '#666', bg: '#66666610', border: '#66666640', headerBorder: '#66666630' }
+  const accent = SOURCE_ACCENTS[source_] || {
+    color: 'var(--color-text-secondary)',
+    bg: 'color-mix(in srgb, var(--color-text-secondary) 6%, transparent)',
+    border: 'color-mix(in srgb, var(--color-text-secondary) 25%, transparent)',
+    headerBorder: 'color-mix(in srgb, var(--color-text-secondary) 19%, transparent)',
+  }
   const addWord = useWordStore(s => s.addWord)
   const mergeWordFields = useWordStore(s => s.mergeWordFields)
+  const displayFields = useSettingsStore(s => s.displayFields)
 
   // 初始化默认全选（含子字段）
   useEffect(() => {
@@ -147,29 +165,30 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
     }
 
     // 2. 收集选中的字段，构建 merge 输入
-    const selectedFieldInputs: { key: string; value: string; source: FieldSource; parentKey?: string }[] = []
+    const selectedFieldInputs: MergeFieldInput[] = []
 
     // 音标
-    if (selectedFields.has('phonetic-0') && grouped.phonetic.length > 0) {
-      selectedFieldInputs.push({ key: 'phonetic', value: grouped.phonetic[0], source: source_ as FieldSource })
+    if (displayFields.phonetic && selectedFields.has('phonetic-0') && grouped.phonetic.length > 0) {
+      selectedFieldInputs.push({ key: 'phonetic', value: grouped.phonetic[0], source: source_ as FieldSource, tempId: 'p-phonetic' })
     }
 
     // 中文释义
     for (let i = 0; i < grouped.chineseDefinitions.length; i++) {
-      if (selectedFields.has(`chinese-${i}`)) {
-        selectedFieldInputs.push({ key: 'chinese_definition', value: grouped.chineseDefinitions[i], source: source_ as FieldSource })
+      if (displayFields.chinese_definition && selectedFields.has(`chinese-${i}`)) {
+        selectedFieldInputs.push({ key: 'chinese_definition', value: grouped.chineseDefinitions[i], source: source_ as FieldSource, tempId: `p-chinese-${i}` })
       }
     }
 
     // 英文释义 + 近义词 + 例句
     for (let defIdx = 0; defIdx < grouped.englishDefinitions.length; defIdx++) {
       const def = grouped.englishDefinitions[defIdx]
-      if (!selectedFields.has(`english-${defIdx}`)) continue
+      if (!selectedFields.has(`english-${defIdx}`) || !displayFields.english_definition) continue
 
       selectedFieldInputs.push({
         key: 'english_definition',
         value: def.value,
         source: source_ as FieldSource,
+        tempId: `p-english-${defIdx}`,
       })
 
       // 近义词
@@ -178,18 +197,18 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
           key: 'synonyms',
           value: def.synonyms.join(', '),
           source: source_ as FieldSource,
-          parentKey: `english_definition::${defIdx}`,
+          parentTempId: `p-english-${defIdx}`,
         })
       }
 
       // 例句
       for (let exIdx = 0; exIdx < def.examples.length; exIdx++) {
-        if (selectedFields.has(`example-${defIdx}-${exIdx}`)) {
+        if (displayFields.example && selectedFields.has(`example-${defIdx}-${exIdx}`)) {
           selectedFieldInputs.push({
             key: 'example',
             value: def.examples[exIdx],
             source: source_ as FieldSource,
-            parentKey: `english_definition::${defIdx}`,
+            parentTempId: `p-english-${defIdx}`,
           })
         }
       }
@@ -198,10 +217,10 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
     // 词形变化
     let hasExchange = false
     for (let i = 0; i < grouped.exchangeItems.length; i++) {
-      if (selectedFields.has(`exchange-${i}`)) {
+      if (displayFields.exchange && selectedFields.has(`exchange-${i}`)) {
         if (!hasExchange) {
           // 先插入容器
-          selectedFieldInputs.push({ key: 'exchange', value: '', source: source_ as FieldSource })
+          selectedFieldInputs.push({ key: 'exchange', value: '', source: source_ as FieldSource, tempId: 'p-exchange' })
           hasExchange = true
         }
         const item = grouped.exchangeItems[i]
@@ -209,16 +228,15 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
           key: 'exchange_item',
           value: `${item.label}: ${item.value}`,
           source: source_ as FieldSource,
-          parentKey: 'exchange',
+          parentTempId: 'p-exchange',
         })
       }
     }
 
     // 3. 执行合并
-    await mergeWordFields(word.id, selectedFieldInputs)
-    // 4. 反馈：按钮状态变化
-    setAdded(true)
-    setTimeout(() => setAdded(false), 2000)
+    const ok = await mergeWordFields(word.id, selectedFieldInputs)
+    // 4. 成功 → 通知面板回编辑视图并定位新词（D2）
+    if (ok) onAdded(word.id)
   }
 
   return (
@@ -234,7 +252,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
           style={{ color: accent.color }}>
           {sourceLabel}
         </span>
-        <span className="text-lg font-bold" style={{ fontFamily: 'var(--font-word)' }}>
+        <span className="text-lg font-bold" style={{ fontFamily: 'var(--font-serif)' }}>
           {word_}
         </span>
       </div>
@@ -243,7 +261,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
       <div className="px-4 py-3 space-y-3 text-sm">
 
         {/* 音标 */}
-        {grouped.phonetic.length > 0 && (
+        {grouped.phonetic.length > 0 && displayFields.phonetic && (
           <label className="flex items-start gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -253,13 +271,13 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
             />
             <div>
               <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>音标</span>
-              <div style={{ fontFamily: 'var(--font-ui)' }}>{grouped.phonetic[0]}</div>
+              <div style={{ fontFamily: 'var(--font-phonetic)' }}>{grouped.phonetic[0]}</div>
             </div>
           </label>
         )}
 
         {/* 中文释义 */}
-        {grouped.chineseDefinitions.map((def, i) => (
+        {displayFields.chinese_definition && grouped.chineseDefinitions.map((def, i) => (
           <label key={`chinese-${i}`} className="flex items-start gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -277,7 +295,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
         ))}
 
         {/* 英文释义 */}
-        {grouped.englishDefinitions.map((def, defIdx) => (
+        {displayFields.english_definition && grouped.englishDefinitions.map((def, defIdx) => (
           <div key={`english-${defIdx}`} className="space-y-1">
             <label className="flex items-start gap-2 cursor-pointer">
               <input
@@ -313,7 +331,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
             )}
 
             {/* 子字段：例句 */}
-            {def.examples.length > 0 && (
+            {displayFields.example && def.examples.length > 0 && (
               <div className="ml-6 pl-4 space-y-1" style={{ borderLeft: '2px solid var(--color-border)' }}>
                 <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>例句</div>
                 {def.examples.map((ex, exIdx) => (
@@ -335,7 +353,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
         ))}
 
         {/* 词形变化 */}
-        {grouped.exchangeItems.length > 0 && (
+        {displayFields.exchange && grouped.exchangeItems.length > 0 && (
           <div className="space-y-1 pt-2" style={{ borderTop: '1px dashed var(--color-border)' }}>
             <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>词形变化</div>
             {grouped.exchangeItems.map((item, i) => (
@@ -348,7 +366,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
                 />
                 <div style={{ fontSize: '13px' }}>
                   <span style={{ color: 'var(--color-text-secondary)' }}>{item.label}:</span>{' '}
-                  <span style={{ fontFamily: 'var(--font-word)' }}>{item.value}</span>
+                  <span style={{ fontFamily: 'var(--font-serif)' }}>{item.value}</span>
                 </div>
               </label>
             ))}
@@ -364,7 +382,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries }
           style={{ background: accent.color, color: 'white' }}
           onClick={handleAdd}
         >
-          {added ? '已添加' : '添加到词库'}
+          添加到词库
         </button>
       </div>
     </div>

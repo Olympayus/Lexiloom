@@ -1,0 +1,6 @@
+@keyframes weave-pulse {
+  0%   { transform: scaleX(1); }
+  30%  { transform: scaleX(1.5); }
+  70%  { transform: scaleX(1); }
+  100% { transform: scaleX(1); }
+}

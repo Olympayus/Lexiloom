@@ -8,12 +8,13 @@ Built with Tauri 2 + React + TypeScript + SQLite.
 
 ## Status
 
-**v0.2.1** — ECDICT + WordNet two-dictionary search and hierarchical field editing are complete. Display control, Chinese↔English search, and cleanup hardening are in progress (work scope: `docs/v0.2.1-work.md`).
+**v0.3.0** — Full v0.3 UI overhaul complete: design tokens, three-zone layout, top search flow (dict detail view), collapsible grouped sidebar, three-state field editing, category system, and a settings drawer.
 
 ## Features
 
 - **Dictionary search** — Two-phase English search across ECDICT + WordNet (typeahead suggestion → detail card), merge selected fields into your word bank
-- **Word management** — Add, edit, delete words; hierarchical fields with in-place editing
+- **Word management** — Add, edit, delete words; hierarchical fields with three-state editing (original / edited / personal) and drag-to-reorder
+- **Categories** — 8-color category capsules, word↔category assignment, category mode in sidebar
 - **11 built-in fields** — Chinese definition, English definition, part of speech, derivatives, synonyms, example sentences, usage scenarios, phonetic, word forms (exchange / exchange items), examples
 - **Offline-first** — All dictionary data runs locally, no internet required
 - **Cross-platform** — Windows, macOS, and Linux via Tauri 2

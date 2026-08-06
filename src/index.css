@@ -1,18 +1,18 @@
 @import "tailwindcss";
 @import "./styles/tokens.css";
+@import "./styles/animations.css";
 
 body {
-  font-family: var(--font-ui);
-  line-height: var(--line-height-relaxed);
+  font-family: var(--font-sans);
+  line-height: var(--leading-relaxed);
   color: var(--color-text-primary);
   background: var(--color-canvas);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-@keyframes weave-pulse {
-  0%   { transform: scaleX(1); }
-  30%  { transform: scaleX(1.5); }
-  70%  { transform: scaleX(1); }
-  100% { transform: scaleX(1); }
+/* §11 a11y：键盘焦点 2px 品牌色外框（内联样式不覆盖样式表 outline 的除外——见各输入框移除 outline:none） */
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
 }

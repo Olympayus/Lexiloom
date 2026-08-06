@@ -4,90 +4,83 @@ import type { Word, WordWithPreview } from '../types/word'
 import type { UpsertFieldValueInput } from '../types/field'
 import { getFieldValuesForWord } from '../db/fields'
 import { getDefinitions } from './fieldService'
+import { assignDefaultToWord } from './categoryService'
 
 export async function addWord(lemma: string): Promise<Word | null> {
   const existing = await wordsDb.getWordByLemma(lemma)
   if (existing.ok && existing.data) return existing.data
 
   const result = await wordsDb.createWord({ lemma })
+  if (result.ok && result.data) {
+    await assignDefaultToWord(result.data.id)
+  }
   return result.ok ? result.data : null
 }
 
-// Merge fields into an existing word entry (dedup by field_id + value)
-export async function mergeFields(
-  wordId: string,
-  fields: { key: string; value: string; source: 'ecdict' | 'wordnet' | 'user'; parentKey?: string }[]
-): Promise<boolean> {
+export interface MergeFieldInput {
+  key: string
+  value: string
+  source: 'ecdict' | 'wordnet' | 'user'
+  tempId?: string        // 父字段客户端临时 id
+  parentTempId?: string  // 子字段引用父字段 tempId
+}
+
+// Merge fields into an existing word entry (dedup by field_id + value).
+// Parents carry tempId; children reference that tempId via parentTempId so
+// they attach to the exact inserted parent row (no compound-key guessing).
+export async function mergeFields(wordId: string, fields: MergeFieldInput[]): Promise<boolean> {
   const defs = await getDefinitions()
   const defMap = new Map(defs.map(d => [d.key, d]))
   const existingResult = await getFieldValuesForWord(wordId)
   if (!existingResult.ok) return false
 
-  // Build dedup set from existing field values
   const existingSet = new Set<string>()
+  const existingIdMap = new Map<string, string>()
   for (const fv of existingResult.data) {
-    existingSet.add(`${fv.fieldId}||${fv.value}`)
+    const dedupKey = `${fv.fieldId}||${fv.value}`
+    existingSet.add(dedupKey)
+    existingIdMap.set(dedupKey, fv.id)
   }
 
-  // Separate parent fields from child fields
-  const parentInputs: { key: string; input: UpsertFieldValueInput }[] = []
-  const childInputs: { parentKey: string; input: UpsertFieldValueInput }[] = []
+  const parentInputs: { tempId?: string; input: UpsertFieldValueInput }[] = []
+  const childInputs: { parentTempId: string; input: UpsertFieldValueInput }[] = []
 
-  // Determine starting display_order
   const maxOrder = existingResult.data.reduce((max, fv) => Math.max(max, fv.displayOrder || 0), 0)
   let nextOrder = maxOrder + 1
+
+  const tempIdMap = new Map<string, string>()
 
   for (const field of fields) {
     const def = defMap.get(field.key)
     if (!def) continue
-
     const dedupKey = `${def.id}||${field.value}`
-    if (existingSet.has(dedupKey)) continue
-
-    if (field.parentKey) {
-      // Child field: queue for insertion after parent is inserted
-      childInputs.push({
-        parentKey: field.parentKey,
-        input: {
-          wordId,
-          fieldId: def.id,
-          value: field.value,
-          source: field.source,
-          displayOrder: nextOrder++,
-        },
-      })
+    if (existingSet.has(dedupKey)) {
+      // Parent already exists: bind its tempId to the existing row so children
+      // referencing it still attach instead of becoming orphaned root rows.
+      if (!field.parentTempId && field.tempId) {
+        const existingId = existingIdMap.get(dedupKey)
+        if (existingId) tempIdMap.set(field.tempId, existingId)
+      }
+      continue
+    }
+    if (field.parentTempId) {
+      childInputs.push({ parentTempId: field.parentTempId, input: {
+        wordId, fieldId: def.id, value: field.value, source: field.source, displayOrder: nextOrder++,
+      } })
     } else {
-      // Parent field: insert immediately to obtain real DB id
-      parentInputs.push({
-        key: field.key,
-        input: {
-          wordId,
-          fieldId: def.id,
-          value: field.value,
-          source: field.source,
-          displayOrder: nextOrder++,
-        },
-      })
+      parentInputs.push({ tempId: field.tempId, input: {
+        wordId, fieldId: def.id, value: field.value, source: field.source, displayOrder: nextOrder++,
+      } })
     }
   }
 
-  // Insert in order: parents first, then children with resolved parentId
   try {
-    const parentIdMap = new Map<string, string>()
-    const parentKeyCounts = new Map<string, number>() // occurrence counter per field key
-    for (const { key, input } of parentInputs) {
+    for (const { tempId, input } of parentInputs) {
       const result = await fieldsDb.insertFieldValue(input)
-      if (result.ok && result.data) {
-        const occ = parentKeyCounts.get(key) ?? 0
-        parentKeyCounts.set(key, occ + 1)
-        // Store with compound key (e.g. "english_definition::0") so children match the right parent
-        parentIdMap.set(`${key}::${occ}`, result.data.id)
-        // Also keep bare key for single-occurrence fields like "exchange"
-        parentIdMap.set(key, result.data.id)
-      }
+      if (result.ok && result.data && tempId) tempIdMap.set(tempId, result.data.id)
     }
-    for (const { parentKey, input } of childInputs) {
-      const resolvedParentId = parentIdMap.get(parentKey) || null
+    for (const { parentTempId, input } of childInputs) {
+      const resolvedParentId = tempIdMap.get(parentTempId) || null
       await fieldsDb.insertFieldValue({ ...input, parentId: resolvedParentId })
     }
     return true

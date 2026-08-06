@@ -43,26 +43,33 @@ export async function getAllWords(): Promise<DbResult<Word[]>> {
 async function queryWordPreviews(filter: string | null): Promise<WordWithPreview[]> {
   const db = getDb()
   const fieldDefs = await db.select<{ id: string; key: string }[]>(
-    `SELECT id, key FROM field_definitions WHERE key IN ('chinese_definition', 'part_of_speech')`
+    `SELECT id, key FROM field_definitions WHERE key IN ('chinese_definition', 'part_of_speech', 'phonetic')`
   )
   const defMap = new Map<string, string>()
   fieldDefs.forEach(fd => defMap.set(fd.key, fd.id))
   const chineseDefId = defMap.get('chinese_definition')
   const posId = defMap.get('part_of_speech')
+  const phoneticId = defMap.get('phonetic')
 
   const filterParam = filter ? `%${filter}%` : null
+  // 每个 (word_id, field_id) 组取 display_order 最小者（首条）作为预览，与工作台展示顺序一致；
+  // 不能用 MAX(value)——多值时按字典序取会选错「首释义」。
   const rows = await db.select<Record<string, any>[]>(
     `SELECT w.*,
-            MAX(CASE WHEN fv.field_id = ?1 THEN fv.value END) as chinese_definition,
-            MAX(CASE WHEN fv.field_id = ?2 THEN fv.value END) as part_of_speech
+            MAX(CASE WHEN fv.field_id = ?1 AND fv.rn = 1 THEN fv.value END) as chinese_definition,
+            MAX(CASE WHEN fv.field_id = ?2 AND fv.rn = 1 THEN fv.value END) as part_of_speech,
+            MAX(CASE WHEN fv.field_id = ?3 AND fv.rn = 1 THEN fv.value END) as phonetic
      FROM words w
-     LEFT JOIN field_values fv ON fv.word_id = w.id
-     ${filterParam ? 'WHERE w.lemma LIKE ?3 OR fv.value LIKE ?3' : ''}
+     LEFT JOIN (
+       SELECT fv2.*, ROW_NUMBER() OVER (PARTITION BY fv2.word_id, fv2.field_id ORDER BY fv2.display_order, fv2.id) AS rn
+       FROM field_values fv2
+     ) fv ON fv.word_id = w.id
+     ${filterParam ? 'WHERE w.lemma LIKE ?4 OR fv.value LIKE ?4' : ''}
      GROUP BY w.id
      ORDER BY w.updated_at DESC`,
     filterParam
-      ? [chineseDefId || '', posId || '', filterParam]
-      : [chineseDefId || '', posId || '']
+      ? [chineseDefId || '', posId || '', phoneticId || '', filterParam]
+      : [chineseDefId || '', posId || '', phoneticId || '']
   )
   return rows.map(r => ({
     id: r.id,
@@ -73,6 +80,7 @@ async function queryWordPreviews(filter: string | null): Promise<WordWithPreview
     updatedAt: r.updated_at,
     chineseDefinition: r.chinese_definition || undefined,
     partOfSpeech: r.part_of_speech || undefined,
+    phonetic: r.phonetic || undefined,
   }))
 }
 
