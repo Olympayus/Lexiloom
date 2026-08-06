@@ -3,6 +3,7 @@ import type { DictionaryEntry } from '../../types/dictionary'
 import type { Word } from '../../types/word'
 import type { FieldSource } from '../../types/field'
 import { useWordStore } from '../../stores/wordStore'
+import { useSettingsStore } from '../../stores/settingsStore'
 import type { MergeFieldInput } from '../../services/wordService'
 
 interface Props {
@@ -91,6 +92,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
   const accent = SOURCE_ACCENTS[source_] || { color: '#666', bg: '#66666610', border: '#66666640', headerBorder: '#66666630' }
   const addWord = useWordStore(s => s.addWord)
   const mergeWordFields = useWordStore(s => s.mergeWordFields)
+  const displayFields = useSettingsStore(s => s.displayFields)
 
   // 初始化默认全选（含子字段）
   useEffect(() => {
@@ -244,7 +246,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
       <div className="px-4 py-3 space-y-3 text-sm">
 
         {/* 音标 */}
-        {grouped.phonetic.length > 0 && (
+        {grouped.phonetic.length > 0 && displayFields.phonetic && (
           <label className="flex items-start gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -260,7 +262,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
         )}
 
         {/* 中文释义 */}
-        {grouped.chineseDefinitions.map((def, i) => (
+        {displayFields.chinese_definition && grouped.chineseDefinitions.map((def, i) => (
           <label key={`chinese-${i}`} className="flex items-start gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -278,7 +280,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
         ))}
 
         {/* 英文释义 */}
-        {grouped.englishDefinitions.map((def, defIdx) => (
+        {displayFields.english_definition && grouped.englishDefinitions.map((def, defIdx) => (
           <div key={`english-${defIdx}`} className="space-y-1">
             <label className="flex items-start gap-2 cursor-pointer">
               <input
@@ -314,7 +316,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
             )}
 
             {/* 子字段：例句 */}
-            {def.examples.length > 0 && (
+            {displayFields.example && def.examples.length > 0 && (
               <div className="ml-6 pl-4 space-y-1" style={{ borderLeft: '2px solid var(--color-border)' }}>
                 <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>例句</div>
                 {def.examples.map((ex, exIdx) => (
@@ -336,7 +338,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
         ))}
 
         {/* 词形变化 */}
-        {grouped.exchangeItems.length > 0 && (
+        {displayFields.exchange && grouped.exchangeItems.length > 0 && (
           <div className="space-y-1 pt-2" style={{ borderTop: '1px dashed var(--color-border)' }}>
             <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>词形变化</div>
             {grouped.exchangeItems.map((item, i) => (
