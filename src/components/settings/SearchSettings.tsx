@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useSettingsStore, type DisplayFieldKey, type OnlineSourceKey } from '../../stores/settingsStore'
 import { Toggle } from '../ui/Toggle'
 import Icon from '../icons'
@@ -101,10 +102,10 @@ export default function SearchSettings() {
         )}
       </div>
 
-      {/* 悬浮框 */}
-      {tooltip.visible && (
+      {/* 悬浮框：createPortal 到 body，脱离抽屉 transform 容器（§7.3） */}
+      {tooltip.visible && createPortal(
         <div style={{
-          position: 'fixed', left: tooltip.x, top: tooltip.y, zIndex: 'var(--z-modal)',
+          position: 'fixed', left: tooltip.x, top: tooltip.y, zIndex: 'var(--z-toast)',
           background: 'var(--color-surface)', border: '1px solid var(--color-border)',
           borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-overlay)',
           padding: '16px', maxWidth: '360px', fontSize: 'var(--text-sm)',
@@ -121,7 +122,8 @@ export default function SearchSettings() {
           <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: '8px', fontStyle: 'italic' }}>
             ✗ 表示该词典本身不包含此字段，与您的开关设置无关。
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )

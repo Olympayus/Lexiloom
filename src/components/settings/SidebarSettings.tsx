@@ -29,7 +29,7 @@ export default function SidebarSettings() {
                 borderRadius: 'var(--radius-lg)',
                 background: selected ? 'var(--color-brand-soft)' : 'transparent',
                 fontFamily: 'var(--font-sans)',
-                transition: 'all var(--duration-fast) var(--ease-smooth)',
+                transition: 'background-color var(--duration-fast) var(--ease-smooth), border-color var(--duration-fast) var(--ease-smooth)',
               }}
               onMouseEnter={e => { if (!selected) e.currentTarget.style.borderColor = 'var(--color-border-strong)' }}
               onMouseLeave={e => { if (!selected) e.currentTarget.style.borderColor = 'var(--color-border)' }}

@@ -37,7 +37,7 @@ export default function SettingsPanel() {
     fontFamily: 'var(--font-sans)',
     border: 'none',
     borderLeft: `2px solid ${isActive ? 'var(--color-brand)' : 'transparent'}`,
-    transition: 'all var(--duration-fast) var(--ease-smooth)',
+    transition: 'background-color var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth), border-color var(--duration-fast) var(--ease-smooth)',
   })
 
   return (
@@ -93,7 +93,7 @@ export default function SettingsPanel() {
                 width: '36px', height: '36px', border: 'none', background: 'transparent',
                 borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', color: 'var(--color-text-secondary)',
-                transition: 'all var(--duration-fast) var(--ease-smooth)',
+                transition: 'background-color var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
               }}
               onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-secondary)' }}
