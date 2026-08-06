@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useFocusTrap } from '../../lib/useFocusTrap'
 import { useSettingsStore } from '../../stores/settingsStore'
 import Icon from '../icons'
 import SearchSettings from './SearchSettings'
@@ -31,28 +32,7 @@ export default function SettingsPanel() {
   }, [open, closeSettings])
 
   // 完整 Tab 陷阱：抽屉打开时 Tab/Shift+Tab 在抽屉内循环（a11y；P6 遗留）
-  useEffect(() => {
-    if (!open) return
-    const panel = panelRef.current
-    if (!panel) return
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return
-      const focusables = Array.from(
-        panel.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
-      ).filter(el => !el.hasAttribute('disabled') && el.offsetParent !== null)
-      if (focusables.length === 0) return
-      const first = focusables[0]
-      const last = focusables[focusables.length - 1]
-      const active = document.activeElement
-      if (e.shiftKey) {
-        if (active === first || !panel.contains(active)) { e.preventDefault(); last.focus() }
-      } else {
-        if (active === last || !panel.contains(active)) { e.preventDefault(); first.focus() }
-      }
-    }
-    window.addEventListener('keydown', onKeyDown, true)
-    return () => window.removeEventListener('keydown', onKeyDown, true)
-  }, [open])
+  useFocusTrap(open, panelRef)
 
   // 焦点管理：打开时聚焦关闭按钮；关闭时归还焦点到顶栏齿轮（a11y）
   useEffect(() => {
@@ -82,7 +62,7 @@ export default function SettingsPanel() {
         onClick={closeSettings}
         aria-hidden={!open}
         style={{
-          position: 'fixed', inset: 0, background: 'rgba(28,24,20,0.3)', zIndex: 'var(--z-overlay)',
+          position: 'fixed', inset: 0, background: 'var(--color-scrim)', zIndex: 'var(--z-overlay)',
           opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none',
           transition: 'opacity 200ms var(--ease-smooth)',
         }}

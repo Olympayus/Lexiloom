@@ -44,6 +44,7 @@
   --color-success: #6B8E7F;
   --color-warning: #C17A4E;
   --color-danger: #B85450;
+  --color-scrim: rgba(28, 24, 20, 0.3);  /* 模态/抽屉覆盖层 */
 
   /* 字体 */
   --font-serif: 'Iowan Old Style', 'Georgia', 'Times New Roman', 'Noto Serif SC', serif;

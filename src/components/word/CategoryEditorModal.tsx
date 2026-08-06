@@ -1,4 +1,5 @@
-import { useState, useEffect, type CSSProperties } from 'react'
+import { useState, useEffect, useRef, type CSSProperties } from 'react'
+import { useFocusTrap } from '../../lib/useFocusTrap'
 import { useCategoryStore } from '../../stores/categoryStore'
 import type { Category } from '../../types/category'
 import { Button } from '../ui/Button'
@@ -39,6 +40,9 @@ export default function CategoryEditorModal({ open, category, wordId, onClose, o
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [open, onClose])
+
+  const panelRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(open, panelRef)
 
   if (!open) return null
 
@@ -84,8 +88,11 @@ export default function CategoryEditorModal({ open, category, wordId, onClose, o
 
   return (
     <div
+      ref={panelRef}
+      role="dialog"
+      aria-modal="true"
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(28,24,20,0.3)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      style={{ position: 'fixed', inset: 0, background: 'var(--color-scrim)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
     >
       <div style={{ width: '360px', padding: '24px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-overlay)' }}>
         <div style={{ fontFamily: 'var(--font-serif)', fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)', marginBottom: '16px' }}>
