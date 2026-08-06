@@ -143,7 +143,7 @@ export default function CategoryEditorModal({ open, category, wordId, onClose, o
                   marginRight: 'auto', border: 'none', background: 'transparent', cursor: 'pointer',
                   fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)',
                   fontFamily: 'var(--font-sans)', padding: '6px 8px', borderRadius: 'var(--radius-sm)',
-                  transition: 'color var(--duration-fast) var(--ease-smooth), background var(--duration-fast) var(--ease-smooth)',
+                  transition: 'color var(--duration-fast) var(--ease-smooth), background-color var(--duration-fast) var(--ease-smooth)',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-danger)' }}
                 onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-tertiary)' }}

@@ -762,7 +762,7 @@ export default function WordWorkbench() {
             color: 'var(--color-text-tertiary)',
             cursor: 'pointer',
             fontFamily: 'var(--font-sans)',
-            transition: 'color var(--duration-fast) var(--ease-smooth), background var(--duration-fast) var(--ease-smooth)',
+            transition: 'color var(--duration-fast) var(--ease-smooth), background-color var(--duration-fast) var(--ease-smooth)',
           }}
           onMouseEnter={e => {
             e.currentTarget.style.color = 'var(--color-danger)'
