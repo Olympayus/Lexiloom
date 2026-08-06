@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { getDb } from '../db/connection'
 import { createTestDb, type DbLike } from '../db/test-utils'
 import * as categoriesDb from '../db/categories'
+import * as wordsDb from '../db/words'
 import * as categoryService from './categoryService'
 import * as wordService from './wordService'
 
@@ -41,5 +42,48 @@ describe('categoryService 默认分类自动归入', () => {
     await wordService.addWord('again-word')  // 已存在：走 existing 早退
     const cats = await categoryService.getWordCategories(w1!.id)
     expect(cats.filter(c => c.id === cat.data.id)).toHaveLength(1)
+  })
+})
+
+describe('categoryService 分类 CRUD 包装', () => {
+  it('createCategory + getCategories 往返', async () => {
+    const created = await categoryService.createCategory({ name: '文学', color: '#8B7355' })
+    expect(created).not.toBeNull()
+    const all = await categoryService.getCategories()
+    expect(all.some(c => c.id === created!.id)).toBe(true)
+  })
+
+  it('updateCategory 更新名称', async () => {
+    const cat = await categoriesDb.createCategory({ name: '旧名', color: '#4A6FA5' })
+    if (!cat.ok) throw new Error('createCategory failed')
+    const updated = await categoryService.updateCategory(cat.data.id, { name: '新名' })
+    expect(updated?.name).toBe('新名')
+  })
+
+  it('deleteCategory 删除分类', async () => {
+    const cat = await categoriesDb.createCategory({ name: '待删', color: '#B85450' })
+    if (!cat.ok) throw new Error('createCategory failed')
+    expect(await categoryService.deleteCategory(cat.data.id)).toBe(true)
+  })
+
+  it('assignCategoryToWord / unassignCategoryFromWord 包装', async () => {
+    const cat = await categoriesDb.createCategory({ name: '医学', color: '#6B8E7F' })
+    if (!cat.ok) throw new Error('createCategory failed')
+    const w = await wordsDb.createWord({ lemma: 'svc-assign' })
+    if (!w.ok) throw new Error('createWord failed')
+    expect(await categoryService.assignCategoryToWord(w.data.id, cat.data.id)).toBe(true)
+    expect((await categoryService.getWordCategories(w.data.id)).some(c => c.id === cat.data.id)).toBe(true)
+    expect(await categoryService.unassignCategoryFromWord(w.data.id, cat.data.id)).toBe(true)
+    expect((await categoryService.getWordCategories(w.data.id)).some(c => c.id === cat.data.id)).toBe(false)
+  })
+
+  it('getWordCategoryMap 返回 word_id → 分类 id 列表', async () => {
+    const cat = await categoriesDb.createCategory({ name: '映射', color: '#5A7A8C' })
+    if (!cat.ok) throw new Error('createCategory failed')
+    const w = await wordsDb.createWord({ lemma: 'svc-map' })
+    if (!w.ok) throw new Error('createWord failed')
+    await categoryService.assignCategoryToWord(w.data.id, cat.data.id)
+    const map = await categoryService.getWordCategoryMap()
+    expect(map[w.data.id]).toContain(cat.data.id)
   })
 })
