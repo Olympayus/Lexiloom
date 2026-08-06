@@ -19,10 +19,20 @@ const SOURCE_NAMES: Record<string, string> = {
   wordnet: 'WordNet',
 }
 
-// 来源配色（含 alpha 变体 — 用 hex 硬编码避免 CSS var + alpha 拼接失效）
+// 来源配色：颜色走 --color-* 变量；alpha 变体用 color-mix 生成（避免硬编码 hex，§11 视觉第 8 项）
 const SOURCE_ACCENTS: Record<string, { color: string; bg: string; border: string; headerBorder: string }> = {
-  ecdict: { color: 'var(--color-brand)', bg: '#4A6FA510', border: '#4A6FA540', headerBorder: '#4A6FA530' },
-  wordnet: { color: '#5B8C5A', bg: '#5B8C5A10', border: '#5B8C5A40', headerBorder: '#5B8C5A30' },
+  ecdict: {
+    color: 'var(--color-brand)',
+    bg: 'color-mix(in srgb, var(--color-brand) 6%, transparent)',
+    border: 'color-mix(in srgb, var(--color-brand) 25%, transparent)',
+    headerBorder: 'color-mix(in srgb, var(--color-brand) 19%, transparent)',
+  },
+  wordnet: {
+    color: 'var(--color-wordnet)',
+    bg: 'color-mix(in srgb, var(--color-wordnet) 6%, transparent)',
+    border: 'color-mix(in srgb, var(--color-wordnet) 25%, transparent)',
+    headerBorder: 'color-mix(in srgb, var(--color-wordnet) 19%, transparent)',
+  },
 }
 
 // 按模板分组字段
@@ -89,7 +99,12 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set())
   const grouped = useMemo(() => groupFields(entries), [entries])
   const sourceLabel = SOURCE_NAMES[source_] || source_
-  const accent = SOURCE_ACCENTS[source_] || { color: '#666', bg: '#66666610', border: '#66666640', headerBorder: '#66666630' }
+  const accent = SOURCE_ACCENTS[source_] || {
+    color: 'var(--color-text-secondary)',
+    bg: 'color-mix(in srgb, var(--color-text-secondary) 6%, transparent)',
+    border: 'color-mix(in srgb, var(--color-text-secondary) 25%, transparent)',
+    headerBorder: 'color-mix(in srgb, var(--color-text-secondary) 19%, transparent)',
+  }
   const addWord = useWordStore(s => s.addWord)
   const mergeWordFields = useWordStore(s => s.mergeWordFields)
   const displayFields = useSettingsStore(s => s.displayFields)
@@ -256,7 +271,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
             />
             <div>
               <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>音标</span>
-              <div style={{ fontFamily: 'var(--font-sans)' }}>{grouped.phonetic[0]}</div>
+              <div style={{ fontFamily: 'var(--font-phonetic)' }}>{grouped.phonetic[0]}</div>
             </div>
           </label>
         )}

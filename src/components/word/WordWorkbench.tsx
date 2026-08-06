@@ -27,7 +27,7 @@ const fieldState = (fv: FieldValue): FieldState =>
 const FIELD_STYLES: Record<FieldState, CSSProperties> = {
   original: { background: 'var(--color-surface-sunken)', border: '1px solid var(--color-border)', borderLeft: '3px solid var(--color-weave-original)' },
   edited:   { background: 'var(--color-brand-softer)',  border: '1px solid var(--color-brand-soft)',  borderLeft: '3px solid var(--color-weave-edited)' },
-  personal: { background: 'var(--color-accent-soft)',   border: '1px solid rgba(193,122,78,0.2)',      borderLeft: '3px solid var(--color-weave-personal)' },
+  personal: { background: 'var(--color-accent-soft)',   border: '1px solid color-mix(in srgb, var(--color-accent) 20%, transparent)',      borderLeft: '3px solid var(--color-weave-personal)' },
 }
 
 interface InsertIndicator {
@@ -217,7 +217,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
               fontSize: 'var(--text-xs)',
               padding: '2px 8px',
               borderRadius: 'var(--radius-sm)',
-              background: state === 'edited' ? 'var(--color-brand-soft)' : 'rgba(193,122,78,0.15)',
+              background: state === 'edited' ? 'var(--color-brand-soft)' : 'color-mix(in srgb, var(--color-accent) 15%, transparent)',
               color: state === 'edited' ? 'var(--color-brand)' : 'var(--color-accent)',
               whiteSpace: 'nowrap',
             }}
@@ -766,7 +766,7 @@ export default function WordWorkbench() {
           }}
           onMouseEnter={e => {
             e.currentTarget.style.color = 'var(--color-danger)'
-            e.currentTarget.style.background = 'rgba(184,84,80,0.08)'
+            e.currentTarget.style.background = 'color-mix(in srgb, var(--color-danger) 8%, transparent)'
           }}
           onMouseLeave={e => {
             e.currentTarget.style.color = 'var(--color-text-tertiary)'

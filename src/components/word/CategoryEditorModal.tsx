@@ -165,7 +165,7 @@ export default function CategoryEditorModal({ open, category, wordId, onClose, o
                   lineHeight: 1.5,
                   transition: 'background-color var(--duration-fast) var(--ease-smooth)',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(184,84,80,0.08)' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--color-danger) 8%, transparent)' }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-surface)' }}
               >
                 删除分类
