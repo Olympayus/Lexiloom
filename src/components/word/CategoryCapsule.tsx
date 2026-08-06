@@ -14,11 +14,16 @@ function hexToRgb(hex: string): string {
 
 export default function CategoryCapsule({ category, isSelected = false, onClick }: Props) {
   const rgb = hexToRgb(category.color)
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLSpanElement>) => {
+    if (!onClick) return
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() }
+  }
   return (
     <span
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : -1}
       onClick={onClick}
+      onKeyDown={handleKeyDown}
       className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-xs font-medium cursor-pointer select-none"
       style={{
         background: isSelected ? category.color : `rgba(${rgb}, 0.12)`,

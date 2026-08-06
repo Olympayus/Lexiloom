@@ -110,7 +110,7 @@ export default function TopBar() {
             onKeyDown={handleKeyDown}
             placeholder="添加或查询单词..."
             style={{
-              flex: 1, border: 'none', outline: 'none', background: 'transparent',
+              flex: 1, border: 'none', background: 'transparent',
               fontSize: 'var(--text-base)', color: 'var(--color-text-primary)',
               fontFamily: 'var(--font-sans)',
             }}

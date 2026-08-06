@@ -125,6 +125,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
           {...listeners}
           {...attributes}
           title="拖动排序"
+          aria-label="拖动排序"
           className="opacity-0 group-hover:opacity-100"
           style={{
             width: '24px',
@@ -171,7 +172,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
               <div className="space-y-2">
                 {def.fieldType === 'multiline' ? (
                   <textarea
-                    className="w-full px-3 py-2 rounded text-sm outline-none resize-none min-h-[60px]"
+                    className="w-full px-3 py-2 rounded text-sm resize-none min-h-[60px]"
                     style={{
                       border: '1px solid var(--color-brand)',
                       color: 'var(--color-text-primary)',
@@ -185,7 +186,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
                   />
                 ) : (
                   <input
-                    className="w-full px-3 py-1.5 rounded text-sm outline-none"
+                    className="w-full px-3 py-1.5 rounded text-sm"
                     style={{
                       border: '1px solid var(--color-brand)',
                       color: 'var(--color-text-primary)',
@@ -204,7 +205,15 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
                 </div>
               </div>
             ) : (
-              <div onClick={() => onStartEdit(fv)} style={{ cursor: 'pointer' }}>
+              <div
+                onClick={() => onStartEdit(fv)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onStartEdit(fv) }
+                }}
+                role="button"
+                tabIndex={0}
+                style={{ cursor: 'pointer' }}
+              >
                 {fv.value}
               </div>
             )}
@@ -230,6 +239,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
             <button
               type="button"
               title="更多操作"
+              aria-label="更多操作"
               onClick={() => onToggleMenu(fv.id)}
               className="opacity-0 group-hover:opacity-100"
               style={{
@@ -544,6 +554,7 @@ export default function WordWorkbench() {
                 <button
                   type="button"
                   title={capsuleExpanded ? '收起分类' : '展开更多分类'}
+                  aria-label={capsuleExpanded ? '收起分类' : '展开更多分类'}
                   onClick={() => setCapsuleExpanded(v => !v)}
                   style={{
                     height: '24px', padding: '0 10px', borderRadius: 'var(--radius-full)',
@@ -575,6 +586,7 @@ export default function WordWorkbench() {
               <button
                 type="button"
                 title="添加分类"
+                aria-label="添加分类"
                 onClick={() => { setAssignOpen(true); setCapsuleExpanded(false) }}
                 style={{
                   width: '24px',
@@ -615,6 +627,7 @@ export default function WordWorkbench() {
               type="button"
               role="switch"
               aria-checked={editorMode}
+              aria-label="编者模式"
               onClick={() => { setEditorMode(!editorMode); setMenuOpenId(null) }}
               style={{
                 width: '36px',

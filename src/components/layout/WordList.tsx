@@ -158,6 +158,11 @@ export default function WordList({
       <div
         key={row.key}
         onClick={() => toggleGroup(row.key)}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleGroup(row.key) }
+        }}
+        role="button"
+        tabIndex={0}
         className="flex items-center cursor-pointer select-none"
         style={{
           gap: '6px',

@@ -78,7 +78,7 @@ export default function CategoryEditorModal({ open, category, wordId, onClose, o
     width: '100%', height: '36px', padding: '0 12px',
     border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
     fontSize: 'var(--text-sm)', background: 'var(--color-surface)',
-    outline: 'none', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)',
+    color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)',
   }
   const labelStyle: CSSProperties = { fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginBottom: '6px' }
 

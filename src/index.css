@@ -10,3 +10,9 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* §11 a11y：键盘焦点 2px 品牌色外框（内联样式不覆盖样式表 outline 的除外——见各输入框移除 outline:none） */
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}

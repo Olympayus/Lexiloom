@@ -5,7 +5,7 @@ export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTML
     return (
       <input
         ref={ref}
-        className={`w-full px-4 py-2 rounded-lg bg-white outline-none ${className}`}
+        className={`w-full px-4 py-2 rounded-lg bg-white ${className}`}
         style={{
           border: '1px solid var(--color-border)',
           color: 'var(--color-text-primary)',
