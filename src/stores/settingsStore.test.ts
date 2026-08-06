@@ -1,0 +1,56 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import { useSettingsStore } from './settingsStore'
+
+const DEFAULT = {
+  settingsOpen: false,
+  displayFields: {
+    phonetic: true, part_of_speech: true, chinese_definition: true,
+    english_definition: true, example: true, exchange: true, etymology: true,
+  },
+  onlineDictEnabled: false,
+  onlineSources: { oxford: true, longman: true, collins: true, merriam: true },
+  sidebarMode: 'alphabet',
+}
+
+describe('settingsStore（规格 §7）', () => {
+  beforeEach(() => {
+    useSettingsStore.setState(JSON.parse(JSON.stringify(DEFAULT)))
+  })
+
+  it('默认值：字段开关全开、在线词典关闭、字母模式、抽屉关闭', () => {
+    const s = useSettingsStore.getState()
+    expect(s.settingsOpen).toBe(false)
+    expect(s.onlineDictEnabled).toBe(false)
+    expect(s.sidebarMode).toBe('alphabet')
+    expect(Object.values(s.displayFields).every(Boolean)).toBe(true)
+    expect(Object.values(s.onlineSources).every(Boolean)).toBe(true)
+  })
+
+  it('openSettings/closeSettings 切换抽屉', () => {
+    useSettingsStore.getState().openSettings()
+    expect(useSettingsStore.getState().settingsOpen).toBe(true)
+    useSettingsStore.getState().closeSettings()
+    expect(useSettingsStore.getState().settingsOpen).toBe(false)
+  })
+
+  it('setDisplayField 只改单个字段', () => {
+    useSettingsStore.getState().setDisplayField('phonetic', false)
+    const s = useSettingsStore.getState()
+    expect(s.displayFields.phonetic).toBe(false)
+    expect(s.displayFields.chinese_definition).toBe(true)
+  })
+
+  it('setOnlineDictEnabled 与 setOnlineSource', () => {
+    useSettingsStore.getState().setOnlineDictEnabled(true)
+    useSettingsStore.getState().setOnlineSource('collins', false)
+    const s = useSettingsStore.getState()
+    expect(s.onlineDictEnabled).toBe(true)
+    expect(s.onlineSources.collins).toBe(false)
+    expect(s.onlineSources.oxford).toBe(true)
+  })
+
+  it('setSidebarMode 切换模式', () => {
+    useSettingsStore.getState().setSidebarMode('category')
+    expect(useSettingsStore.getState().sidebarMode).toBe('category')
+  })
+})
