@@ -2,9 +2,10 @@ import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 import { getDb } from '../db/connection'
 import * as wordsDb from '../db/words'
 import { createTestDb, type DbLike } from '../db/test-utils'
-import { mergeFields } from './wordService'
+import { deleteWord, getPreviews, mergeFields } from './wordService'
 import { clearDefinitionsCache } from './fieldService'
 import { getFieldValuesForWord } from '../db/fields'
+import * as fieldsDb from '../db/fields'
 
 vi.mock('../db/connection', () => ({
   getDb: vi.fn(),
@@ -88,5 +89,37 @@ describe('wordService.mergeFields 显式父子匹配键', () => {
     expect(items).toHaveLength(2)
     const containerId = containers[0].id
     for (const item of items) expect(item.parentId).toBe(containerId)
+  })
+
+  it('未解析的 parentTempId 回退为根级而非报错', async () => {
+    const w = await wordsDb.createWord({ lemma: 'orphan-child' })
+    if (!w.ok) throw new Error('createWord failed')
+    const ok = await mergeFields(w.data.id, [
+      { key: 'english_definition', value: 'a standalone definition', source: 'wordnet' },
+      { key: 'synonyms', value: 'alpha, beta', source: 'wordnet', parentTempId: 'p-missing' },
+    ])
+    expect(ok).toBe(true)
+    const r = await getFieldValuesForWord(w.data.id)
+    if (!r.ok) throw new Error('getFieldValuesForWord failed')
+    const syn = r.data.find(fv => fv.fieldId === 'f_synonyms')
+    expect(syn).toBeDefined()
+    expect(syn!.parentId).toBeNull()  // 回退为根级（P4 ledger 未测路径）
+  })
+})
+
+describe('wordService 词操作', () => {
+  it('deleteWord 删除单词返回 true', async () => {
+    const w = await wordsDb.createWord({ lemma: 'del-me' })
+    if (!w.ok) throw new Error('createWord failed')
+    expect(await deleteWord(w.data.id)).toBe(true)
+  })
+
+  it('getPreviews 返回首条释义预览', async () => {
+    const w = await wordsDb.createWord({ lemma: 'run' })
+    if (!w.ok) throw new Error('createWord failed')
+    await fieldsDb.insertFieldValue({ wordId: w.data.id, fieldId: 'f_chinese_definition', value: '跑步', source: 'ecdict' })
+    const previews = await getPreviews()
+    const p = previews.find(x => x.id === w.data.id)
+    expect(p?.chineseDefinition).toBe('跑步')
   })
 })
