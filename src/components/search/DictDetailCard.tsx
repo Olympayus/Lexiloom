@@ -153,13 +153,13 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
     const selectedFieldInputs: MergeFieldInput[] = []
 
     // 音标
-    if (selectedFields.has('phonetic-0') && grouped.phonetic.length > 0) {
+    if (displayFields.phonetic && selectedFields.has('phonetic-0') && grouped.phonetic.length > 0) {
       selectedFieldInputs.push({ key: 'phonetic', value: grouped.phonetic[0], source: source_ as FieldSource, tempId: 'p-phonetic' })
     }
 
     // 中文释义
     for (let i = 0; i < grouped.chineseDefinitions.length; i++) {
-      if (selectedFields.has(`chinese-${i}`)) {
+      if (displayFields.chinese_definition && selectedFields.has(`chinese-${i}`)) {
         selectedFieldInputs.push({ key: 'chinese_definition', value: grouped.chineseDefinitions[i], source: source_ as FieldSource, tempId: `p-chinese-${i}` })
       }
     }
@@ -167,7 +167,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
     // 英文释义 + 近义词 + 例句
     for (let defIdx = 0; defIdx < grouped.englishDefinitions.length; defIdx++) {
       const def = grouped.englishDefinitions[defIdx]
-      if (!selectedFields.has(`english-${defIdx}`)) continue
+      if (!selectedFields.has(`english-${defIdx}`) || !displayFields.english_definition) continue
 
       selectedFieldInputs.push({
         key: 'english_definition',
@@ -188,7 +188,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
 
       // 例句
       for (let exIdx = 0; exIdx < def.examples.length; exIdx++) {
-        if (selectedFields.has(`example-${defIdx}-${exIdx}`)) {
+        if (displayFields.example && selectedFields.has(`example-${defIdx}-${exIdx}`)) {
           selectedFieldInputs.push({
             key: 'example',
             value: def.examples[exIdx],
@@ -202,7 +202,7 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
     // 词形变化
     let hasExchange = false
     for (let i = 0; i < grouped.exchangeItems.length; i++) {
-      if (selectedFields.has(`exchange-${i}`)) {
+      if (displayFields.exchange && selectedFields.has(`exchange-${i}`)) {
         if (!hasExchange) {
           // 先插入容器
           selectedFieldInputs.push({ key: 'exchange', value: '', source: source_ as FieldSource, tempId: 'p-exchange' })

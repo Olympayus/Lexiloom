@@ -144,6 +144,7 @@ export default function TopBar() {
       {/* 设置按钮：齿轮 20px，点击打开设置面板（规格 §3、§7.1） */}
       <button
         type="button"
+        id="settings-trigger"
         aria-label="设置"
         title="设置"
         onClick={openSettings}

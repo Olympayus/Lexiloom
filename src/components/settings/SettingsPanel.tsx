@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSettingsStore } from '../../stores/settingsStore'
 import Icon from '../icons'
 import SearchSettings from './SearchSettings'
@@ -17,6 +17,7 @@ export default function SettingsPanel() {
   const open = useSettingsStore(s => s.settingsOpen)
   const closeSettings = useSettingsStore(s => s.closeSettings)
   const [active, setActive] = useState<SectionKey>('search')
+  const closeBtnRef = useRef<HTMLButtonElement>(null)
 
   // Esc 关闭：capture 阶段拦截并 stopPropagation，避免穿透到词典详情的 bubble Esc（§7.1）
   useEffect(() => {
@@ -27,6 +28,15 @@ export default function SettingsPanel() {
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
   }, [open, closeSettings])
+
+  // 焦点管理：打开时聚焦关闭按钮；关闭时归还焦点到顶栏齿轮（a11y）
+  useEffect(() => {
+    if (!open) return
+    closeBtnRef.current?.focus()
+    return () => {
+      document.getElementById('settings-trigger')?.focus()
+    }
+  }, [open])
 
   const navStyle = (isActive: boolean): React.CSSProperties => ({
     width: '100%', display: 'block', textAlign: 'left', cursor: 'pointer',
@@ -86,6 +96,7 @@ export default function SettingsPanel() {
             </div>
             <button
               type="button"
+              ref={closeBtnRef}
               aria-label="关闭设置"
               title="关闭"
               onClick={closeSettings}
