@@ -73,3 +73,14 @@ export function buildMergeInputs(fields: DictionaryField[], selected: Set<string
   walk(flat)
   return out
 }
+
+// 词性/容器级整体勾选：未全选 → 补全子树；全选 → 清空子树（spec §4.5）
+export function toggleSubtreeSelection(selected: Set<string>, allKeys: string[], key: string): Set<string> {
+  const next = new Set(selected)
+  const descendantKeys = allKeys.filter(k => k.startsWith(`${key}-`))
+  const isOn = !descendantKeys.every(k => next.has(k))
+  for (const k of [key, ...descendantKeys]) {
+    if (isOn) next.add(k); else next.delete(k)
+  }
+  return next
+}

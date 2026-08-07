@@ -27,6 +27,19 @@ describe('buildEcdictFields', () => {
     const supp = fields.find(f => f.key === 'supplementary')
     expect(supp?.children?.map(c => c.value)).toEqual(['[计] 运行'])
   })
+  it('run（补充+词形变化齐备）：模板序 supplementary 先于 exchange', () => {
+    const fields = buildEcdictFields({
+      word: 'run',
+      translation: 'n. 跑, 赛跑\\nvi. 跑\\n[计] 运行',
+      definition: null, phonetic: 'rʌn', exchange: 'p:ran/i:running',
+    })
+    const keys = fields.map(f => f.key)
+    const suppIdx = keys.indexOf('supplementary')
+    const exchIdx = keys.indexOf('exchange')
+    expect(suppIdx).toBeGreaterThanOrEqual(0)
+    expect(exchIdx).toBeGreaterThanOrEqual(0)
+    expect(suppIdx).toBeLessThan(exchIdx)
+  })
   it('英文释义按行首词性挂到同词性父，中文在前', () => {
     const fields = buildEcdictFields({
       word: 'run',

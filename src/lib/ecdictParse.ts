@@ -90,6 +90,9 @@ export function buildEcdictFields(input: {
     }
   }
 
+  // 补充释义先于词形变化（模板序：phonetic → POS → supplementary → exchange）
+  if (supplementaryUsed) fields.push(supplementary)
+
   // 词形变化
   if (input.exchange) {
     const items = parseExchangeItems(input.exchange)
@@ -101,6 +104,5 @@ export function buildEcdictFields(input: {
     }
   }
 
-  if (supplementaryUsed) fields.push(supplementary)
   return fields
 }

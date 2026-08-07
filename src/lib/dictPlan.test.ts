@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mergeEntryFields, flattenTree, buildMergeInputs } from './dictPlan'
+import { mergeEntryFields, flattenTree, buildMergeInputs, toggleSubtreeSelection } from './dictPlan'
 import type { DictionaryField } from '../types/dictionary'
 
 const fields: DictionaryField[] = [
@@ -46,5 +46,29 @@ describe('buildMergeInputs', () => {
   it('勾选子但漏勾父：自动隐式补选祖先（保证无游离释义）', () => {
     const inputs = buildMergeInputs(fields, new Set(['0-1-0']), 'wordnet')
     expect(inputs.map(i => i.key)).toEqual(['part_of_speech', 'english_definition', 'synonyms'])
+  })
+})
+
+describe('toggleSubtreeSelection', () => {
+  const allKeys = ['0', '0-0', '0-1', '0-1-0', '1', '1-0']
+
+  it('全选时点击 → 清空该子树（key + 全部后代移除，兄弟/外部 key 保留）', () => {
+    const all = new Set(allKeys)
+    const next = toggleSubtreeSelection(all, allKeys, '0')
+    expect([...next].sort()).toEqual(['1', '1-0'])
+  })
+
+  it('未选时点击 → 补全 key + 全部后代', () => {
+    const partial = new Set(['1', '1-0'])
+    const next = toggleSubtreeSelection(partial, allKeys, '0')
+    expect([...next].sort()).toEqual([...allKeys].sort())
+  })
+
+  it('前缀安全：key 0-1 不得误匹配兄弟 0-10', () => {
+    const keys = ['0', '0-1', '0-10', '0-1-0']
+    const all = new Set(keys)
+    const next = toggleSubtreeSelection(all, keys, '0-1')
+    // 0-1 子树 = {0-1, 0-1-0} 被清空；兄弟 0-10 保留
+    expect([...next].sort()).toEqual(['0', '0-10'])
   })
 })

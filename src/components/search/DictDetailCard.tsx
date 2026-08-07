@@ -5,7 +5,7 @@ import type { Word } from '../../types/word'
 import type { FieldSource } from '../../types/field'
 import { useWordStore } from '../../stores/wordStore'
 import { useSettingsStore } from '../../stores/settingsStore'
-import { mergeEntryFields, flattenTree, buildMergeInputs } from '../../lib/dictPlan'
+import { mergeEntryFields, flattenTree, buildMergeInputs, toggleSubtreeSelection } from '../../lib/dictPlan'
 import type { FlatNode } from '../../lib/dictPlan'
 
 interface Props {
@@ -83,7 +83,10 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
       return map[key] ?? true
     }
     const filter = (nodes: DictionaryField[]): DictionaryField[] =>
-      nodes.filter(n => keyAllowed(n.key)).map(n => ({ ...n, children: n.children ? filter(n.children) : n.children }))
+      nodes
+        .filter(n => keyAllowed(n.key))
+        .map(n => ({ ...n, children: n.children ? filter(n.children) : n.children }))
+        .filter(n => !(n.value === '' && !(n.children && n.children.length > 0))) // 隐藏子字段后变空的容器无意义，丢弃
     return filter(merged)
   }, [merged, displayFields])
 
@@ -114,17 +117,9 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
     })
   }
 
-  // 词性/容器级整体勾选：toggle 整棵子树（key 前缀匹配）。
-  // 注：descendantKeys 取全树子树 key（而非当前已选集合），否则二次点击无法重新补全。
+  // 词性/容器级整体勾选：未全选 → 补全子树；全选 → 清空子树（dictPlan.toggleSubtreeSelection）
   const toggleSubtree = (key: string) => {
-    setSelected(prev => {
-      const next = new Set(prev)
-      const prefix = `${key}-`
-      const descendantKeys = allNodeKeys.filter(k => k.startsWith(prefix))
-      const isOn = !descendantKeys.every(k => next.has(k)) // 未全选 → 补全；全选 → 清空
-      for (const k of [key, ...descendantKeys]) { if (isOn) next.add(k); else next.delete(k) }
-      return next
-    })
+    setSelected(prev => toggleSubtreeSelection(prev, allNodeKeys, key))
   }
 
   const handleAdd = async () => {
