@@ -1,10 +1,12 @@
 import { useState, useMemo, useEffect } from 'react'
-import type { DictionaryEntry } from '../../types/dictionary'
+import type { ReactNode } from 'react'
+import type { DictionaryEntry, DictionaryField } from '../../types/dictionary'
 import type { Word } from '../../types/word'
 import type { FieldSource } from '../../types/field'
 import { useWordStore } from '../../stores/wordStore'
 import { useSettingsStore } from '../../stores/settingsStore'
-import type { MergeFieldInput } from '../../services/wordService'
+import { mergeEntryFields, flattenTree, buildMergeInputs } from '../../lib/dictPlan'
+import type { FlatNode } from '../../lib/dictPlan'
 
 interface Props {
   word: string
@@ -35,69 +37,30 @@ const SOURCE_ACCENTS: Record<string, { color: string; bg: string; border: string
   },
 }
 
-// 按模板分组字段
-function groupFields(entries: DictionaryEntry[]): {
-  phonetic: string[]
-  chineseDefinitions: string[]
-  englishDefinitions: { value: string; synonyms: string[]; examples: string[] }[]
-  exchangeItems: { label: string; value: string }[]
-} {
-  const result = {
-    phonetic: [] as string[],
-    chineseDefinitions: [] as string[],
-    englishDefinitions: [] as { value: string; synonyms: string[]; examples: string[] }[],
-    exchangeItems: [] as { label: string; value: string }[],
+// 字段类型 → 展示标签（词性节点用胶囊，故此处不映射）
+function fieldLabel(key: string): string {
+  switch (key) {
+    case 'phonetic': return '音标'
+    case 'chinese_definition': return '中文释义'
+    case 'english_definition': return '英文释义'
+    case 'synonyms': return '近义词'
+    case 'example_sentence': return '例句'
+    case 'exchange': return '词形变化'
+    case 'supplementary': return '补充释义'
+    default: return ''
   }
+}
 
-  for (const entry of entries) {
-    for (const field of entry.fields) {
-      switch (field.key) {
-        case 'phonetic':
-          result.phonetic.push(field.value)
-          break
-        case 'chinese_definition':
-          result.chineseDefinitions.push(field.value)
-          break
-        case 'english_definition':
-          result.englishDefinitions.push({ value: field.value, synonyms: [], examples: [] })
-          break
-        case 'synonyms':
-          if (result.englishDefinitions.length > 0) {
-            const last = result.englishDefinitions[result.englishDefinitions.length - 1]
-            last.synonyms = field.value.split(', ').filter(Boolean)
-          }
-          break
-        case 'example':
-          if (result.englishDefinitions.length > 0) {
-            const last = result.englishDefinitions[result.englishDefinitions.length - 1]
-            last.examples.push(field.value)
-          }
-          break
-        case 'exchange':
-          // 容器，忽略
-          break
-        case 'exchange_item':
-          // 格式 "过去式: observed"
-          const colonIdx = field.value.indexOf(':')
-          if (colonIdx > 0) {
-            result.exchangeItems.push({
-              label: field.value.substring(0, colonIdx),
-              value: field.value.substring(colonIdx + 1).trim(),
-            })
-          } else {
-            result.exchangeItems.push({ label: '', value: field.value })
-          }
-          break
-      }
-    }
-  }
-
-  return result
+// 子树叶子计数（词性窗格胶囊数字）
+function countItems(node: FlatNode): number {
+  if (node.children.length === 0) return 1
+  return node.children.reduce((sum, c) => sum + countItems(c), 0)
 }
 
 export default function DictDetailCard({ word: word_, source: source_, entries, onAdded }: Props) {
-  const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set())
-  const grouped = useMemo(() => groupFields(entries), [entries])
+  const addWord = useWordStore(s => s.addWord)
+  const mergeWordFields = useWordStore(s => s.mergeWordFields)
+  const displayFields = useSettingsStore(s => s.displayFields)
   const sourceLabel = SOURCE_NAMES[source_] || source_
   const accent = SOURCE_ACCENTS[source_] || {
     color: 'var(--color-text-secondary)',
@@ -105,50 +68,61 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
     border: 'color-mix(in srgb, var(--color-text-secondary) 25%, transparent)',
     headerBorder: 'color-mix(in srgb, var(--color-text-secondary) 19%, transparent)',
   }
-  const addWord = useWordStore(s => s.addWord)
-  const mergeWordFields = useWordStore(s => s.mergeWordFields)
-  const displayFields = useSettingsStore(s => s.displayFields)
 
-  // 初始化默认全选（含子字段）
+  // 合并同词性父（跨 entry 显示为一窗格）
+  const merged = useMemo(() => mergeEntryFields(entries.flatMap(e => e.fields)), [entries])
+
+  // displayFields 隐藏的字段类型不渲染、不进入勾选（等价原逐项 displayFields 判断）
+  const visible = useMemo(() => {
+    const keyAllowed = (key: string) => {
+      const map: Record<string, boolean> = {
+        phonetic: displayFields.phonetic, part_of_speech: true,
+        chinese_definition: displayFields.chinese_definition, english_definition: displayFields.english_definition,
+        example: displayFields.example, exchange: displayFields.exchange,
+      }
+      return map[key] ?? true
+    }
+    const filter = (nodes: DictionaryField[]): DictionaryField[] =>
+      nodes.filter(n => keyAllowed(n.key)).map(n => ({ ...n, children: n.children ? filter(n.children) : n.children }))
+    return filter(merged)
+  }, [merged, displayFields])
+
+  const flat = useMemo(() => flattenTree(visible), [visible])
+
+  // 全树路径 key 表（toggleSubtree 判定子树是否全选）
+  const allNodeKeys = useMemo(() => {
+    const keys: string[] = []
+    const walk = (nodes: FlatNode[]) => { for (const n of nodes) { keys.push(n.key); walk(n.children) } }
+    walk(flat)
+    return keys
+  }, [flat])
+
+  // 勾选状态：Set<key>，key 为路径（'0'、'0-1'、'0-1-0'）
+  const [selected, setSelected] = useState<Set<string>>(new Set())
   useEffect(() => {
-    const allKeys = new Set<string>()
-    grouped.phonetic.forEach((_, i) => allKeys.add(`phonetic-${i}`))
-    grouped.chineseDefinitions.forEach((_, i) => allKeys.add(`chinese-${i}`))
-    grouped.englishDefinitions.forEach((def, defIdx) => {
-      allKeys.add(`english-${defIdx}`)
-      def.synonyms.forEach((_, i) => allKeys.add(`synonym-${defIdx}-${i}`))
-      def.examples.forEach((_, i) => allKeys.add(`example-${defIdx}-${i}`))
-    })
-    grouped.exchangeItems.forEach((_, i) => allKeys.add(`exchange-${i}`))
-    setSelectedFields(allKeys)
-  }, [word_, source_])
+    const all = new Set<string>()
+    const walk = (nodes: FlatNode[]) => { for (const n of nodes) { all.add(n.key); walk(n.children) } }
+    walk(flat)
+    setSelected(all)
+  }, [word_, source_, flat])
 
-  const toggleField = (key: string) => {
-    setSelectedFields(prev => {
+  const toggle = (key: string) => {
+    setSelected(prev => {
       const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
+      if (next.has(key)) next.delete(key); else next.add(key)
       return next
     })
   }
 
-  const toggleEnglishDef = (defIdx: number, checked: boolean) => {
-    setSelectedFields(prev => {
+  // 词性/容器级整体勾选：toggle 整棵子树（key 前缀匹配）。
+  // 注：descendantKeys 取全树子树 key（而非当前已选集合），否则二次点击无法重新补全。
+  const toggleSubtree = (key: string) => {
+    setSelected(prev => {
       const next = new Set(prev)
-      const defKey = `english-${defIdx}`
-      if (checked) {
-        next.add(defKey)
-        // 自动选中子字段
-        const def = grouped.englishDefinitions[defIdx]
-        def.synonyms.forEach((_, i) => next.add(`synonym-${defIdx}-${i}`))
-        def.examples.forEach((_, i) => next.add(`example-${defIdx}-${i}`))
-      } else {
-        next.delete(defKey)
-        // 取消子字段
-        const def = grouped.englishDefinitions[defIdx]
-        def.synonyms.forEach((_, i) => next.delete(`synonym-${defIdx}-${i}`))
-        def.examples.forEach((_, i) => next.delete(`example-${defIdx}-${i}`))
-      }
+      const prefix = `${key}-`
+      const descendantKeys = allNodeKeys.filter(k => k.startsWith(prefix))
+      const isOn = !descendantKeys.every(k => next.has(k)) // 未全选 → 补全；全选 → 清空
+      for (const k of [key, ...descendantKeys]) { if (isOn) next.add(k); else next.delete(k) }
       return next
     })
   }
@@ -164,79 +138,99 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
       else return
     }
 
-    // 2. 收集选中的字段，构建 merge 输入
-    const selectedFieldInputs: MergeFieldInput[] = []
-
-    // 音标
-    if (displayFields.phonetic && selectedFields.has('phonetic-0') && grouped.phonetic.length > 0) {
-      selectedFieldInputs.push({ key: 'phonetic', value: grouped.phonetic[0], source: source_ as FieldSource, tempId: 'p-phonetic' })
-    }
-
-    // 中文释义
-    for (let i = 0; i < grouped.chineseDefinitions.length; i++) {
-      if (displayFields.chinese_definition && selectedFields.has(`chinese-${i}`)) {
-        selectedFieldInputs.push({ key: 'chinese_definition', value: grouped.chineseDefinitions[i], source: source_ as FieldSource, tempId: `p-chinese-${i}` })
-      }
-    }
-
-    // 英文释义 + 近义词 + 例句
-    for (let defIdx = 0; defIdx < grouped.englishDefinitions.length; defIdx++) {
-      const def = grouped.englishDefinitions[defIdx]
-      if (!selectedFields.has(`english-${defIdx}`) || !displayFields.english_definition) continue
-
-      selectedFieldInputs.push({
-        key: 'english_definition',
-        value: def.value,
-        source: source_ as FieldSource,
-        tempId: `p-english-${defIdx}`,
-      })
-
-      // 近义词
-      if (def.synonyms.length > 0 && selectedFields.has(`synonym-${defIdx}-0`)) {
-        selectedFieldInputs.push({
-          key: 'synonyms',
-          value: def.synonyms.join(', '),
-          source: source_ as FieldSource,
-          parentTempId: `p-english-${defIdx}`,
-        })
-      }
-
-      // 例句
-      for (let exIdx = 0; exIdx < def.examples.length; exIdx++) {
-        if (displayFields.example && selectedFields.has(`example-${defIdx}-${exIdx}`)) {
-          selectedFieldInputs.push({
-            key: 'example',
-            value: def.examples[exIdx],
-            source: source_ as FieldSource,
-            parentTempId: `p-english-${defIdx}`,
-          })
-        }
-      }
-    }
-
-    // 词形变化
-    let hasExchange = false
-    for (let i = 0; i < grouped.exchangeItems.length; i++) {
-      if (displayFields.exchange && selectedFields.has(`exchange-${i}`)) {
-        if (!hasExchange) {
-          // 先插入容器
-          selectedFieldInputs.push({ key: 'exchange', value: '', source: source_ as FieldSource, tempId: 'p-exchange' })
-          hasExchange = true
-        }
-        const item = grouped.exchangeItems[i]
-        selectedFieldInputs.push({
-          key: 'exchange_item',
-          value: `${item.label}: ${item.value}`,
-          source: source_ as FieldSource,
-          parentTempId: 'p-exchange',
-        })
-      }
-    }
+    // 2. 由可见树 + 勾选集构建 merge 输入（displayFields 过滤已由 visible 完成）
+    const selectedFieldInputs = buildMergeInputs(visible, selected, source_ as FieldSource)
 
     // 3. 执行合并
     const ok = await mergeWordFields(word.id, selectedFieldInputs)
     // 4. 成功 → 通知面板回编辑视图并定位新词（D2）
     if (ok) onAdded(word.id)
+  }
+
+  // 叶子值渲染（音标/例句/词形变化项等特殊排版）
+  const renderValue = (node: FlatNode): ReactNode => {
+    const key = node.field.key
+    switch (key) {
+      case 'phonetic':
+        return <div style={{ fontFamily: 'var(--font-phonetic)' }}>{node.field.value}</div>
+      case 'example':
+        return <div style={{ color: 'var(--color-text-secondary)', fontSize: '13px', fontStyle: 'italic' }}>"{node.field.value}"</div>
+      case 'exchange_item': {
+        const colonIdx = node.field.value.indexOf(':')
+        if (colonIdx > 0) {
+          return (
+            <div style={{ fontSize: '13px' }}>
+              <span style={{ color: 'var(--color-text-secondary)' }}>{node.field.value.substring(0, colonIdx)}:</span>{' '}
+              <span style={{ fontFamily: 'var(--font-serif)' }}>{node.field.value.substring(colonIdx + 1).trim()}</span>
+            </div>
+          )
+        }
+        return <div style={{ fontSize: '13px' }}>{node.field.value}</div>
+      }
+      default:
+        return <div>{node.field.value}</div>
+    }
+  }
+
+  // 递归渲染 flat 树：词性/容器节点整棵勾选，普通节点单项勾选
+  const renderFlat = (nodes: FlatNode[]): ReactNode => {
+    const keyCounts = new Map<string, number>()
+    for (const n of nodes) keyCounts.set(n.field.key, (keyCounts.get(n.field.key) ?? 0) + 1)
+    const seen = new Map<string, number>()
+
+    return nodes.map(node => {
+      const isContainer = node.children.length > 0
+      const isPos = node.field.key === 'part_of_speech'
+      const idx = seen.get(node.field.key) ?? 0
+      seen.set(node.field.key, idx + 1)
+      const label = fieldLabel(node.field.key)
+      const showNum = Boolean(label) && (keyCounts.get(node.field.key) ?? 0) > 1
+      const numLabel = showNum ? `${label}(${idx + 1})` : label
+      const onToggle = () => (isContainer ? toggleSubtree(node.key) : toggle(node.key))
+
+      return (
+        <div key={node.key}>
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={selected.has(node.key)}
+              onChange={onToggle}
+              className="mt-0.5"
+            />
+            {isPos ? (
+              // 词性窗格：胶囊标签 + 计数（与工作台分类胶囊一致的视觉语言）
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '4px',
+                  height: '20px', padding: '0 10px', borderRadius: 'var(--radius-full)',
+                  fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)',
+                  background: accent.bg, color: accent.color, border: '1px solid ' + accent.border,
+                }}>
+                  {node.field.value}
+                </span>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
+                  {countItems(node)} 项
+                </span>
+              </div>
+            ) : (
+              <div className="flex-1">
+                {label && (
+                  <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>{numLabel}</span>
+                )}
+                {!isContainer && renderValue(node)}
+              </div>
+            )}
+          </label>
+
+          {isContainer && (
+            <div className="ml-6 pl-4 mt-1 space-y-1"
+              style={{ borderLeft: '2px solid var(--color-border)' }}>
+              {renderFlat(node.children)}
+            </div>
+          )}
+        </div>
+      )
+    })
   }
 
   return (
@@ -257,121 +251,9 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
         </span>
       </div>
 
-      {/* 卡片内容 - 层级模板 */}
+      {/* 卡片内容 - POS 分组树 */}
       <div className="px-4 py-3 space-y-3 text-sm">
-
-        {/* 音标 */}
-        {grouped.phonetic.length > 0 && displayFields.phonetic && (
-          <label className="flex items-start gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={selectedFields.has('phonetic-0')}
-              onChange={() => toggleField('phonetic-0')}
-              className="mt-0.5"
-            />
-            <div>
-              <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>音标</span>
-              <div style={{ fontFamily: 'var(--font-phonetic)' }}>{grouped.phonetic[0]}</div>
-            </div>
-          </label>
-        )}
-
-        {/* 中文释义 */}
-        {displayFields.chinese_definition && grouped.chineseDefinitions.map((def, i) => (
-          <label key={`chinese-${i}`} className="flex items-start gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={selectedFields.has(`chinese-${i}`)}
-              onChange={() => toggleField(`chinese-${i}`)}
-              className="mt-0.5"
-            />
-            <div>
-              <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>
-                中文释义{grouped.chineseDefinitions.length > 1 ? `(${i + 1})` : ''}
-              </span>
-              <div>{def}</div>
-            </div>
-          </label>
-        ))}
-
-        {/* 英文释义 */}
-        {displayFields.english_definition && grouped.englishDefinitions.map((def, defIdx) => (
-          <div key={`english-${defIdx}`} className="space-y-1">
-            <label className="flex items-start gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedFields.has(`english-${defIdx}`)}
-                onChange={(e) => toggleEnglishDef(defIdx, e.target.checked)}
-                className="mt-0.5"
-              />
-              <div className="flex-1">
-                <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>
-                  英文释义{grouped.englishDefinitions.length > 1 ? `(${defIdx + 1})` : ''}
-                </span>
-                <div>{def.value}</div>
-              </div>
-            </label>
-
-            {/* 子字段：近义词 */}
-            {def.synonyms.length > 0 && (
-              <div className="ml-6 pl-4" style={{ borderLeft: '2px solid var(--color-border)' }}>
-                <label className="flex items-start gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedFields.has(`synonym-${defIdx}-0`)}
-                    onChange={() => toggleField(`synonym-${defIdx}-0`)}
-                    className="mt-0.5"
-                  />
-                  <div>
-                    <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>近义词</span>
-                    <div>{def.synonyms.join(', ')}</div>
-                  </div>
-                </label>
-              </div>
-            )}
-
-            {/* 子字段：例句 */}
-            {displayFields.example && def.examples.length > 0 && (
-              <div className="ml-6 pl-4 space-y-1" style={{ borderLeft: '2px solid var(--color-border)' }}>
-                <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>例句</div>
-                {def.examples.map((ex, exIdx) => (
-                  <label key={`example-${defIdx}-${exIdx}`} className="flex items-start gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedFields.has(`example-${defIdx}-${exIdx}`)}
-                      onChange={() => toggleField(`example-${defIdx}-${exIdx}`)}
-                      className="mt-0.5"
-                    />
-                    <div style={{ color: 'var(--color-text-secondary)', fontSize: '13px', fontStyle: 'italic' }}>
-                      "{ex}"
-                    </div>
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-
-        {/* 词形变化 */}
-        {displayFields.exchange && grouped.exchangeItems.length > 0 && (
-          <div className="space-y-1 pt-2" style={{ borderTop: '1px dashed var(--color-border)' }}>
-            <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>词形变化</div>
-            {grouped.exchangeItems.map((item, i) => (
-              <label key={`exchange-${i}`} className="flex items-start gap-2 cursor-pointer ml-4">
-                <input
-                  type="checkbox"
-                  checked={selectedFields.has(`exchange-${i}`)}
-                  onChange={() => toggleField(`exchange-${i}`)}
-                  className="mt-0.5"
-                />
-                <div style={{ fontSize: '13px' }}>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>{item.label}:</span>{' '}
-                  <span style={{ fontFamily: 'var(--font-serif)' }}>{item.value}</span>
-                </div>
-              </label>
-            ))}
-          </div>
-        )}
+        {renderFlat(flat)}
       </div>
 
       {/* 添加到词库按钮 */}
