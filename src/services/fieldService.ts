@@ -24,9 +24,15 @@ export async function insertValue(input: UpsertFieldValueInput): Promise<FieldVa
   return result.ok ? result.data : null
 }
 
-// Add a new empty user field_value for the given word + field (add-field flow).
-export async function addFieldValue(wordId: string, fieldId: string): Promise<FieldValue | null> {
-  return insertValue({ wordId, fieldId, value: '', source: 'user' })
+// addFieldValue 签名扩展：支持挂到父下
+export async function addFieldValue(wordId: string, fieldId: string, parentId?: string | null): Promise<FieldValue | null> {
+  return insertValue({ wordId, fieldId, value: '', source: 'user', parentId: parentId ?? null })
+}
+
+// 级联删除（编辑侧单节点删除）
+export async function deleteValueCascade(id: string): Promise<boolean> {
+  const result = await fieldsDb.deleteFieldValueCascade(id)
+  return result.ok
 }
 
 // Batch insert multiple field values (used for dictionary imports)

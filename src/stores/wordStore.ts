@@ -16,7 +16,8 @@ interface WordStore {
   selectWord: (id: string | null) => Promise<void>
   updateFieldValue: (fvId: string, input: FieldValueContentUpdate) => Promise<void>
   restoreFieldValue: (fvId: string) => Promise<void>
-  addFieldValue: (fieldId: string) => Promise<FieldValue | null>
+  addFieldValue: (fieldId: string, parentId?: string | null) => Promise<FieldValue | null>
+  deleteFieldValue: (fvId: string) => Promise<void>
   reorderFieldValues: (entries: { id: string; displayOrder: number }[]) => Promise<void>
   addWord: (lemma: string) => Promise<Word | null>
   mergeWordFields: (wordId: string, fields: MergeFieldInput[]) => Promise<boolean>
@@ -58,12 +59,19 @@ export const useWordStore = create<WordStore>((set, get) => ({
     await get().selectWord(selectedWordId)
   },
 
-  addFieldValue: async (fieldId) => {
+  addFieldValue: async (fieldId, parentId) => {
     const { selectedWordId } = get()
     if (!selectedWordId) return null
-    const fv = await fieldService.addFieldValue(selectedWordId, fieldId)
+    const fv = await fieldService.addFieldValue(selectedWordId, fieldId, parentId)
     await get().selectWord(selectedWordId)
     return fv
+  },
+
+  deleteFieldValue: async (fvId) => {
+    const { selectedWordId } = get()
+    if (!selectedWordId) return
+    await fieldService.deleteValueCascade(fvId)
+    await get().selectWord(selectedWordId)
   },
 
   reorderFieldValues: async (entries) => {

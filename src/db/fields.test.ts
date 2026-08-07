@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest'
 import { getDb } from './connection'
 import * as fieldsDb from './fields'
+import { deleteFieldValueCascade, getFieldValuesForWord, insertFieldValue } from './fields'
 import { createWord } from './words'
+import * as wordsDb from './words'
 import { createTestDb, type DbLike } from './test-utils'
 
 vi.mock('./connection', () => ({
@@ -129,5 +131,24 @@ describe('db/fields', () => {
     if (!fvResult.ok) throw new Error('insertFieldValue failed')
     const res = await fieldsDb.restoreFieldValue(fvResult.data.id)
     expect(res.ok).toBe(false)
+  })
+
+  it('级联删除整棵子树（先子后父）', async () => {
+    const w = await wordsDb.createWord({ lemma: 'cascade' })
+    if (!w.ok) throw new Error('createWord failed')
+    const parentResult = await insertFieldValue({ wordId: w.data.id, fieldId: 'f_part_of_speech', value: 'n.', source: 'ecdict' })
+    if (!parentResult.ok) throw new Error('insertFieldValue failed')
+    const parent = parentResult.data
+    const childResult = await insertFieldValue({ wordId: w.data.id, fieldId: 'f_chinese_definition', value: '大气', source: 'ecdict', parentId: parent.id })
+    if (!childResult.ok) throw new Error('insertFieldValue failed')
+    const child = childResult.data
+    await insertFieldValue({ wordId: w.data.id, fieldId: 'f_synonyms', value: '', source: 'ecdict', parentId: child.id })
+    const r0 = await getFieldValuesForWord(w.data.id)
+    if (!r0.ok) throw new Error('getFieldValuesForWord failed')
+    expect(r0.data).toHaveLength(3)
+    await deleteFieldValueCascade(parent.id)
+    const r1 = await getFieldValuesForWord(w.data.id)
+    if (!r1.ok) throw new Error('getFieldValuesForWord failed')
+    expect(r1.data).toHaveLength(0)
   })
 })

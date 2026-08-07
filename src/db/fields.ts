@@ -162,3 +162,27 @@ export async function deleteFieldValue(id: string): Promise<DbResult<void>> {
     return { ok: false, error: e.toString() }
   }
 }
+
+// 级联删除：先收集所有后代，再自底向上删除（规避 parent_id ON DELETE SET NULL 产生根级孤儿）
+export async function deleteFieldValueCascade(id: string): Promise<DbResult<void>> {
+  try {
+    const descendants: string[] = []
+    const collect = async (pid: string) => {
+      const children = await getDb().select<{ id: string }[]>(
+        'SELECT id FROM field_values WHERE parent_id = ?1', [pid]
+      )
+      for (const c of children) {
+        await collect(c.id)
+        descendants.push(c.id)
+      }
+    }
+    await collect(id)
+    for (const did of descendants) {
+      await getDb().execute('DELETE FROM field_values WHERE id = ?1', [did])
+    }
+    await getDb().execute('DELETE FROM field_values WHERE id = ?1', [id])
+    return { ok: true, data: undefined }
+  } catch (e: any) {
+    return { ok: false, error: e.toString() }
+  }
+}
