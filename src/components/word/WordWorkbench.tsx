@@ -84,6 +84,8 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
         borderRadius: 'var(--radius-md)',
         padding: '8px 12px',
         marginBottom: '6px',
+        position: 'relative',
+        transition: 'background-color 200ms var(--ease-smooth), border-color 200ms var(--ease-smooth)',
       }
     : {}
   const isEditing = editingId === fv.id
