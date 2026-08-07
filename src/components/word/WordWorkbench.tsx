@@ -10,6 +10,7 @@ import {
 import { useWordStore } from '../../stores/wordStore'
 import { getDefinitions } from '../../services/fieldService'
 import { formatPhonetic } from '../../lib/phonetic'
+import { sortTreeByTemplate } from '../../lib/fieldOrder'
 import { Button } from '../ui/Button'
 import EmptyState from '../ui/EmptyState'
 import Icon from '../icons'
@@ -70,6 +71,21 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
 
   const hasChildren = fv.children && fv.children.length > 0
   const isContainer = hasChildren && !fv.value
+  // 词性父：规则线块状窗格（spec §6.1）；词性父不使用 FIELD_STYLES/isLevel1 普通卡样式，窗格样式优先
+  const isPosPane = def.key === 'part_of_speech'
+  const posChildren = fv.children ?? []
+  const childKey = (c: FieldValue) => defs.find(d => d.id === c.fieldId)?.key ?? ''
+  const zhCount = posChildren.filter(c => childKey(c) === 'chinese_definition').length
+  const enCount = posChildren.filter(c => childKey(c) === 'english_definition').length
+  const paneStyle: CSSProperties = isPosPane
+    ? {
+        background: 'color-mix(in srgb, var(--color-brand) 4%, transparent)',
+        borderLeft: '3px solid color-mix(in srgb, var(--color-brand) 55%, transparent)',
+        borderRadius: 'var(--radius-md)',
+        padding: '8px 12px',
+        marginBottom: '6px',
+      }
+    : {}
   const isEditing = editingId === fv.id
   const isLevel1 = depth === 0
   const isPhonetic = def.key === 'phonetic'
@@ -81,26 +97,28 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
       ref={setRefs}
       className="group"
       style={
-        editorMode
-          ? {
-              ...FIELD_STYLES[state],
-              borderRadius: 'var(--radius-md)',
-              padding: '12px',
-              marginBottom: '2px',
-              transition: 'background-color 200ms var(--ease-smooth), border-color 200ms var(--ease-smooth)',
-              position: 'relative',
-              ...draggingStyle,
-            }
-          : {
-              background: isLevel1 ? 'var(--color-surface-raised)' : 'transparent',
-              border: isLevel1 ? '1px solid var(--color-border)' : 'none',
-              borderRadius: 'var(--radius-md)',
-              padding: isLevel1 ? '12px' : '10px 12px',
-              marginBottom: isLevel1 ? '2px' : '0',
-              transition: 'background-color 200ms var(--ease-smooth), border-color 200ms var(--ease-smooth)',
-              position: 'relative',
-              ...draggingStyle,
-            }
+        isPosPane
+          ? { ...paneStyle, ...draggingStyle }
+          : editorMode
+            ? {
+                ...FIELD_STYLES[state],
+                borderRadius: 'var(--radius-md)',
+                padding: isLevel1 ? '8px' : '6px 12px',
+                marginBottom: '2px',
+                transition: 'background-color 200ms var(--ease-smooth), border-color 200ms var(--ease-smooth)',
+                position: 'relative',
+                ...draggingStyle,
+              }
+            : {
+                background: isLevel1 ? 'var(--color-surface-raised)' : 'transparent',
+                border: isLevel1 ? '1px solid var(--color-border)' : 'none',
+                borderRadius: 'var(--radius-md)',
+                padding: isLevel1 ? '8px' : '6px 12px',
+                marginBottom: isLevel1 ? '2px' : '0',
+                transition: 'background-color 200ms var(--ease-smooth), border-color 200ms var(--ease-smooth)',
+                position: 'relative',
+                ...draggingStyle,
+              }
       }
     >
       {insertIndicator && insertIndicator.overId === fv.id && (
@@ -118,7 +136,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
           }}
         />
       )}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: isPosPane ? 'center' : 'baseline', gap: '12px' }}>
         <button
           type="button"
           ref={setActivatorNodeRef}
@@ -146,23 +164,55 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
         >
           <Icon name="grip" size={16} />
         </button>
-        <span
-          style={{
-            width: isLevel1 ? '100px' : 'auto',
-            minWidth: isLevel1 ? undefined : '80px',
-            flexShrink: 0,
-            fontSize: isLevel1 ? 'var(--text-sm)' : 'var(--text-xs)',
-            fontWeight: 'var(--weight-medium)',
-            color: 'var(--color-text-secondary)',
-          }}
-        >
-          {def.name}
-        </span>
-        {!isContainer && (
+        {isPosPane ? (
+          <>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                height: '20px',
+                padding: '0 10px',
+                borderRadius: 'var(--radius-full)',
+                fontSize: 'var(--text-xs)',
+                fontWeight: 'var(--weight-medium)',
+                background: 'color-mix(in srgb, var(--color-brand) 8%, transparent)',
+                color: 'var(--color-brand)',
+                border: '1px solid color-mix(in srgb, var(--color-brand) 25%, transparent)',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              {def.name} {fv.value}
+            </span>
+            <span
+              style={{
+                fontSize: 'var(--text-xs)',
+                color: 'var(--color-text-tertiary)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              中文×{zhCount} · 英文×{enCount}
+            </span>
+          </>
+        ) : (
+          <>
+            <span
+              style={{
+                width: isLevel1 ? '100px' : 'auto',
+                minWidth: isLevel1 ? undefined : '80px',
+                flexShrink: 0,
+                fontSize: isLevel1 ? 'var(--text-sm)' : 'var(--text-xs)',
+                fontWeight: 'var(--weight-medium)',
+                color: 'var(--color-text-secondary)',
+              }}
+            >
+              {def.name}
+            </span>
+            {!isContainer && (
           <div
             style={{
               flex: 1,
-              fontSize: isLevel1 ? 'var(--text-base)' : 'var(--text-sm)',
+              fontSize: 'var(--text-sm)',
               color: editorMode && state === 'original' ? 'var(--color-text-secondary)' : 'var(--color-text-primary)',
               lineHeight: isLevel1 ? 'var(--leading-relaxed)' : undefined,
               fontFamily: isPhonetic ? 'var(--font-phonetic)' : undefined,
@@ -218,6 +268,8 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
               </div>
             )}
           </div>
+            )}
+          </>
         )}
         {editorMode && state !== 'original' && (
           <span
@@ -302,7 +354,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
         )}
       </div>
       {hasChildren && (
-        <div style={{ marginLeft: '24px', paddingLeft: '16px', borderLeft: '1px solid var(--color-border)', marginTop: '8px' }}>
+        <div style={{ marginLeft: '16px', paddingLeft: '12px', borderLeft: '1px solid var(--color-border)', marginTop: '8px' }}>
           {fv.children!.map(child => (
             <FieldCard key={child.id} fv={child} depth={depth + 1} {...rest} />
           ))}
@@ -462,17 +514,16 @@ export default function WordWorkbench() {
     await reorderFieldValues(without.map((s, i) => ({ id: s.id, displayOrder: i })))
   }
 
-  // 头部音标/词性：从 fieldValues 经 defs 反查 key 提取（规格 §5.1）
+  // 头部音标：从 fieldValues 经 defs 反查 key 提取（规格 §6.1 标题行仅音标，词性改由窗格展示）
   const defKeyByFieldId = new Map(defs.map(d => [d.id, d.key]))
   const phonetic = fieldValues.find(fv => defKeyByFieldId.get(fv.fieldId) === 'phonetic')?.value
-  const posText = fieldValues
-    .filter(fv => defKeyByFieldId.get(fv.fieldId) === 'part_of_speech')
-    .map(fv => fv.value)
-    .filter(Boolean)
-    .join(' · ')
-  const showPhoneticRow = Boolean(phonetic || posText)
+  const showPhoneticRow = Boolean(phonetic)
 
-  const sortedFieldValues = [...fieldValues].sort((a, b) => a.displayOrder - b.displayOrder)
+  // 模板序渲染（spec §4.1）：children 由 getValues 已聚成树，sortTreeByTemplate 递归重排
+  const sortedFieldValues = sortTreeByTemplate(
+    fv => defKeyByFieldId.get(fv.fieldId) ?? fv.fieldId,
+    fieldValues
+  )
 
   const wordCapsules = categories.filter(c => wordCategoryIds.includes(c.id))
   const showMoreCapsules = wordCapsules.length > 4
@@ -504,9 +555,9 @@ export default function WordWorkbench() {
         background: 'var(--color-surface)',
       }}
     >
-      <div style={{ maxWidth: '720px', margin: '0 auto', padding: '32px 40px 60px' }}>
+      <div style={{ maxWidth: '720px', margin: '0 auto', padding: '24px 32px 48px' }}>
         {/* 单词标题区（规格 §5.1） */}
-        <div style={{ marginBottom: '20px' }}>
+        <div style={{ marginBottom: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '6px' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -537,8 +588,6 @@ export default function WordWorkbench() {
               {showPhoneticRow && (
                 <div style={{ fontSize: 'var(--text-base)', color: 'var(--color-text-secondary)' }}>
                   {phonetic && <span style={{ fontFamily: 'var(--font-phonetic)' }}>{formatPhonetic(phonetic)}</span>}
-                  {phonetic && posText && <span> · </span>}
-                  {posText && <span>{posText}</span>}
                 </div>
               )}
             </div>
@@ -617,7 +666,7 @@ export default function WordWorkbench() {
         </div>
 
         {/* 分割线 */}
-        <div style={{ height: '1px', background: 'var(--color-border-strong)', margin: '16px 0' }} />
+        <div style={{ height: '1px', background: 'var(--color-border-strong)', margin: '8px 0' }} />
 
         {/* 工具栏：编者模式开关（规格 §5.2，交互 Task 6 接入） */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '8px 0' }}>
