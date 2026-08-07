@@ -151,6 +151,31 @@ describe('wordService.mergeFields 显式父子匹配键', () => {
     expect(underN.filter(fv => fv.fieldId === 'f_chinese_definition')).toHaveLength(1)
     expect(underV.filter(fv => fv.fieldId === 'f_chinese_definition')).toHaveLength(1)
   })
+
+  it('深度3合并：wordnet 树（POS→释义→synonyms→synonym_item）不产生根级孤儿', async () => {
+    const w = await wordsDb.createWord({ lemma: 'atmosphere' })
+    if (!w.ok) throw new Error('createWord failed')
+    const ok = await mergeFields(w.data.id, [
+      { key: 'part_of_speech', value: 'n.', source: 'wordnet', tempId: 'p-pos' },
+      { key: 'english_definition', value: 'the atmosphere', source: 'wordnet', tempId: 'p-def', parentTempId: 'p-pos' },
+      { key: 'synonyms', value: '', source: 'wordnet', tempId: 'p-syn', parentTempId: 'p-def' },
+      { key: 'synonym_item', value: 'air', source: 'wordnet', tempId: 'p-item', parentTempId: 'p-syn' },
+    ])
+    expect(ok).toBe(true)
+    const r = await getFieldValuesForWord(w.data.id)
+    if (!r.ok) throw new Error('getFieldValuesForWord failed')
+    // 除词性根外，每一行都必须有非空 parent_id（无根级孤儿）
+    const orphans = r.data.filter(fv => fv.parentId === null)
+    expect(orphans.map(fv => fv.fieldId)).toEqual(['f_part_of_speech'])
+    // 深度3 精确挂载链：释义→POS，synonyms→释义，synonym_item→synonyms
+    const pos = r.data.find(fv => fv.fieldId === 'f_part_of_speech')!
+    const def = r.data.find(fv => fv.fieldId === 'f_english_definition')!
+    const syn = r.data.find(fv => fv.fieldId === 'f_synonyms')!
+    const item = r.data.find(fv => fv.fieldId === 'f_synonym_item')!
+    expect(def.parentId).toBe(pos.id)
+    expect(syn.parentId).toBe(def.id)
+    expect(item.parentId).toBe(syn.id)
+  })
 })
 
 describe('wordService 词操作', () => {

@@ -45,14 +45,14 @@ export async function mergeFields(wordId: string, fields: MergeFieldInput[]): Pr
   }
 
   const parentInputs: { tempId?: string; input: UpsertFieldValueInput }[] = []
-  const childInputs: { parentTempId: string; input: UpsertFieldValueInput }[] = []
+  const childInputs: { tempId?: string; parentTempId: string; input: UpsertFieldValueInput }[] = []
   const tempIdMap = new Map<string, string>() // 父 tempId → 真实 id（已存在或新插）
 
   for (const field of fields) {
     const def = defMap.get(field.key)
     if (!def) continue
     if (field.parentTempId) {
-      childInputs.push({ parentTempId: field.parentTempId, input: {
+      childInputs.push({ tempId: field.tempId, parentTempId: field.parentTempId, input: {
         wordId, fieldId: def.id, value: field.value, source: field.source,
       } })
     } else {
@@ -74,14 +74,19 @@ export async function mergeFields(wordId: string, fields: MergeFieldInput[]): Pr
       }
       if (tempId) tempIdMap.set(tempId, existingIdMap.get(key) || '')
     }
-    for (const { parentTempId, input } of childInputs) {
+    for (const { tempId, parentTempId, input } of childInputs) {
       const parentId = tempIdMap.get(parentTempId) || null
       const key = `${parentId || 'root'}||${input.fieldId}||${input.value}`
-      if (existingSet.has(key)) continue
+      if (existingSet.has(key)) {
+        // 去重命中：子字段自身 tempId 仍须注册，供其后代引用（深度3 树）
+        if (tempId) tempIdMap.set(tempId, existingIdMap.get(key)!)
+        continue
+      }
       const result = await fieldsDb.insertFieldValue({ ...input, parentId })
       if (result.ok && result.data) {
         existingSet.add(key)
         existingIdMap.set(key, result.data.id)
+        if (tempId) tempIdMap.set(tempId, result.data.id)
       }
     }
     await renumberWordByTemplate(wordId)

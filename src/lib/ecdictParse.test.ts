@@ -50,14 +50,19 @@ describe('buildEcdictFields', () => {
     const pos = fields.find(f => f.key === 'part_of_speech')
     expect(pos?.children?.map(c => c.key)).toEqual(['chinese_definition', 'english_definition', 'english_definition'])
   })
-  it('exchange 标签修正：p→过去式 d→过去分词，0/1 过滤', () => {
-    const items = parseExchangeItems('p:ran/i:running/d:run/0:run/1:d/3:runs/s:runs')
+  it('exchange 标签修正（spec §5.3 全前缀）：p/i/d→时态、3/s/f→人称/复数、r/t/b/z→级、0/1 过滤', () => {
+    const items = parseExchangeItems('p:ran/i:running/d:run/0:run/1:d/3:runs/s:runs/f:aces/r:better/t:best/b:balder/z:baldest')
     expect(items).toEqual([
       { label: '过去式', value: 'ran' },
       { label: '现在分词', value: 'running' },
       { label: '过去分词', value: 'run' },
       { label: '第三人称单数', value: 'runs' },
       { label: '复数', value: 'runs' },
+      { label: '复数', value: 'aces' },
+      { label: '比较级', value: 'better' },
+      { label: '最高级', value: 'best' },
+      { label: '比较级', value: 'balder' },
+      { label: '最高级', value: 'baldest' },
     ])
   })
 })
