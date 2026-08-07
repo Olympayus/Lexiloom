@@ -109,15 +109,15 @@ describe('wordService.mergeFields 显式父子匹配键', () => {
   it('双词源合并：同词性父合并，模板重排（中文释义先于英文释义）', async () => {
     const w = await wordsDb.createWord({ lemma: 'observe' })
     if (!w.ok) throw new Error('createWord failed')
-    // ecdict 先来：n. 大气
-    await mergeFields(w.data.id, [
-      { key: 'part_of_speech', value: 'n.', source: 'ecdict', tempId: 'p0' },
-      { key: 'chinese_definition', value: '大气', source: 'ecdict', parentTempId: 'p0' },
-    ])
-    // wordnet 后来：n. 英文释义 → 并入同一 n. 窗格
+    // wordnet 先来：n. 英文释义
     await mergeFields(w.data.id, [
       { key: 'part_of_speech', value: 'n.', source: 'wordnet', tempId: 'p0' },
       { key: 'english_definition', value: 'the envelope of gases', source: 'wordnet', parentTempId: 'p0' },
+    ])
+    // ecdict 后来：n. 中文释义 → 并入同一 n. 窗格，模板重排使中文释义显示在英文前
+    await mergeFields(w.data.id, [
+      { key: 'part_of_speech', value: 'n.', source: 'ecdict', tempId: 'p0' },
+      { key: 'chinese_definition', value: '大气', source: 'ecdict', parentTempId: 'p0' },
     ])
     const r = await getFieldValuesForWord(w.data.id)
     if (!r.ok) throw new Error('getFieldValuesForWord failed')
@@ -130,18 +130,26 @@ describe('wordService.mergeFields 显式父子匹配键', () => {
     expect(zh.displayOrder).toBeLessThan(en.displayOrder)
   })
 
-  it('同名释义分属不同词性父不去重', async () => {
+  it('同名释义分属不同词性父不去重，同父同名批内去重', async () => {
     const w = await wordsDb.createWord({ lemma: 'tie' })
     if (!w.ok) throw new Error('createWord failed')
+    // 同一批次：n. 下出现两次 `跑`（批内同父同值应去重），vi. 下出现一次 `跑`
     await mergeFields(w.data.id, [
       { key: 'part_of_speech', value: 'n.', source: 'ecdict', tempId: 'p-n' },
       { key: 'chinese_definition', value: '跑', source: 'ecdict', parentTempId: 'p-n' },
       { key: 'part_of_speech', value: 'vi.', source: 'ecdict', tempId: 'p-v' },
       { key: 'chinese_definition', value: '跑', source: 'ecdict', parentTempId: 'p-v' },
+      { key: 'chinese_definition', value: '跑', source: 'ecdict', parentTempId: 'p-n' },
     ])
     const r = await getFieldValuesForWord(w.data.id)
     if (!r.ok) throw new Error('getFieldValuesForWord failed')
     expect(r.data.filter(fv => fv.fieldId === 'f_chinese_definition')).toHaveLength(2)
+    // n. 下 1 行、vi. 下 1 行（旧实现：n. 下 2 行 + vi. 下 1 行 = 3 行）
+    const posRows = r.data.filter(fv => fv.fieldId === 'f_part_of_speech')
+    const underN = r.data.filter(fv => fv.parentId === posRows.find(p => p.value === 'n.')!.id)
+    const underV = r.data.filter(fv => fv.parentId === posRows.find(p => p.value === 'vi.')!.id)
+    expect(underN.filter(fv => fv.fieldId === 'f_chinese_definition')).toHaveLength(1)
+    expect(underV.filter(fv => fv.fieldId === 'f_chinese_definition')).toHaveLength(1)
   })
 })
 
