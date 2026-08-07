@@ -3,13 +3,19 @@ export type FieldKey =
   | 'english_definition'
   | 'part_of_speech'
   | 'derivatives'
+  | 'derivatives_item'
   | 'synonyms'
+  | 'synonym_item'
   | 'example_sentence'
   | 'usage_scenario'
   | 'phonetic'
   | 'exchange'
   | 'exchange_item'
   | 'example'
+  | 'supplementary'
+  | 'supplementary_item'
+  | 'phrase'
+  | 'phrase_item'
 
 export const BUILTIN_FIELDS: Record<FieldKey, {
   name: string
@@ -27,6 +33,12 @@ export const BUILTIN_FIELDS: Record<FieldKey, {
   exchange:            { name: '词形变化', fieldType: 'text',      displayOrder: 9 },
   exchange_item:       { name: '词形变化项', fieldType: 'text',    displayOrder: 10 },
   example:             { name: '例句',     fieldType: 'text',      displayOrder: 11 },
+  supplementary:      { name: '补充',     fieldType: 'text', displayOrder: 12 },
+  supplementary_item: { name: '补充项',   fieldType: 'text', displayOrder: 13 },
+  phrase:             { name: '短语',     fieldType: 'text', displayOrder: 14 },
+  phrase_item:        { name: '短语项',   fieldType: 'text', displayOrder: 15 },
+  derivatives_item:   { name: '派生词项', fieldType: 'text', displayOrder: 16 },
+  synonym_item:       { name: '近义词项', fieldType: 'text', displayOrder: 17 },
 }
 
 export interface FieldDefinition {
