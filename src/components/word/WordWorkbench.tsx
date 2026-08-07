@@ -10,7 +10,7 @@ import {
 import { useWordStore } from '../../stores/wordStore'
 import { getDefinitions } from '../../services/fieldService'
 import { formatPhonetic } from '../../lib/phonetic'
-import { sortTreeByTemplate } from '../../lib/fieldOrder'
+import { sortTreeByTemplate, ROOT_FIELD_KEYS, ALLOWED_CHILD_KEYS } from '../../lib/fieldOrder'
 import { Button } from '../ui/Button'
 import EmptyState from '../ui/EmptyState'
 import Icon from '../icons'
@@ -51,6 +51,10 @@ interface FieldCardProps {
   onCancelEdit: () => void
   onToggleMenu: (id: string) => void
   onRestore: (id: string) => void
+  onAddChild: (parentFv: FieldValue, childDef: FieldDefinition) => void
+  onDelete: (fv: FieldValue) => void
+  childMenuId: string | null
+  onToggleChildMenu: (id: string) => void
 }
 
 // 单个字段卡片：grip 拖拽（仅 grip 激活拖拽，点击/编辑不受影响）+ 同级插入指示线（规格 §5.5）
@@ -58,6 +62,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
   const {
     defs, editorMode, editingId, editValue, menuOpenId, insertIndicator,
     onStartEdit, onEditValueChange, onSave, onCancelEdit, onToggleMenu, onRestore,
+    onAddChild, onDelete, childMenuId, onToggleChildMenu,
   } = rest
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({ id: fv.id })
   const { setNodeRef: setDropRef } = useDroppable({ id: `drop-${fv.id}` })
@@ -91,6 +96,14 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
   const isEditing = editingId === fv.id
   const isLevel1 = depth === 0
   const isPhonetic = def.key === 'phonetic'
+  // 子词条菜单（Task 10 §Step 2）：依据 ALLOWED_CHILD_KEYS 过滤可选子字段（spec §3.2）
+  const allowedChildKeys = ALLOWED_CHILD_KEYS[def.key] ?? []
+  const childDefs = defs.filter(d => allowedChildKeys.includes(d.key))
+  const childMenuLabel = def.key === 'part_of_speech'
+    ? '添加释义'
+    : (def.key === 'chinese_definition' || def.key === 'english_definition')
+      ? '添加子词条'
+      : '添加项'
   const state = fieldState(fv)
   const draggingStyle = isDragging ? { transform: 'scale(1.02)', boxShadow: 'var(--shadow-raised)' } : null
 
@@ -167,35 +180,65 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
           <Icon name="grip" size={16} />
         </button>
         {isPosPane ? (
-          <>
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                height: '20px',
-                padding: '0 10px',
-                borderRadius: 'var(--radius-full)',
-                fontSize: 'var(--text-xs)',
-                fontWeight: 'var(--weight-medium)',
-                background: 'color-mix(in srgb, var(--color-brand) 8%, transparent)',
-                color: 'var(--color-brand)',
-                border: '1px solid color-mix(in srgb, var(--color-brand) 25%, transparent)',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-              }}
-            >
-              {def.name} {fv.value}
-            </span>
-            <span
-              style={{
-                fontSize: 'var(--text-xs)',
-                color: 'var(--color-text-tertiary)',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              中文×{zhCount} · 英文×{enCount}
-            </span>
-          </>
+          isEditing ? (
+            <div className="space-y-2" style={{ flex: 1 }}>
+              <input
+                className="w-full px-3 py-1.5 rounded text-sm"
+                style={{
+                  border: '1px solid var(--color-brand)',
+                  color: 'var(--color-text-primary)',
+                  background: 'var(--color-surface)',
+                  transition: `transform var(--duration-fast) var(--ease-smooth)`,
+                  transform: 'scale(1.005)',
+                }}
+                value={editValue}
+                onChange={e => onEditValueChange(e.target.value)}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button onClick={onSave}>保存</Button>
+                <Button variant="secondary" onClick={onCancelEdit}>取消</Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <span
+                onClick={() => onStartEdit(fv)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onStartEdit(fv) }
+                }}
+                title="点击编辑词性标签"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  height: '20px',
+                  padding: '0 10px',
+                  borderRadius: 'var(--radius-full)',
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 'var(--weight-medium)',
+                  background: 'color-mix(in srgb, var(--color-brand) 8%, transparent)',
+                  color: 'var(--color-brand)',
+                  border: '1px solid color-mix(in srgb, var(--color-brand) 25%, transparent)',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  cursor: 'pointer',
+                }}
+              >
+                {def.name} {fv.value}
+              </span>
+              <span
+                style={{
+                  fontSize: 'var(--text-xs)',
+                  color: 'var(--color-text-tertiary)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                中文×{zhCount} · 英文×{enCount}
+              </span>
+            </>
+          )
         ) : (
           <>
             <span
@@ -350,6 +393,29 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
                 >
                   还原原始值
                 </button>
+                <button
+                  type="button"
+                  onClick={() => onDelete(fv)}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '6px 10px',
+                    border: 'none',
+                    background: 'transparent',
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                    color: 'var(--color-danger)',
+                    fontSize: 'var(--text-sm)',
+                    fontFamily: 'var(--font-sans)',
+                    whiteSpace: 'nowrap',
+                    transition: 'background-color var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--color-danger) 10%, transparent)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                >
+                  删除
+                </button>
               </div>
             )}
           </div>
@@ -362,18 +428,98 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
           ))}
         </div>
       )}
+      {/* 每卡「+ 添加子词条」菜单（Task 10 §Step 2）：编者模式可用，按 ALLOWED_CHILD_KEYS 过滤 */}
+      {editorMode && childDefs.length > 0 && (
+        <div style={{ position: 'relative', marginTop: '8px' }}>
+          <button
+            type="button"
+            onClick={() => onToggleChildMenu(fv.id)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '2px 8px',
+              border: '1px dashed var(--color-border-strong)',
+              borderRadius: 'var(--radius-full)',
+              background: 'transparent',
+              fontSize: 'var(--text-xs)',
+              color: 'var(--color-text-tertiary)',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-sans)',
+              transition: 'color var(--duration-fast) var(--ease-smooth), border-color var(--duration-fast) var(--ease-smooth), background-color var(--duration-fast) var(--ease-smooth)',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.color = 'var(--color-brand)'
+              e.currentTarget.style.borderColor = 'var(--color-brand)'
+              e.currentTarget.style.background = 'var(--color-brand-softer)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.color = 'var(--color-text-tertiary)'
+              e.currentTarget.style.borderColor = 'var(--color-border-strong)'
+              e.currentTarget.style.background = 'transparent'
+            }}
+          >
+            <Icon name="plus" size={14} />
+            {childMenuLabel}
+          </button>
+          {childMenuId === fv.id && (
+            <div
+              style={{
+                position: 'absolute',
+                left: 0,
+                bottom: 'calc(100% + 4px)',
+                minWidth: '120px',
+                padding: '4px',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-md)',
+                boxShadow: 'var(--shadow-overlay)',
+                zIndex: 'var(--z-dropdown)',
+              }}
+            >
+              {childDefs.map(childDef => (
+                <button
+                  key={childDef.id}
+                  type="button"
+                  onClick={() => onAddChild(fv, childDef)}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '6px 10px',
+                    border: 'none',
+                    background: 'transparent',
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                    color: 'var(--color-text-primary)',
+                    fontSize: 'var(--text-sm)',
+                    fontFamily: 'var(--font-sans)',
+                    whiteSpace: 'nowrap',
+                    transition: 'background-color var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
+                >
+                  {childDef.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
 
 export default function WordWorkbench() {
-  const { words, selectedWordId, fieldValues, updateFieldValue, restoreFieldValue, deleteWord, addFieldValue, reorderFieldValues } = useWordStore()
+  const { words, selectedWordId, fieldValues, updateFieldValue, restoreFieldValue, deleteWord, addFieldValue, deleteFieldValue, reorderFieldValues } = useWordStore()
   const [defs, setDefs] = useState<FieldDefinition[]>([])
   const [editorMode, setEditorMode] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [entryValue, setEntryValue] = useState('')  // 进入编辑时的值
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
+  const [childMenuId, setChildMenuId] = useState<string | null>(null)
   const [addFieldOpen, setAddFieldOpen] = useState(false)
   const [saved, setSaved] = useState(false)
   const [fadeIn, setFadeIn] = useState(true)
@@ -441,6 +587,11 @@ export default function WordWorkbench() {
     if (!editingId) return
     const fv = findFieldValueById(editingId)
     if (!fv) return
+    // 词性空标签校验（Task 10 §Step 4）：词性父必须有非空标签
+    if (defKeyByFieldId.get(fv.fieldId) === 'part_of_speech' && !editValue.trim()) {
+      window.alert('词性标签不能为空')
+      return
+    }
     if (editValue === entryValue) { setEditingId(null); return }  // 未真实修改：不置位
     if (fv.source === 'user') {
       await updateFieldValue(fv.id, { value: editValue })  // 个人字段保持 personal
@@ -468,6 +619,28 @@ export default function WordWorkbench() {
     setEditingId(fv.id)
     setEditValue('')
     setEntryValue('')
+  }
+
+  // 添加子词条：挂到当前节点下 → 自动进入编辑态（Task 10 §Step 2）
+  const handleAddChild = async (parentFv: FieldValue, childDef: FieldDefinition) => {
+    setChildMenuId(null)
+    const fv = await addFieldValue(childDef.id, parentFv.id)
+    if (!fv) return
+    setEditingId(fv.id)
+    setEditValue('')
+    setEntryValue('')
+  }
+
+  // 单节点删除：级联确认，含子级时提示删除子树（Task 10 §Step 3）
+  const handleDeleteField = async (fv: FieldValue) => {
+    setMenuOpenId(null)
+    const name = defs.find(d => d.id === fv.fieldId)?.name ?? (fv.value || '字段')
+    const hasKids = !!(fv.children && fv.children.length > 0)
+    const msg = hasKids
+      ? `删除「${name}」及其全部子词条？此操作不可撤销。`
+      : `删除「${name}」？此操作不可撤销。`
+    if (!window.confirm(msg)) return
+    await deleteFieldValue(fv.id)
   }
 
   // 拖拽重排（规格 §5.5）：仅同级；拖动中卡片缩放+阴影，目标处 2px 品牌色插入线
@@ -545,6 +718,10 @@ export default function WordWorkbench() {
     onCancelEdit: () => setEditingId(null),
     onToggleMenu: (id) => setMenuOpenId(menuOpenId === id ? null : id),
     onRestore: (id) => { setMenuOpenId(null); restoreFieldValue(id) },
+    onAddChild: handleAddChild,
+    onDelete: handleDeleteField,
+    childMenuId,
+    onToggleChildMenu: (id) => setChildMenuId(childMenuId === id ? null : id),
   }
 
   return (
@@ -679,7 +856,7 @@ export default function WordWorkbench() {
               role="switch"
               aria-checked={editorMode}
               aria-label="编者模式"
-              onClick={() => { setEditorMode(!editorMode); setMenuOpenId(null) }}
+              onClick={() => { setEditorMode(!editorMode); setMenuOpenId(null); setChildMenuId(null) }}
               style={{
                 width: '36px',
                 height: '20px',
@@ -778,7 +955,8 @@ export default function WordWorkbench() {
                 zIndex: 'var(--z-dropdown)',
               }}
             >
-              {defs.map(def => (
+              {/* 根级「+ 添加字段」仅列根级字段（Task 10 §Step 1） */}
+              {defs.filter(d => ROOT_FIELD_KEYS.includes(d.key)).map(def => (
                 <button
                   key={def.id}
                   type="button"
