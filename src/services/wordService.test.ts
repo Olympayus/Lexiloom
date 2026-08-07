@@ -105,6 +105,44 @@ describe('wordService.mergeFields 显式父子匹配键', () => {
     expect(syn).toBeDefined()
     expect(syn!.parentId).toBeNull()  // 回退为根级（P4 ledger 未测路径）
   })
+
+  it('双词源合并：同词性父合并，模板重排（中文释义先于英文释义）', async () => {
+    const w = await wordsDb.createWord({ lemma: 'observe' })
+    if (!w.ok) throw new Error('createWord failed')
+    // ecdict 先来：n. 大气
+    await mergeFields(w.data.id, [
+      { key: 'part_of_speech', value: 'n.', source: 'ecdict', tempId: 'p0' },
+      { key: 'chinese_definition', value: '大气', source: 'ecdict', parentTempId: 'p0' },
+    ])
+    // wordnet 后来：n. 英文释义 → 并入同一 n. 窗格
+    await mergeFields(w.data.id, [
+      { key: 'part_of_speech', value: 'n.', source: 'wordnet', tempId: 'p0' },
+      { key: 'english_definition', value: 'the envelope of gases', source: 'wordnet', parentTempId: 'p0' },
+    ])
+    const r = await getFieldValuesForWord(w.data.id)
+    if (!r.ok) throw new Error('getFieldValuesForWord failed')
+    const posRows = r.data.filter(fv => fv.fieldId === 'f_part_of_speech')
+    expect(posRows).toHaveLength(1)
+    const children = r.data.filter(fv => fv.parentId === posRows[0].id)
+    expect(children.map(c => c.fieldId)).toEqual(['f_chinese_definition', 'f_english_definition'])
+    const zh = children.find(c => c.fieldId === 'f_chinese_definition')!
+    const en = children.find(c => c.fieldId === 'f_english_definition')!
+    expect(zh.displayOrder).toBeLessThan(en.displayOrder)
+  })
+
+  it('同名释义分属不同词性父不去重', async () => {
+    const w = await wordsDb.createWord({ lemma: 'tie' })
+    if (!w.ok) throw new Error('createWord failed')
+    await mergeFields(w.data.id, [
+      { key: 'part_of_speech', value: 'n.', source: 'ecdict', tempId: 'p-n' },
+      { key: 'chinese_definition', value: '跑', source: 'ecdict', parentTempId: 'p-n' },
+      { key: 'part_of_speech', value: 'vi.', source: 'ecdict', tempId: 'p-v' },
+      { key: 'chinese_definition', value: '跑', source: 'ecdict', parentTempId: 'p-v' },
+    ])
+    const r = await getFieldValuesForWord(w.data.id)
+    if (!r.ok) throw new Error('getFieldValuesForWord failed')
+    expect(r.data.filter(fv => fv.fieldId === 'f_chinese_definition')).toHaveLength(2)
+  })
 })
 
 describe('wordService 词操作', () => {

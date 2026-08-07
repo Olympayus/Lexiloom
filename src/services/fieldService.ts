@@ -1,5 +1,6 @@
 import * as fieldsDb from '../db/fields'
 import type { FieldDefinition, FieldValue, UpsertFieldValueInput, FieldValueContentUpdate } from '../types/field'
+import { sortTreeByTemplate } from '../lib/fieldOrder'
 
 let defsCache: FieldDefinition[] | null = null
 
@@ -83,4 +84,25 @@ export async function getValues(wordId: string): Promise<FieldValue[]> {
   return result.data
     .filter(fv => !fv.parentId)
     .map(fv => ({ ...fv, children: childrenMap.get(fv.id) || [] }))
+}
+
+// 按模板位次重排整词 display_order（spec §4.1）：合并后调用。
+// 返回 true 表示完成（无行时也是成功）。
+export async function renumberWordByTemplate(wordId: string): Promise<boolean> {
+  const result = await fieldsDb.getFieldValuesForWord(wordId)
+  if (!result.ok || result.data.length === 0) return true
+  const defs = await getDefinitions()
+  const keyByDefId = new Map(defs.map(d => [d.id, d.key]))
+  const keyOf = (fv: FieldValue) => keyByDefId.get(fv.fieldId) ?? fv.fieldId
+  const values = await getValues(wordId)
+  const sorted = sortTreeByTemplate(keyOf, values)
+  const flat: { id: string; displayOrder: number }[] = []
+  const assign = (nodes: FieldValue[]) => {
+    for (const n of nodes) {
+      flat.push({ id: n.id, displayOrder: flat.length })
+      if (n.children?.length) assign(n.children)
+    }
+  }
+  assign(sorted)
+  return (await fieldsDb.reorderFieldValues(flat)).ok
 }
