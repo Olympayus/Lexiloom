@@ -159,14 +159,15 @@ export default function CategoryEditorModal({ open, category, wordId, onClose, o
 
         {error && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger)', marginBottom: '8px' }}>{error}</div>}
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'flex-end', alignItems: 'center', marginTop: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginTop: '20px' }}>
+          {/* 左侧列：从此单词移除（上） + 删除分类（左下角） */}
           {category && wordId && (
-            <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
               <button
                 type="button"
                 onClick={handleRemoveFromWord}
                 style={{
-                  marginRight: 'auto', border: 'none', background: 'transparent', cursor: 'pointer',
+                  border: 'none', background: 'transparent', cursor: 'pointer',
                   fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)',
                   fontFamily: 'var(--font-sans)', padding: '6px 8px', borderRadius: 'var(--radius-sm)',
                   whiteSpace: 'nowrap',
@@ -198,10 +199,13 @@ export default function CategoryEditorModal({ open, category, wordId, onClose, o
               >
                 删除分类
               </button>
-            </>
+            </div>
           )}
-          <Button variant="secondary" onClick={onClose}>取消</Button>
-          <Button onClick={handleSave}>保存</Button>
+          {/* 右侧：取消 + 保存 并列 */}
+          <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+            <Button variant="secondary" onClick={onClose}>取消</Button>
+            <Button onClick={handleSave}>保存</Button>
+          </div>
         </div>
       </div>
     </div>
