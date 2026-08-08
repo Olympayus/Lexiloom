@@ -8,7 +8,7 @@ import Icon from '../icons'
 
 // 全局顶栏（规格 §3）：Logo 32×32 / 主搜索框 40px / 设置按钮；建议下拉 → 词典详情视图（D2）
 // 自绘标题栏（Task 15）：header 为拖拽区 + 内置窗口控制；搜索框绝对居中、胶囊圆角
-export default function TopBar() {
+export default function TopBar({ sidebarWidth }: { sidebarWidth: number }) {
   const appWindow = getCurrentWindow()
   const [isMaximized, setIsMaximized] = useState(false)
   const [query, setQuery] = useState('')
@@ -119,8 +119,8 @@ export default function TopBar() {
         </button>
       </div>
 
-      {/* 中：搜索框居中，宽度随中间 1fr 栏伸缩（上限 960px） */}
-      <div style={{ justifySelf: 'center', width: '100%', maxWidth: '960px' }}>
+      {/* 中：搜索框居中；宽度上限 = 视口 − 2×(侧边栏宽 + 16px 间隙)，左边缘落在侧边栏延长线右侧留一小段距离 */}
+      <div style={{ justifySelf: 'center', width: '100%', maxWidth: `min(960px, calc(100vw - ${(sidebarWidth + 16) * 2}px))` }}>
         <div className="relative">
           <div style={{
             display: 'flex', alignItems: 'center', gap: '10px', height: '40px', padding: '0 14px',

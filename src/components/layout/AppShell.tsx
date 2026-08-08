@@ -36,7 +36,7 @@ export default function AppShell() {
     <div className="h-screen flex flex-col" style={{ background: 'var(--color-canvas)' }}>
       {/* 全局顶栏：始终可见，不随侧边栏折叠（规格 §2） */}
       <header className="shrink-0">
-        <TopBar />
+        <TopBar sidebarWidth={sidebarWidth} />
       </header>
 
       <div className="flex-1 flex overflow-hidden">
