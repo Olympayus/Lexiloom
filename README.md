@@ -15,7 +15,7 @@ Built with Tauri 2 + React + TypeScript + SQLite.
 - **Dictionary search** — Two-phase English search across ECDICT + WordNet (typeahead suggestion → detail card), merge selected fields into your word bank
 - **Word management** — Add, edit, delete words; hierarchical fields with three-state editing (original / edited / personal) and drag-to-reorder
 - **Categories** — 8-color category capsules, word↔category assignment, category mode in sidebar
-- **11 built-in fields** — Chinese definition, English definition, part of speech, derivatives, synonyms, example sentences, usage scenarios, phonetic, word forms (exchange / exchange items), examples
+- **17 built-in fields** — Chinese definition, English definition, part of speech, derivatives (with items), synonyms (with items), example sentences, usage scenarios, phonetic, word forms (exchange / exchange items), supplementary (with items), phrases (with items)
 - **Offline-first** — All dictionary data runs locally, no internet required
 - **Cross-platform** — Windows, macOS, and Linux via Tauri 2
 

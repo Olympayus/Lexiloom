@@ -19,6 +19,10 @@
   --color-accent: #C17A4E;
   --color-accent-soft: #F5E8DC;
 
+  /* 词性窗格特殊色（低饱和鸢尾紫，与品牌蓝/词源绿/个人陶土区分且和谐） */
+  --color-pos: #7E6A9E;
+  --color-pos-soft: #F0ECF6;
+
   /* 边框 */
   --color-border: #E8E4DE;
   --color-border-strong: #D9D4CE;

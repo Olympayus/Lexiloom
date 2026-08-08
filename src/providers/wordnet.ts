@@ -1,6 +1,7 @@
 import type { DictionaryProvider } from './types'
 import type { DictionaryEntry } from '../types/dictionary'
 import { getCachedDb } from './dbCache'
+import { buildWordnetFields } from '../lib/wordnetParse'
 
 const DB_PATH = 'sqlite:wordnet.db'
 
@@ -35,42 +36,19 @@ export class WordNetProvider implements DictionaryProvider {
 
     if (rows.length === 0) return []
 
-    // Each synset becomes an independent English definition with sub-fields
-    const entries: DictionaryEntry[] = []
+    const synsets = rows.map(row => ({
+      pos: row.pos,
+      definition: row.definition ?? '',
+      examples: row.examples ?? null,
+      words: row.words ?? null,
+    }))
+    const fields = buildWordnetFields(word, synsets)
 
-    for (const row of rows) {
-      const fields: DictionaryEntry['fields'] = []
-
-      // English definition
-      fields.push({ key: 'english_definition', value: row.definition })
-
-      // Synonyms (exclude the search term itself)
-      const wordsList: string[] = row.words
-        ? row.words.split('\n').filter((w: string) => w.toLowerCase() !== normalized)
-        : []
-      if (wordsList.length > 0) {
-        fields.push({ key: 'synonyms', value: wordsList.join(', ') })
-      }
-
-      // Example sentences (extracted from gloss quotes)
-      if (row.examples) {
-        const examples = row.examples.split('\n').filter(Boolean)
-        if (examples.length > 0) {
-          fields.push({ key: 'example_sentence', value: '' }) // container
-          for (const ex of examples) {
-            fields.push({ key: 'example', value: ex })
-          }
-        }
-      }
-
-      entries.push({
-        word: word,
-        normalizedWord: normalized,
-        source: 'wordnet',
-        fields,
-      })
-    }
-
-    return entries
+    return [{
+      word,
+      normalizedWord: normalized,
+      source: 'wordnet',
+      fields,
+    }]
   }
 }

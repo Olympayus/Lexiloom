@@ -24,7 +24,7 @@ npm run tauri dev
 
 ## Key Types
 - `Word` (src/types/word.ts) — word identity
-- `FieldKey` (src/types/field.ts) — 11 built-in field keys (union literal type)
+- `FieldKey` (src/types/field.ts) — 17 built-in field keys (union literal type)
 - `BUILTIN_FIELDS` (src/types/field.ts) — field metadata constant
 - `FieldValue` (src/types/field.ts) — word + field value pair
 - `DictionaryEntry` (src/types/dictionary.ts)

@@ -1,5 +1,6 @@
 import * as fieldsDb from '../db/fields'
 import type { FieldDefinition, FieldValue, UpsertFieldValueInput, FieldValueContentUpdate } from '../types/field'
+import { sortTreeByTemplate } from '../lib/fieldOrder'
 
 let defsCache: FieldDefinition[] | null = null
 
@@ -23,9 +24,15 @@ export async function insertValue(input: UpsertFieldValueInput): Promise<FieldVa
   return result.ok ? result.data : null
 }
 
-// Add a new empty user field_value for the given word + field (add-field flow).
-export async function addFieldValue(wordId: string, fieldId: string): Promise<FieldValue | null> {
-  return insertValue({ wordId, fieldId, value: '', source: 'user' })
+// addFieldValue 签名扩展：支持挂到父下
+export async function addFieldValue(wordId: string, fieldId: string, parentId?: string | null): Promise<FieldValue | null> {
+  return insertValue({ wordId, fieldId, value: '', source: 'user', parentId: parentId ?? null })
+}
+
+// 级联删除（编辑侧单节点删除）
+export async function deleteValueCascade(id: string): Promise<boolean> {
+  const result = await fieldsDb.deleteFieldValueCascade(id)
+  return result.ok
 }
 
 // Batch insert multiple field values (used for dictionary imports)
@@ -83,4 +90,25 @@ export async function getValues(wordId: string): Promise<FieldValue[]> {
   return result.data
     .filter(fv => !fv.parentId)
     .map(fv => ({ ...fv, children: childrenMap.get(fv.id) || [] }))
+}
+
+// 按模板位次重排整词 display_order（spec §4.1）：合并后调用。
+// 返回 true 表示完成（无行时也是成功）。
+export async function renumberWordByTemplate(wordId: string): Promise<boolean> {
+  const result = await fieldsDb.getFieldValuesForWord(wordId)
+  if (!result.ok || result.data.length === 0) return true
+  const defs = await getDefinitions()
+  const keyByDefId = new Map(defs.map(d => [d.id, d.key]))
+  const keyOf = (fv: FieldValue) => keyByDefId.get(fv.fieldId) ?? fv.fieldId
+  const values = await getValues(wordId)
+  const sorted = sortTreeByTemplate(keyOf, values)
+  const flat: { id: string; displayOrder: number }[] = []
+  const assign = (nodes: FieldValue[]) => {
+    for (const n of nodes) {
+      flat.push({ id: n.id, displayOrder: flat.length })
+      if (n.children?.length) assign(n.children)
+    }
+  }
+  assign(sorted)
+  return (await fieldsDb.reorderFieldValues(flat)).ok
 }
