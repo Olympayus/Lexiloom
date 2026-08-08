@@ -55,6 +55,7 @@ interface FieldCardProps {
   onDelete: (fv: FieldValue) => void
   childMenuId: string | null
   onToggleChildMenu: (id: string) => void
+  labelOverride?: string | null
 }
 
 // 单个字段卡片：grip 拖拽（仅 grip 激活拖拽，点击/编辑不受影响）+ 同级插入指示线（规格 §5.5）
@@ -62,7 +63,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
   const {
     defs, editorMode, editingId, editValue, menuOpenId, insertIndicator,
     onStartEdit, onEditValueChange, onSave, onCancelEdit, onToggleMenu, onRestore,
-    onAddChild, onDelete, childMenuId, onToggleChildMenu,
+    onAddChild, onDelete, childMenuId, onToggleChildMenu, labelOverride,
   } = rest
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({ id: fv.id })
   const { setNodeRef: setDropRef } = useDroppable({ id: `drop-${fv.id}` })
@@ -82,16 +83,28 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
   const childKey = (c: FieldValue) => defs.find(d => d.id === c.fieldId)?.key ?? ''
   const zhCount = posChildren.filter(c => childKey(c) === 'chinese_definition').length
   const enCount = posChildren.filter(c => childKey(c) === 'english_definition').length
+  // 词性窗格样式按模式区分（#1）：普通模式中性化，编者模式保留品牌色
   const paneStyle: CSSProperties = isPosPane
-    ? {
-        background: 'color-mix(in srgb, var(--color-brand) 4%, transparent)',
-        borderLeft: '3px solid color-mix(in srgb, var(--color-brand) 55%, transparent)',
-        borderRadius: 'var(--radius-md)',
-        padding: '8px 12px',
-        marginBottom: '6px',
-        position: 'relative',
-        transition: 'background-color 200ms var(--ease-smooth), border-color 200ms var(--ease-smooth)',
-      }
+    ? editorMode
+      ? {
+          background: 'color-mix(in srgb, var(--color-brand) 4%, transparent)',
+          borderLeft: '3px solid color-mix(in srgb, var(--color-brand) 55%, transparent)',
+          borderRadius: 'var(--radius-md)',
+          padding: '8px 12px',
+          marginBottom: '6px',
+          position: 'relative',
+          transition: 'background-color 200ms var(--ease-smooth), border-color 200ms var(--ease-smooth)',
+        }
+      : {
+          background: 'var(--color-surface-raised)',
+          border: '1px solid var(--color-border)',
+          borderLeft: '3px solid var(--color-border-strong)',
+          borderRadius: 'var(--radius-md)',
+          padding: '8px 12px',
+          marginBottom: '6px',
+          position: 'relative',
+          transition: 'background-color 200ms var(--ease-smooth), border-color 200ms var(--ease-smooth)',
+        }
     : {}
   const isEditing = editingId === fv.id
   const isLevel1 = depth === 0
@@ -106,6 +119,37 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
       : '添加项'
   const state = fieldState(fv)
   const draggingStyle = isDragging ? { transform: 'scale(1.02)', boxShadow: 'var(--shadow-raised)' } : null
+
+  // 子级渲染（#2 + #3）：词性父下中/英释义独立编号（每个词性从 1 重计）；每个子级外包连接横线「┗━」+ 相对定位
+  const renderedChildren = hasChildren
+    ? (() => {
+        let zhNum = 0
+        let enNum = 0
+        return fv.children!.map(child => {
+          const cKey = childKey(child)
+          let labelOverride: string | null = null
+          if (isPosPane) {
+            if (cKey === 'chinese_definition') { zhNum += 1; labelOverride = `中文释义(${zhNum})` }
+            else if (cKey === 'english_definition') { enNum += 1; labelOverride = `英文释义(${enNum})` }
+          }
+          return (
+            <div key={child.id} style={{ position: 'relative' }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '-8px',
+                  top: '12px',
+                  width: '8px',
+                  borderTop: '1px solid var(--color-border)',
+                  pointerEvents: 'none',
+                }}
+              />
+              <FieldCard fv={child} depth={depth + 1} {...rest} labelOverride={labelOverride} />
+            </div>
+          )
+        })
+      })()
+    : null
 
   return (
     <div
@@ -218,9 +262,9 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
                   borderRadius: 'var(--radius-full)',
                   fontSize: 'var(--text-xs)',
                   fontWeight: 'var(--weight-medium)',
-                  background: 'color-mix(in srgb, var(--color-brand) 8%, transparent)',
-                  color: 'var(--color-brand)',
-                  border: '1px solid color-mix(in srgb, var(--color-brand) 25%, transparent)',
+                  background: editorMode ? 'color-mix(in srgb, var(--color-brand) 8%, transparent)' : 'transparent',
+                  color: editorMode ? 'var(--color-brand)' : 'var(--color-text-secondary)',
+                  border: `1px solid ${editorMode ? 'color-mix(in srgb, var(--color-brand) 25%, transparent)' : 'var(--color-border-strong)'}`,
                   whiteSpace: 'nowrap',
                   flexShrink: 0,
                   cursor: 'pointer',
@@ -251,7 +295,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
                 color: 'var(--color-text-secondary)',
               }}
             >
-              {def.name}
+              {labelOverride ?? def.name}
             </span>
             {!isContainer && (
           <div
@@ -331,7 +375,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
             {state === 'edited' ? '已编辑' : '个人'}
           </span>
         )}
-        {state === 'edited' && (
+        {(editorMode || state === 'edited') && (
           <div style={{ position: 'relative', flexShrink: 0, alignSelf: 'center' }}>
             <button
               type="button"
@@ -370,29 +414,31 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
                   zIndex: 'var(--z-dropdown)',
                 }}
               >
-                <button
-                  type="button"
-                  onClick={() => onRestore(fv.id)}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '6px 10px',
-                    border: 'none',
-                    background: 'transparent',
-                    borderRadius: 'var(--radius-sm)',
-                    cursor: 'pointer',
-                    color: 'var(--color-text-primary)',
-                    fontSize: 'var(--text-sm)',
-                    fontFamily: 'var(--font-sans)',
-                    whiteSpace: 'nowrap',
-                    transition: 'background-color var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
-                >
-                  还原原始值
-                </button>
+                {state === 'edited' && (
+                  <button
+                    type="button"
+                    onClick={() => onRestore(fv.id)}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      textAlign: 'left',
+                      padding: '6px 10px',
+                      border: 'none',
+                      background: 'transparent',
+                      borderRadius: 'var(--radius-sm)',
+                      cursor: 'pointer',
+                      color: 'var(--color-text-primary)',
+                      fontSize: 'var(--text-sm)',
+                      fontFamily: 'var(--font-sans)',
+                      whiteSpace: 'nowrap',
+                      transition: 'background-color var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
+                  >
+                    还原原始值
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => onDelete(fv)}
@@ -422,10 +468,8 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
         )}
       </div>
       {hasChildren && (
-        <div style={{ marginLeft: '16px', paddingLeft: '12px', borderLeft: '1px solid var(--color-border)', marginTop: '8px' }}>
-          {fv.children!.map(child => (
-            <FieldCard key={child.id} fv={child} depth={depth + 1} {...rest} />
-          ))}
+        <div style={{ marginLeft: '6px', paddingLeft: '8px', borderLeft: '1px solid var(--color-border)', marginTop: '8px' }}>
+          {renderedChildren}
         </div>
       )}
       {/* 每卡「+ 添加子词条」菜单（Task 10 §Step 2）：编者模式可用，按 ALLOWED_CHILD_KEYS 过滤 */}

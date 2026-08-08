@@ -179,7 +179,11 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
       const idx = seen.get(node.field.key) ?? 0
       seen.set(node.field.key, idx + 1)
       const label = fieldLabel(node.field.key)
-      const showNum = Boolean(label) && (keyCounts.get(node.field.key) ?? 0) > 1
+      // #2 中/英释义按词性独立编号：释义始终显示 (n)，非释义节点仅在同类多于 1 时显示编号
+      const isDefinition = node.field.key === 'chinese_definition' || node.field.key === 'english_definition'
+      const showNum = isDefinition
+        ? true
+        : Boolean(label) && (keyCounts.get(node.field.key) ?? 0) > 1
       const numLabel = showNum ? `${label}(${idx + 1})` : label
       const onToggle = () => (isContainer ? toggleSubtree(node.key) : toggle(node.key))
 
