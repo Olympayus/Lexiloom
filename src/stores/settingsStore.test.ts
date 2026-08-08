@@ -53,4 +53,31 @@ describe('settingsStore（规格 §7）', () => {
     useSettingsStore.getState().setSidebarMode('category')
     expect(useSettingsStore.getState().sidebarMode).toBe('category')
   })
+
+  it('持久化：修改写入 localStorage，且不含瞬时字段 settingsOpen', () => {
+    useSettingsStore.getState().setSidebarMode('category')
+    useSettingsStore.getState().setDisplayField('phonetic', false)
+    const raw = localStorage.getItem('lexiloom-settings')
+    expect(raw).not.toBeNull()
+    const parsed = JSON.parse(raw!)
+    expect(parsed.state.sidebarMode).toBe('category')
+    expect(parsed.state.displayFields.phonetic).toBe(false)
+    expect(parsed.state.settingsOpen).toBeUndefined()
+  })
+
+  it('恢复：localStorage 有值时 rehydrate 还原', async () => {
+    localStorage.setItem('lexiloom-settings', JSON.stringify({
+      state: {
+        displayFields: { phonetic: false, part_of_speech: true, chinese_definition: true, english_definition: true, example: true, exchange: true, etymology: true },
+        onlineDictEnabled: true, onlineSources: { oxford: true, longman: true, collins: true, merriam: true },
+        sidebarMode: 'category',
+      },
+      version: 1,
+    }))
+    await useSettingsStore.persist.rehydrate()
+    const s = useSettingsStore.getState()
+    expect(s.sidebarMode).toBe('category')
+    expect(s.onlineDictEnabled).toBe(true)
+    expect(s.displayFields.phonetic).toBe(false)
+  })
 })
