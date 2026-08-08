@@ -490,15 +490,17 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
                   zIndex: 'var(--z-dropdown)',
                 }}
               >
-                <button
-                  type="button"
-                  onClick={() => { onToggleMenu(fv.id); onStartEdit(fv) }}
-                  style={menuItemStyle}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
-                >
-                  编辑
-                </button>
+                {!isContainer && (
+                  <button
+                    type="button"
+                    onClick={() => { onToggleMenu(fv.id); onStartEdit(fv) }}
+                    style={menuItemStyle}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
+                  >
+                    编辑
+                  </button>
+                )}
                 {childDefs.length > 0 && (
                   <div style={{ position: 'relative' }}>
                     <button
@@ -731,6 +733,8 @@ export default function WordWorkbench() {
     setAddFieldOpen(false)
     const fv = await addFieldValue(def.id)
     if (!fv) return
+    // 非词性容器无值格可编辑：不进入幻影编辑态（词性有独立标签编辑路径，保留自动进入）
+    if (CONTAINER_FIELD_KEYS.includes(def.key) && def.key !== 'part_of_speech') return
     setEditingId(fv.id)
     setEditValue('')
     setEntryValue('')
@@ -742,6 +746,8 @@ export default function WordWorkbench() {
     setMenuOpenId(null)
     const fv = await addFieldValue(childDef.id, parentFv.id)
     if (!fv) return
+    // 子容器（如 definition 下的 example_sentence/synonyms）无值格可编辑：不进入幻影编辑态
+    if (CONTAINER_FIELD_KEYS.includes(childDef.key)) return
     setEditingId(fv.id)
     setEditValue('')
     setEntryValue('')
