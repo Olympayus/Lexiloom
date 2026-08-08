@@ -131,10 +131,6 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
       ? '添加子词条'
       : '添加项'
   const state = fieldState(fv)
-  // 「多行」判定放宽（trashfix）：fieldType 为 multiline，或值含换行符（text 字段值视觉多行也按多行锚定）
-  const isMulti =
-    def.fieldType === 'multiline' ||
-    (fv.value ?? '').includes('\n')
   const draggingStyle = isDragging ? { transform: 'scale(1.02)', boxShadow: 'var(--shadow-raised)' } : null
 
   // 子级渲染（#2 + #3）：词性父下中/英释义独立编号（每个词性从 1 重计）；每个子级外包连接横线「┗━」+ 相对定位
@@ -325,7 +321,6 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
               color: editorMode && state === 'original' ? 'var(--color-text-secondary)' : 'var(--color-text-primary)',
               lineHeight: isLevel1 ? 'var(--leading-relaxed)' : undefined,
               fontFamily: isPhonetic ? 'var(--font-phonetic)' : undefined,
-              paddingBottom: isMulti ? '16px' : undefined,  // 多行值底部预留，避免垃圾桶遮挡末行
             }}
           >
             {isEditing ? (
@@ -400,8 +395,8 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
                 {state === 'edited' ? '已编辑' : '个人'}
               </span>
             )}
-            {/* 单行垃圾桶：回到 flex 行内、角标之后（占位不重叠）；多行垃圾桶为卡片右下绝对定位 */}
-            {!isMulti && (
+            {/* 叶子节点垃圾桶：flex 行末、角标之后（容器节点垃圾桶为卡片右下绝对定位） */}
+            {childDefs.length === 0 && (
               <button
                 type="button"
                 title="删除"
@@ -518,8 +513,8 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
           </div>
         )}
       </div>
-      {/* 多行垃圾桶：卡片直接子级，绝对定位锚定卡片（卡片恒 position: relative）右下角 */}
-      {editorMode && isMulti && (
+      {/* 容器节点垃圾桶：卡片直接子级，绝对定位锚定卡片（卡片恒 position: relative）右下角，与左下「+ 添加」按钮对侧 */}
+      {editorMode && childDefs.length > 0 && (
         <button
           type="button"
           title="删除"
