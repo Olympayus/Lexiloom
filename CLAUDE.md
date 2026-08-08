@@ -3,8 +3,8 @@
 Personal vocabulary knowledge management desktop app.
 Tauri 2 + React + TypeScript + SQLite.
 
-> **Status: v0.3.0** — 双词典搜索 + 分层字段 + 全新 UI（Design Tokens、三栏布局、侧边栏收起/分组、工作台三态编辑、分类系统、设置抽屉）完成。
-> **v0.3.0（分支 v0.3.0）** — UI 重构已全部完成（P1–P7）。模块蓝图见 `docs/superpowers/specs/2026-08-03-v0.3-module-plan-design.md`；规格见 `docs/Implementation_Spec.md`。
+> **Status: v0.3.2** — 首次正式发布（正式第 0 版）就绪。v0.3.1 分层字段管理 + v0.3.2 九项 UX 收尾全部完成：侧边栏右键菜单、点击空白关闭、搜索合并添加、分类管理设置、自绘标题栏、分类弹窗 ×、设置持久化、ecdict 词性修正、小 i 弹窗修正。
+> **v0.3.2（分支 v0.3.2 → main）** — 功能全部合入 main；版本号已在 package.json / Cargo.toml / tauri.conf.json 三处同步为 0.3.2。
 
 ## Quick Start
 ```bash
