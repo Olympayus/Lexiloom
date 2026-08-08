@@ -31,6 +31,28 @@ const FIELD_STYLES: Record<FieldState, CSSProperties> = {
   personal: { background: 'var(--color-accent-soft)',   border: '1px solid color-mix(in srgb, var(--color-accent) 20%, transparent)',      borderLeft: '3px solid var(--color-weave-personal)' },
 }
 
+// 容器字段（#5 键判定，取代「有子级且无值」推断：刚建的空容器立即按容器渲染）
+const CONTAINER_FIELD_KEYS = ['part_of_speech', 'supplementary', 'phrase', 'exchange', 'derivatives', 'example_sentence', 'synonyms']
+// 项类型字段（#4）：标签列不渲染字段名，值占满整行
+const ITEM_FIELD_KEYS = ['exchange_item', 'supplementary_item', 'phrase_item', 'derivatives_item', 'synonym_item', 'example']
+
+// 「更多操作」菜单项统一样式（#6）
+const menuItemStyle: CSSProperties = {
+  display: 'block',
+  width: '100%',
+  textAlign: 'left',
+  padding: '6px 10px',
+  border: 'none',
+  background: 'transparent',
+  borderRadius: 'var(--radius-sm)',
+  cursor: 'pointer',
+  color: 'var(--color-text-primary)',
+  fontSize: 'var(--text-sm)',
+  fontFamily: 'var(--font-sans)',
+  whiteSpace: 'nowrap',
+  transition: 'background-color var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
+}
+
 interface InsertIndicator {
   overId: string
   before: boolean
@@ -50,7 +72,6 @@ interface FieldCardProps {
   onSave: () => void
   onCancelEdit: () => void
   onToggleMenu: (id: string) => void
-  onRestore: (id: string) => void
   onAddChild: (parentFv: FieldValue, childDef: FieldDefinition) => void
   onDelete: (fv: FieldValue) => void
   childMenuId: string | null
@@ -62,7 +83,7 @@ interface FieldCardProps {
 function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
   const {
     defs, editorMode, editingId, editValue, menuOpenId, insertIndicator,
-    onStartEdit, onEditValueChange, onSave, onCancelEdit, onToggleMenu, onRestore,
+    onStartEdit, onEditValueChange, onSave, onCancelEdit, onToggleMenu,
     onAddChild, onDelete, childMenuId, onToggleChildMenu, labelOverride,
   } = rest
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({ id: fv.id })
@@ -76,35 +97,27 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
   if (!def) return null
 
   const hasChildren = fv.children && fv.children.length > 0
-  const isContainer = hasChildren && !fv.value
+  const isContainer = CONTAINER_FIELD_KEYS.includes(def.key)
+  // 标签列文本（#4）：项类型字段不渲染字段名，值占满整行；词性子级用 override
+  const labelText = labelOverride ?? (ITEM_FIELD_KEYS.includes(def.key) ? '' : def.name)
   // 词性父：规则线块状窗格（spec §6.1）；词性父不使用 FIELD_STYLES/isLevel1 普通卡样式，窗格样式优先
   const isPosPane = def.key === 'part_of_speech'
   const posChildren = fv.children ?? []
   const childKey = (c: FieldValue) => defs.find(d => d.id === c.fieldId)?.key ?? ''
   const zhCount = posChildren.filter(c => childKey(c) === 'chinese_definition').length
   const enCount = posChildren.filter(c => childKey(c) === 'english_definition').length
-  // 词性窗格样式按模式区分（#1）：普通模式中性化，编者模式保留品牌色
+  // 词性窗格样式（#1）：两种模式统一中性色，品牌蓝仅保留给「已编辑」字段状态语义
   const paneStyle: CSSProperties = isPosPane
-    ? editorMode
-      ? {
-          background: 'color-mix(in srgb, var(--color-brand) 4%, transparent)',
-          borderLeft: '3px solid color-mix(in srgb, var(--color-brand) 55%, transparent)',
-          borderRadius: 'var(--radius-md)',
-          padding: '8px 12px',
-          marginBottom: '6px',
-          position: 'relative',
-          transition: 'background-color 200ms var(--ease-smooth), border-color 200ms var(--ease-smooth)',
-        }
-      : {
-          background: 'var(--color-surface-raised)',
-          border: '1px solid var(--color-border)',
-          borderLeft: '3px solid var(--color-border-strong)',
-          borderRadius: 'var(--radius-md)',
-          padding: '8px 12px',
-          marginBottom: '6px',
-          position: 'relative',
-          transition: 'background-color 200ms var(--ease-smooth), border-color 200ms var(--ease-smooth)',
-        }
+    ? {
+        background: 'var(--color-surface-raised)',
+        border: '1px solid var(--color-border)',
+        borderLeft: '3px solid var(--color-border-strong)',
+        borderRadius: 'var(--radius-md)',
+        padding: '8px 12px',
+        marginBottom: '6px',
+        position: 'relative',
+        transition: 'background-color 200ms var(--ease-smooth), border-color 200ms var(--ease-smooth)',
+      }
     : {}
   const isEditing = editingId === fv.id
   const isLevel1 = depth === 0
@@ -247,13 +260,14 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
           ) : (
             <>
               <span
-                onClick={() => onStartEdit(fv)}
+                onClick={() => editorMode && onStartEdit(fv)}
+                onDoubleClick={() => !editorMode && onStartEdit(fv)}
                 role="button"
                 tabIndex={0}
                 onKeyDown={e => {
                   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onStartEdit(fv) }
                 }}
-                title="点击编辑词性标签"
+                title={editorMode ? '点击编辑词性标签' : '双击编辑词性标签'}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -262,9 +276,9 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
                   borderRadius: 'var(--radius-full)',
                   fontSize: 'var(--text-xs)',
                   fontWeight: 'var(--weight-medium)',
-                  background: editorMode ? 'color-mix(in srgb, var(--color-brand) 8%, transparent)' : 'transparent',
-                  color: editorMode ? 'var(--color-brand)' : 'var(--color-text-secondary)',
-                  border: `1px solid ${editorMode ? 'color-mix(in srgb, var(--color-brand) 25%, transparent)' : 'var(--color-border-strong)'}`,
+                  background: 'var(--color-pos-soft)',
+                  color: 'var(--color-pos)',
+                  border: '1px solid color-mix(in srgb, var(--color-pos) 45%, transparent)',
                   whiteSpace: 'nowrap',
                   flexShrink: 0,
                   cursor: 'pointer',
@@ -285,18 +299,20 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
           )
         ) : (
           <>
-            <span
-              style={{
-                width: isLevel1 ? '100px' : 'auto',
-                minWidth: isLevel1 ? undefined : '80px',
-                flexShrink: 0,
-                fontSize: isLevel1 ? 'var(--text-sm)' : 'var(--text-xs)',
-                fontWeight: 'var(--weight-medium)',
-                color: 'var(--color-text-secondary)',
-              }}
-            >
-              {labelOverride ?? def.name}
-            </span>
+            {labelText && (
+              <span
+                style={{
+                  width: isLevel1 ? '100px' : 'auto',
+                  minWidth: isLevel1 ? undefined : '80px',
+                  flexShrink: 0,
+                  fontSize: isLevel1 ? 'var(--text-sm)' : 'var(--text-xs)',
+                  fontWeight: 'var(--weight-medium)',
+                  color: 'var(--color-text-secondary)',
+                }}
+              >
+                {labelText}
+              </span>
+            )}
             {!isContainer && (
           <div
             style={{
@@ -345,12 +361,14 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
               </div>
             ) : (
               <div
-                onClick={() => onStartEdit(fv)}
+                onClick={() => editorMode && onStartEdit(fv)}
+                onDoubleClick={() => !editorMode && onStartEdit(fv)}
                 onKeyDown={e => {
                   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onStartEdit(fv) }
                 }}
                 role="button"
                 tabIndex={0}
+                title={editorMode ? '点击编辑' : '双击编辑'}
                 style={{ cursor: 'pointer' }}
               >
                 {fv.value}
@@ -360,22 +378,80 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
             )}
           </>
         )}
-        {editorMode && state !== 'original' && (
-          <span
-            style={{
-              flexShrink: 0,
-              fontSize: 'var(--text-xs)',
-              padding: '2px 8px',
-              borderRadius: 'var(--radius-sm)',
-              background: state === 'edited' ? 'var(--color-brand-soft)' : 'color-mix(in srgb, var(--color-accent) 15%, transparent)',
-              color: state === 'edited' ? 'var(--color-brand)' : 'var(--color-accent)',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {state === 'edited' ? '已编辑' : '个人'}
-          </span>
-        )}
-        {(editorMode || state === 'edited') && (
+        {editorMode ? (
+          <>
+            {state !== 'original' && (
+              <span
+                style={{
+                  flexShrink: 0,
+                  fontSize: 'var(--text-xs)',
+                  padding: '2px 8px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: state === 'edited' ? 'var(--color-brand-soft)' : 'color-mix(in srgb, var(--color-accent) 15%, transparent)',
+                  color: state === 'edited' ? 'var(--color-brand)' : 'var(--color-accent)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {state === 'edited' ? '已编辑' : '个人'}
+              </span>
+            )}
+            {def.fieldType === 'multiline' ? (
+              <button
+                type="button"
+                title="删除"
+                aria-label="删除"
+                onClick={() => onDelete(fv)}
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  bottom: '8px',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: 'none',
+                  background: 'transparent',
+                  borderRadius: 'var(--radius-sm)',
+                  cursor: 'pointer',
+                  color: 'var(--color-text-tertiary)',
+                  zIndex: 1,
+                  transition: 'color var(--duration-fast) var(--ease-smooth)',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-danger)' }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-tertiary)' }}
+              >
+                <Icon name="trash" size={16} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                title="删除"
+                aria-label="删除"
+                onClick={() => onDelete(fv)}
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: 'none',
+                  background: 'transparent',
+                  borderRadius: 'var(--radius-sm)',
+                  cursor: 'pointer',
+                  color: 'var(--color-text-tertiary)',
+                  flexShrink: 0,
+                  alignSelf: 'center',
+                  transition: 'color var(--duration-fast) var(--ease-smooth)',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-danger)' }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-tertiary)' }}
+              >
+                <Icon name="trash" size={16} />
+              </button>
+            )}
+          </>
+        ) : (
           <div style={{ position: 'relative', flexShrink: 0, alignSelf: 'center' }}>
             <button
               type="button"
@@ -414,49 +490,44 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
                   zIndex: 'var(--z-dropdown)',
                 }}
               >
-                {state === 'edited' && (
-                  <button
-                    type="button"
-                    onClick={() => onRestore(fv.id)}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '6px 10px',
-                      border: 'none',
-                      background: 'transparent',
-                      borderRadius: 'var(--radius-sm)',
-                      cursor: 'pointer',
-                      color: 'var(--color-text-primary)',
-                      fontSize: 'var(--text-sm)',
-                      fontFamily: 'var(--font-sans)',
-                      whiteSpace: 'nowrap',
-                      transition: 'background-color var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
-                  >
-                    还原原始值
-                  </button>
+                <button
+                  type="button"
+                  onClick={() => { onToggleMenu(fv.id); onStartEdit(fv) }}
+                  style={menuItemStyle}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
+                >
+                  编辑
+                </button>
+                {childDefs.length > 0 && (
+                  <div style={{ position: 'relative' }}>
+                    <button
+                      type="button"
+                      onClick={() => onToggleChildMenu(fv.id)}
+                      style={menuItemStyle}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
+                    >
+                      添加子词条
+                    </button>
+                    {childMenuId === fv.id && childDefs.map(childDef => (
+                      <button
+                        key={childDef.id}
+                        type="button"
+                        onClick={() => onAddChild(fv, childDef)}
+                        style={{ ...menuItemStyle, paddingLeft: '20px' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
+                      >
+                        {childDef.name}
+                      </button>
+                    ))}
+                  </div>
                 )}
                 <button
                   type="button"
                   onClick={() => onDelete(fv)}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '6px 10px',
-                    border: 'none',
-                    background: 'transparent',
-                    borderRadius: 'var(--radius-sm)',
-                    cursor: 'pointer',
-                    color: 'var(--color-danger)',
-                    fontSize: 'var(--text-sm)',
-                    fontFamily: 'var(--font-sans)',
-                    whiteSpace: 'nowrap',
-                    transition: 'background-color var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
-                  }}
+                  style={{ ...menuItemStyle, color: 'var(--color-danger)' }}
                   onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--color-danger) 10%, transparent)' }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
                 >
@@ -556,7 +627,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
 }
 
 export default function WordWorkbench() {
-  const { words, selectedWordId, fieldValues, updateFieldValue, restoreFieldValue, deleteWord, addFieldValue, deleteFieldValue, reorderFieldValues } = useWordStore()
+  const { words, selectedWordId, fieldValues, updateFieldValue, deleteWord, addFieldValue, deleteFieldValue, reorderFieldValues } = useWordStore()
   const [defs, setDefs] = useState<FieldDefinition[]>([])
   const [editorMode, setEditorMode] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -668,6 +739,7 @@ export default function WordWorkbench() {
   // 添加子词条：挂到当前节点下 → 自动进入编辑态（Task 10 §Step 2）
   const handleAddChild = async (parentFv: FieldValue, childDef: FieldDefinition) => {
     setChildMenuId(null)
+    setMenuOpenId(null)
     const fv = await addFieldValue(childDef.id, parentFv.id)
     if (!fv) return
     setEditingId(fv.id)
@@ -761,7 +833,6 @@ export default function WordWorkbench() {
     onSave: handleSave,
     onCancelEdit: () => setEditingId(null),
     onToggleMenu: (id) => setMenuOpenId(menuOpenId === id ? null : id),
-    onRestore: (id) => { setMenuOpenId(null); restoreFieldValue(id) },
     onAddChild: handleAddChild,
     onDelete: handleDeleteField,
     childMenuId,

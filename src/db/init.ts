@@ -1,4 +1,4 @@
-import { SCHEMA_SEED_STATEMENTS, SCHEMA_VERSION, SQL_DROP_TABLES } from './schema'
+import { SCHEMA_SEED_STATEMENTS, SCHEMA_VERSION, SQL_DROP_TABLES, seedFieldDefinitionsSQL } from './schema'
 
 // 与 tauri-plugin-sql Database 对齐的最小接口（与 test-utils.DbLike 同构）
 export interface DbHandle {
@@ -9,8 +9,12 @@ export interface DbHandle {
 export async function ensureSchema(db: DbHandle): Promise<void> {
   const rows = await db.select<{ user_version: number }>('SELECT user_version FROM pragma_user_version')
   const current = rows[0]?.user_version ?? 0
-  if (current === SCHEMA_VERSION) return
-  for (const sql of SQL_DROP_TABLES) await db.execute(sql)
-  for (const sql of SCHEMA_SEED_STATEMENTS) await db.execute(sql)
-  await db.execute(`PRAGMA user_version = ${SCHEMA_VERSION}`)
+  if (current !== SCHEMA_VERSION) {
+    for (const sql of SQL_DROP_TABLES) await db.execute(sql)
+    for (const sql of SCHEMA_SEED_STATEMENTS) await db.execute(sql)
+    await db.execute(`PRAGMA user_version = ${SCHEMA_VERSION}`)
+    return
+  }
+  // 版本一致：仍幂等补全新内置字段定义（INSERT OR IGNORE），不重建表、不丢数据
+  await db.execute(seedFieldDefinitionsSQL())
 }
