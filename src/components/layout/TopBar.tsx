@@ -90,7 +90,7 @@ export default function TopBar() {
       }}
       style={{
         height: '56px', display: 'grid', gridTemplateColumns: '1fr auto 1fr',
-        alignItems: 'center', gap: '16px', padding: '0 12px 0 20px',
+        alignItems: 'center', gap: '12px', padding: '0 8px 0 16px',
         position: 'relative', zIndex: 'var(--z-sticky)',
         background: 'var(--color-canvas)', borderBottom: '1px solid var(--color-border)',
       }}
@@ -182,7 +182,7 @@ export default function TopBar() {
           title="设置"
           onClick={openSettings}
           style={{
-            width: '36px', height: '36px', flexShrink: 0, marginRight: '6px', outline: 'none',
+            width: '32px', height: '32px', flexShrink: 0, marginRight: '4px', outline: 'none',
             border: 'none', background: 'transparent', borderRadius: 'var(--radius-md)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
             color: 'var(--color-text-secondary)',
@@ -201,19 +201,19 @@ export default function TopBar() {
         </button>
 
         <button type="button" title="最小化" aria-label="最小化" onClick={() => void appWindow.minimize()}
-          style={{ width: '36px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', outline: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
+          style={{ width: '30px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', outline: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
           <Icon name="minimize" size={14} />
         </button>
         <button type="button" title={isMaximized ? '还原' : '最大化'} aria-label={isMaximized ? '还原' : '最大化'} onClick={toggleMaximize}
-          style={{ width: '36px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', outline: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
+          style={{ width: '30px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', outline: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
           <Icon name={isMaximized ? 'restore' : 'maximize'} size={14} />
         </button>
         <button type="button" title="关闭" aria-label="关闭" onClick={() => void appWindow.close()}
-          style={{ width: '36px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', outline: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
+          style={{ width: '30px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', outline: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-danger)'; e.currentTarget.style.color = 'white' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-secondary)' }}>
           <Icon name="close" size={14} />
