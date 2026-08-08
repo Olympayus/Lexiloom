@@ -15,11 +15,9 @@ import { Button } from '../ui/Button'
 import EmptyState from '../ui/EmptyState'
 import Icon from '../icons'
 import CategoryCapsule from './CategoryCapsule'
-import CategoryEditorModal from './CategoryEditorModal'
-import CategoryAssignModal from './CategoryAssignModal'
 import { useCategoryStore } from '../../stores/categoryStore'
+import { useUiStore } from '../../stores/uiStore'
 import type { FieldDefinition, FieldValue } from '../../types/field'
-import type { Category } from '../../types/category'
 
 type FieldState = 'original' | 'edited' | 'personal'
 const fieldState = (fv: FieldValue): FieldState =>
@@ -660,12 +658,10 @@ export default function WordWorkbench() {
   const [saved, setSaved] = useState(false)
   const [fadeIn, setFadeIn] = useState(true)
   const [insertIndicator, setInsertIndicator] = useState<InsertIndicator | null>(null)
-  const [editorOpen, setEditorOpen] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
-  const [assignOpen, setAssignOpen] = useState(false)
   const [capsuleExpanded, setCapsuleExpanded] = useState(false)
 
   const { categories, wordCategoryIds, loadWordCategories } = useCategoryStore()
+  const { openAssign, openEditor } = useUiStore()
 
   const selectedWord = words.find(w => w.id === selectedWordId)
 
@@ -915,7 +911,7 @@ export default function WordWorkbench() {
                 <CategoryCapsule
                   key={cat.id}
                   category={cat}
-                  onClick={() => { setEditingCategory(cat); setEditorOpen(true) }}
+                  onClick={() => openEditor(cat, selectedWord.id)}
                 />
               ))}
               {showMoreCapsules && (
@@ -947,7 +943,7 @@ export default function WordWorkbench() {
                 <CategoryCapsule
                   key={cat.id}
                   category={cat}
-                  onClick={() => { setEditingCategory(cat); setEditorOpen(true) }}
+                  onClick={() => openEditor(cat, selectedWord.id)}
                 />
               ))}
               {/* 「+」虚线圆钮：新建/选择分类（规格 §5.1） */}
@@ -955,7 +951,7 @@ export default function WordWorkbench() {
                 type="button"
                 title="添加分类"
                 aria-label="添加分类"
-                onClick={() => { setAssignOpen(true); setCapsuleExpanded(false) }}
+                onClick={() => { openAssign(selectedWord.id); setCapsuleExpanded(false) }}
                 style={{
                   width: '24px',
                   height: '24px',
@@ -1158,20 +1154,6 @@ export default function WordWorkbench() {
           <Icon name="trash" size={16} />
           删除单词
         </button>
-
-        <CategoryAssignModal
-          open={assignOpen}
-          wordId={selectedWord.id}
-          onClose={() => setAssignOpen(false)}
-          onCreateNew={() => { setAssignOpen(false); setEditingCategory(null); setEditorOpen(true) }}
-        />
-        <CategoryEditorModal
-          open={editorOpen}
-          category={editingCategory}
-          wordId={selectedWord.id}
-          onClose={() => setEditorOpen(false)}
-          onSaved={() => setCapsuleExpanded(false)}
-        />
       </div>
     </div>
   )
