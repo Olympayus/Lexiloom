@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, type CSSProperties } from 'react'
 import { useFocusTrap } from '../../lib/useFocusTrap'
 import { useCategoryStore } from '../../stores/categoryStore'
 import type { Category } from '../../types/category'
+import Icon from '../icons'
 import { Button } from '../ui/Button'
 
 // 规格 §6.2 分类色板（8 色），与 tokens.css --color-cat-1..8 一致
@@ -10,7 +11,7 @@ export const CATEGORY_COLORS = ['#7A7368', '#6B8E7F', '#4A6FA5', '#8B6A8B', '#C1
 interface Props {
   open: boolean
   category: Category | null   // null = 新建模式；非 null = 编辑已有分类
-  wordId: string              // 当前单词（编辑模式「从此单词移除」用）
+  wordId?: string             // 当前单词（编辑模式「从此单词移除」用）；standalone 模式省略
   onClose: () => void
   onSaved?: (category: Category) => void
 }
@@ -33,7 +34,7 @@ export default function CategoryEditorModal({ open, category, wordId, onClose, o
     setError('')
   }, [open, category])
 
-  // Esc 关闭（§11 a11y 键盘可达；模态仅在 workbench 视图渲染，无与词典详情 Esc 冲突）
+  // Esc 关闭（§11 a11y 键盘可达）
   useEffect(() => {
     if (!open) return
     const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -60,13 +61,13 @@ export default function CategoryEditorModal({ open, category, wordId, onClose, o
       name: trimmed, color, description: description.trim() || undefined, isDefault,
     })
     if (!created) { setError('保存失败，请重试'); return }
-    await assignToWord(wordId, created.id)  // 新建分类自动归入当前单词
+    if (created && wordId) await assignToWord(wordId, created.id)  // 新建分类自动归入当前单词（standalone 无 wordId 时不归词）
     onClose()
     onSaved?.(created)
   }
 
   const handleRemoveFromWord = async () => {
-    if (!category) return
+    if (!category || !wordId) return
     await removeFromWord(wordId, category.id)
     onClose()
   }
@@ -95,8 +96,18 @@ export default function CategoryEditorModal({ open, category, wordId, onClose, o
       style={{ position: 'fixed', inset: 0, background: 'var(--color-scrim)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
     >
       <div style={{ width: '360px', padding: '24px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-overlay)' }}>
-        <div style={{ fontFamily: 'var(--font-serif)', fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)', marginBottom: '16px' }}>
-          {category ? '编辑分类' : '新建分类'}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div style={{ fontFamily: 'var(--font-serif)', fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>
+            {category ? '编辑分类' : '新建分类'}
+          </div>
+          <button
+            type="button" aria-label="关闭" title="关闭" onClick={onClose}
+            style={{ width: '28px', height: '28px', border: 'none', background: 'transparent', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-secondary)' }}
+          >
+            <Icon name="close" size={18} />
+          </button>
         </div>
 
         <div style={{ marginBottom: '16px' }}>
@@ -149,7 +160,7 @@ export default function CategoryEditorModal({ open, category, wordId, onClose, o
         {error && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger)', marginBottom: '8px' }}>{error}</div>}
 
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center', marginTop: '20px' }}>
-          {category && (
+          {category && wordId && (
             <>
               <button
                 type="button"
