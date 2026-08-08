@@ -120,7 +120,7 @@ export default function TopBar() {
       </div>
 
       {/* 中：搜索框绝对居中、胶囊圆角（40px 高，聚焦边框 brand） */}
-      <div style={{ justifySelf: 'center', width: 'min(680px, 100%)' }}>
+      <div style={{ justifySelf: 'center', width: 'min(960px, 100%)' }}>
         <div className="relative">
           <div style={{
             display: 'flex', alignItems: 'center', gap: '10px', height: '40px', padding: '0 14px',
