@@ -65,4 +65,15 @@ describe('buildEcdictFields', () => {
       { label: '最高级', value: 'baldest' },
     ])
   })
+  it('a. → adj. 归一化（形容词词性）', () => {
+    const fields = buildEcdictFields({
+      word: 'happy',
+      translation: 'a. 快乐的\\na. 幸福的',
+      definition: null, phonetic: '/ˈhæpi/', exchange: null,
+    })
+    const pos = fields.filter(f => f.key === 'part_of_speech')
+    expect(pos).toHaveLength(1)
+    expect(pos[0].value).toBe('adj.')
+    expect(pos[0].children!.map(c => c.value)).toEqual(['快乐的', '幸福的'])
+  })
 })
