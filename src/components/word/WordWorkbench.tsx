@@ -400,6 +400,34 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
                 {state === 'edited' ? '已编辑' : '个人'}
               </span>
             )}
+            {/* 单行垃圾桶：回到 flex 行内、角标之后（占位不重叠）；多行垃圾桶为卡片右下绝对定位 */}
+            {!isMulti && (
+              <button
+                type="button"
+                title="删除"
+                aria-label="删除"
+                onClick={() => onDelete(fv)}
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: 'none',
+                  background: 'transparent',
+                  borderRadius: 'var(--radius-sm)',
+                  cursor: 'pointer',
+                  color: 'var(--color-text-tertiary)',
+                  flexShrink: 0,
+                  alignSelf: 'center',
+                  transition: 'color var(--duration-fast) var(--ease-smooth)',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-danger)' }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-tertiary)' }}
+              >
+                <Icon name="trash" size={16} />
+              </button>
+            )}
           </>
         ) : (
           <div style={{ position: 'relative', flexShrink: 0, alignSelf: 'center' }}>
@@ -490,8 +518,8 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
           </div>
         )}
       </div>
-      {/* 垃圾桶：卡片直接子级，绝对定位锚定卡片（卡片恒 position: relative）。多行 → 右下；单行 → 垂直居中最右 */}
-      {editorMode && (
+      {/* 多行垃圾桶：卡片直接子级，绝对定位锚定卡片（卡片恒 position: relative）右下角 */}
+      {editorMode && isMulti && (
         <button
           type="button"
           title="删除"
@@ -500,6 +528,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
           style={{
             position: 'absolute',
             right: '8px',
+            bottom: '8px',
             width: '24px',
             height: '24px',
             display: 'flex',
@@ -512,9 +541,6 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
             color: 'var(--color-text-tertiary)',
             zIndex: 1,
             transition: 'color var(--duration-fast) var(--ease-smooth)',
-            ...(isMulti
-              ? { bottom: '8px' }  // 多行：卡片右下角
-              : { top: '50%', transform: 'translateY(-50%)' }),  // 单行：卡片最右、垂直居中
           }}
           onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-danger)' }}
           onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-tertiary)' }}
