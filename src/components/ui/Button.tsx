@@ -21,6 +21,7 @@ export function Button({ variant = 'primary', className = '', ...props }: Props)
         padding: '6px 20px',
         borderRadius: '6px',
         lineHeight: 1.5,
+        whiteSpace: 'nowrap',
       }}
       {...props}
     />

@@ -159,7 +159,7 @@ export default function CategoryEditorModal({ open, category, wordId, onClose, o
 
         {error && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger)', marginBottom: '8px' }}>{error}</div>}
 
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center', marginTop: '20px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'flex-end', alignItems: 'center', marginTop: '20px' }}>
           {category && wordId && (
             <>
               <button
@@ -169,6 +169,7 @@ export default function CategoryEditorModal({ open, category, wordId, onClose, o
                   marginRight: 'auto', border: 'none', background: 'transparent', cursor: 'pointer',
                   fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)',
                   fontFamily: 'var(--font-sans)', padding: '6px 8px', borderRadius: 'var(--radius-sm)',
+                  whiteSpace: 'nowrap',
                   transition: 'color var(--duration-fast) var(--ease-smooth), background-color var(--duration-fast) var(--ease-smooth)',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-danger)' }}
@@ -184,11 +185,12 @@ export default function CategoryEditorModal({ open, category, wordId, onClose, o
                   color: 'var(--color-danger)',
                   border: '1px solid var(--color-border)',
                   borderRadius: '6px',
-                  padding: '6px 20px',
+                  padding: '6px 12px',
                   cursor: 'pointer',
                   fontFamily: 'var(--font-sans)',
                   fontSize: '14px',
                   lineHeight: 1.5,
+                  whiteSpace: 'nowrap',
                   transition: 'background-color var(--duration-fast) var(--ease-smooth)',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--color-danger) 8%, transparent)' }}
