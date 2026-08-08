@@ -89,14 +89,14 @@ export default function TopBar({ sidebarWidth }: { sidebarWidth: number }) {
         toggleMaximize()
       }}
       style={{
-        height: '56px', display: 'grid', gridTemplateColumns: 'auto 1fr auto',
-        alignItems: 'center', gap: '12px', padding: '0 8px 0 16px',
+        height: '56px', display: 'flex', alignItems: 'center', gap: '12px',
+        padding: '0 8px 0 16px',
         position: 'relative', zIndex: 'var(--z-sticky)',
         background: 'var(--color-canvas)', borderBottom: '1px solid var(--color-border)',
       }}
     >
       {/* 左：Logo 32×32（规格 §3：圆角 radius-md，渐变 brand→#3A5A8A），点击回词编辑视图 */}
-      <div style={{ justifySelf: 'start', display: 'flex', alignItems: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
         <button
           type="button"
           aria-label="Lexiloom 首页"
@@ -119,8 +119,13 @@ export default function TopBar({ sidebarWidth }: { sidebarWidth: number }) {
         </button>
       </div>
 
-      {/* 中：搜索框居中；宽度上限 = 视口 − 2×(侧边栏宽 + 16px 间隙)，左边缘落在侧边栏延长线右侧留一小段距离 */}
-      <div style={{ justifySelf: 'center', width: '100%', maxWidth: `min(960px, calc(100vw - ${(sidebarWidth + 16) * 2}px))` }}>
+      {/* 中：搜索框按窗口中心绝对居中；宽度上限 = 视口 − 2×(侧边栏宽 + 16px 间隙)，左边缘落在侧边栏延长线右侧留一小段距离 */}
+      <div
+        style={{
+          position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
+          width: `min(960px, max(320px, calc(100vw - ${(sidebarWidth + 16) * 2}px)))`,
+        }}
+      >
         <div className="relative">
           <div style={{
             display: 'flex', alignItems: 'center', gap: '10px', height: '40px', padding: '0 14px',
@@ -173,7 +178,7 @@ export default function TopBar({ sidebarWidth }: { sidebarWidth: number }) {
       </div>
 
       {/* 右：设置齿轮 + 窗口控制（最小化 / 最大化⇄还原 / 关闭） */}
-      <div style={{ justifySelf: 'end', display: 'flex', alignItems: 'center', gap: '2px' }}>
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
         {/* 设置按钮：齿轮 20px，点击打开设置面板（规格 §3、§7.1） */}
         <button
           type="button"
