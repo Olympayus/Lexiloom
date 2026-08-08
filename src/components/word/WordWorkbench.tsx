@@ -164,6 +164,96 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
       })()
     : null
 
+  // 普通模式「更多操作」三点（按钮 + 下拉菜单）：叶子/容器复用同一 JSX，仅包装位置不同
+  const threeDotMenu = (
+    <>
+      <button
+        type="button"
+        title="更多操作"
+        aria-label="更多操作"
+        onClick={() => onToggleMenu(fv.id)}
+        className="opacity-0 group-hover:opacity-100"
+        style={{
+          width: '24px',
+          height: '24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: 'none',
+          background: 'transparent',
+          borderRadius: 'var(--radius-sm)',
+          cursor: 'pointer',
+          color: 'var(--color-text-tertiary)',
+          transition: 'opacity var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
+        }}
+      >
+        <Icon name="more" size={16} />
+      </button>
+      {menuOpenId === fv.id && (
+        <div
+          style={{
+            position: 'absolute',
+            right: 0,
+            top: 'calc(100% + 4px)',
+            minWidth: '120px',
+            padding: '4px',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: 'var(--shadow-overlay)',
+            zIndex: 'var(--z-dropdown)',
+          }}
+        >
+          {!isContainer && (
+            <button
+              type="button"
+              onClick={() => { onToggleMenu(fv.id); onStartEdit(fv) }}
+              style={menuItemStyle}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
+            >
+              编辑
+            </button>
+          )}
+          {childDefs.length > 0 && (
+            <div style={{ position: 'relative' }}>
+              <button
+                type="button"
+                onClick={() => onToggleChildMenu(fv.id)}
+                style={menuItemStyle}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
+              >
+                添加子词条
+              </button>
+              {childMenuId === fv.id && childDefs.map(childDef => (
+                <button
+                  key={childDef.id}
+                  type="button"
+                  onClick={() => onAddChild(fv, childDef)}
+                  style={{ ...menuItemStyle, paddingLeft: '20px' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
+                >
+                  {childDef.name}
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => onDelete(fv)}
+            style={{ ...menuItemStyle, color: 'var(--color-danger)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--color-danger) 10%, transparent)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+          >
+            删除
+          </button>
+        </div>
+      )}
+    </>
+  )
+
   return (
     <div
       ref={setRefs}
@@ -425,94 +515,20 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
             )}
           </>
         ) : (
-          <div style={{ position: 'relative', flexShrink: 0, alignSelf: 'center' }}>
-            <button
-              type="button"
-              title="更多操作"
-              aria-label="更多操作"
-              onClick={() => onToggleMenu(fv.id)}
-              className="opacity-0 group-hover:opacity-100"
-              style={{
-                width: '24px',
-                height: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: 'none',
-                background: 'transparent',
-                borderRadius: 'var(--radius-sm)',
-                cursor: 'pointer',
-                color: 'var(--color-text-tertiary)',
-                transition: 'opacity var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
-              }}
-            >
-              <Icon name="more" size={16} />
-            </button>
-            {menuOpenId === fv.id && (
-              <div
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 'calc(100% + 4px)',
-                  minWidth: '120px',
-                  padding: '4px',
-                  background: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 'var(--radius-md)',
-                  boxShadow: 'var(--shadow-overlay)',
-                  zIndex: 'var(--z-dropdown)',
-                }}
-              >
-                {!isContainer && (
-                  <button
-                    type="button"
-                    onClick={() => { onToggleMenu(fv.id); onStartEdit(fv) }}
-                    style={menuItemStyle}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
-                  >
-                    编辑
-                  </button>
-                )}
-                {childDefs.length > 0 && (
-                  <div style={{ position: 'relative' }}>
-                    <button
-                      type="button"
-                      onClick={() => onToggleChildMenu(fv.id)}
-                      style={menuItemStyle}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
-                    >
-                      添加子词条
-                    </button>
-                    {childMenuId === fv.id && childDefs.map(childDef => (
-                      <button
-                        key={childDef.id}
-                        type="button"
-                        onClick={() => onAddChild(fv, childDef)}
-                        style={{ ...menuItemStyle, paddingLeft: '20px' }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
-                      >
-                        {childDef.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => onDelete(fv)}
-                  style={{ ...menuItemStyle, color: 'var(--color-danger)' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--color-danger) 10%, transparent)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                >
-                  删除
-                </button>
-              </div>
-            )}
-          </div>
+          // 普通模式三点：叶子节点保留 flex 行内最右；容器节点移到卡片右上角（见下方卡片直接子级）
+          childDefs.length === 0 && (
+            <div style={{ position: 'relative', flexShrink: 0, alignSelf: 'center' }}>
+              {threeDotMenu}
+            </div>
+          )
         )}
       </div>
+      {/* 容器节点三点：普通模式，卡片直接子级，绝对定位锚定卡片（卡片恒 position: relative）右上角 */}
+      {!editorMode && childDefs.length > 0 && (
+        <div style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 'var(--z-dropdown)' }}>
+          {threeDotMenu}
+        </div>
+      )}
       {/* 容器节点垃圾桶：卡片直接子级，绝对定位锚定卡片（卡片恒 position: relative）右下角，与左下「+ 添加」按钮对侧 */}
       {editorMode && childDefs.length > 0 && (
         <button
