@@ -97,30 +97,21 @@ Lexiloom 是一款个人词汇知识管理桌面应用。它把**离线词典查
 
 ## 🚀 安装
 
-### 正式安装包（推荐）
+### 一键安装（推荐，无需命令行）
 
-构建发布版后，运行安装程序即可：
+前往 [GitHub Releases](https://github.com/Olympayus/Lexiloom/releases) 下载对应系统的安装包：
 
-```bash
-cd Lexiloom
-npm install
-npm run build:dictionaries   # 生成本地词典库（首次必须）
-npm run tauri build
-```
+| 系统 | 安装包 |
+|------|--------|
+| **Windows** | `Lexiloom-0.3.2-setup.exe`（推荐）或 `Lexiloom_0.3.2_x64.msi` |
+| **macOS** | `Lexiloom_0.3.2_x64.dmg` |
+| **Linux** | `Lexiloom_0.3.2_x86_64.AppImage` / `.deb` |
 
-生成的安装包位于：
+下载后**双击运行安装程序**，跟随向导即可完成安装；开始菜单会出现 **Lexiloom** 图标。
 
-```
-src-tauri/target/release/bundle/
-├── nsis/Lexiloom-0.3.2-setup.exe   # Windows 安装包（推荐）
-└── msi/Lexiloom_0.3.2_x64.msi      # Windows MSI
-```
+> 💡 全程无需安装 Node.js / Rust，也无需输入任何命令。卸载见 [卸载](#️-卸载) 一节。
 
-双击 `setup.exe`，跟随向导完成安装；开始菜单会创建 **Lexiloom** 快捷方式。
-
-> macOS 为 `.app` / `.dmg`，Linux 为 `.AppImage` / `.deb`（见 `bundle/` 目录）。
-
-### 从源码运行（开发模式）
+### 从源码构建（面向开发者）
 
 前置要求：
 
