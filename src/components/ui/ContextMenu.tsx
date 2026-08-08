@@ -45,7 +45,8 @@ export default function ContextMenu({ x, y, items, onClose }: Props) {
 
   const height = items.length * ITEM_HEIGHT + 8
   const pos = clampMenuPosition(x, y, MENU_WIDTH, height)
-  const submenuOpenLeft = x + MENU_WIDTH + SUBMENU_WIDTH + 8 > window.innerWidth
+  // 翻转判定基于钳制后的 pos.x（原始 x 可能已被 clampMenuPosition 移入视口，导致误判）
+  const submenuOpenLeft = pos.x + MENU_WIDTH + SUBMENU_WIDTH + 8 > window.innerWidth
 
   const itemStyle = (item: MenuItem): React.CSSProperties => ({
     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
@@ -72,7 +73,7 @@ export default function ContextMenu({ x, y, items, onClose }: Props) {
         <div
           key={item.key}
           style={{ position: 'relative' }}
-          onMouseEnter={() => setSub(item.children ? item.key : null)}
+          onMouseEnter={() => setSub(item.children && !item.disabled ? item.key : null)}
           onMouseLeave={() => setSub(prev => prev === item.key ? null : prev)}
         >
           <button
@@ -87,7 +88,7 @@ export default function ContextMenu({ x, y, items, onClose }: Props) {
           {sub === item.key && item.children && (
             <div style={{
               position: 'absolute', top: 0,
-              left: submenuOpenLeft ? `-${SUBMENU_WIDTH}px` : '100%',
+              left: submenuOpenLeft ? `${Math.max(-SUBMENU_WIDTH, 4 - pos.x)}px` : '100%',
               minWidth: SUBMENU_WIDTH, padding: '4px',
               background: 'var(--color-surface)', border: '1px solid var(--color-border)',
               borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-overlay)',

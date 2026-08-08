@@ -50,6 +50,18 @@ export const useSettingsStore = create<SettingsStore>()(
       name: 'lexiloom-settings',
       version: 1,
       storage: createJSONStorage(() => localStorage),
+      migrate: (state) => state as SettingsStore,  // version 1: pass-through, reserved for future migrations
+      onRehydrateStorage: () => (_, error) => {
+        if (error) {
+          // 损坏/缺失数据 → 回退默认值
+          useSettingsStore.setState({
+            displayFields: DEFAULT_DISPLAY_FIELDS,
+            onlineDictEnabled: false,
+            onlineSources: DEFAULT_ONLINE_SOURCES,
+            sidebarMode: 'alphabet',
+          })
+        }
+      },
       partialize: (s) => ({
         displayFields: s.displayFields,
         onlineDictEnabled: s.onlineDictEnabled,

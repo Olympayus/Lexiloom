@@ -143,17 +143,26 @@ export default function DictDetailCard({
     setSelected(prev => toggleSubtreeSelection(prev, allNodeKeys, key))
   }
 
-  // 免跳转添加：合并成功后卡片内「已添加 ✓」反馈（1.5s）
+  // 免跳转添加：合并成功后卡片内「已添加 ✓」反馈（1.5s）；失败则短暂错误提示（2.5s，规格：失败不跳转）
   const [added, setAdded] = useState(false)
+  const [error, setError] = useState(false)
   const handleAdd = async () => {
     const inputs = buildMergeInputs(visible, selected, source_ as FieldSource)
     if (inputs.length === 0) return
     const word = await ensureWord(word_)
-    if (!word) return
+    if (!word) {
+      setError(true)
+      window.setTimeout(() => setError(false), 2500)
+      return
+    }
     const ok = await mergeWordFields(word.id, inputs)
     if (ok) {
+      setError(false)
       setAdded(true)
       window.setTimeout(() => setAdded(false), 1500)
+    } else {
+      setError(true)
+      window.setTimeout(() => setError(false), 2500)
     }
   }
 
@@ -271,8 +280,11 @@ export default function DictDetailCard({
       </div>
 
       {/* 添加到词库按钮 */}
-      <div className="px-4 py-3 flex justify-end"
+      <div className="px-4 py-3 flex items-center justify-end gap-2"
         style={{ borderTop: '1px solid var(--color-border)', background: 'var(--color-canvas)' }}>
+        {error && (
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger)' }}>添加失败，请重试</span>
+        )}
         <button
           className="px-4 py-1.5 rounded text-sm font-medium transition-opacity hover:opacity-90"
           style={{ background: accent.color, color: 'white' }}

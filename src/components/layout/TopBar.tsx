@@ -30,7 +30,7 @@ export default function TopBar() {
     appWindow.onResized(async () => {
       const m = await appWindow.isMaximized()
       if (!cancelled) setIsMaximized(m)
-    }).then(fn => { unlisten = fn })
+    }).then(fn => { unlisten = fn }).catch(console.error)
     return () => { cancelled = true; unlisten?.() }
   }, [appWindow])
 

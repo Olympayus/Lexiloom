@@ -23,6 +23,7 @@ export default function DictDetailPanel({ word }: Props) {
   const [results, setResults] = useState<DetailResult[]>([])
   const [loading, setLoading] = useState(true)
   const [lookupError, setLookupError] = useState(false)
+  const [mergeError, setMergeError] = useState(false)
   const showWorkbench = useViewStore(s => s.showWorkbench)
   const selectWord = useWordStore(s => s.selectWord)
   const mergeWordFields = useWordStore(s => s.mergeWordFields)
@@ -37,7 +38,9 @@ export default function DictDetailPanel({ word }: Props) {
   const anySelected = results.some(r => (selectionCounts[r.source] ?? 0) > 0)
 
   // 合并添加：聚合全源勾选字段 → 确保词条存在 → 一次合并 → 跳编辑页
+  // 规格：addWord/mergeWordFields 任一失败 → 面板顶部错误提示，不跳转（错误在下次 lookup/attempt 时清除）
   const handleMergeAdd = async () => {
+    setMergeError(false)
     const inputs: MergeFieldInput[] = []
     for (const r of results) {
       const built = cardRefs.current[r.source]?.buildInputs()
@@ -45,9 +48,17 @@ export default function DictDetailPanel({ word }: Props) {
     }
     if (inputs.length === 0) return
     const target = await ensureWord(word)
-    if (!target) return
+    if (!target) {
+      setMergeError(true)
+      return
+    }
     const ok = await mergeWordFields(target.id, inputs)
-    if (ok) { void selectWord(target.id); showWorkbench() }
+    if (!ok) {
+      setMergeError(true)
+      return
+    }
+    void selectWord(target.id)
+    showWorkbench()
   }
 
   // 阶段二：精确查询词典详情（两个词典源堆叠）
@@ -55,6 +66,7 @@ export default function DictDetailPanel({ word }: Props) {
     let cancelled = false
     setLoading(true)
     setLookupError(false)
+    setMergeError(false)
     setResults([])
     setSelectionCounts({})
     lookupWord(word)
@@ -130,6 +142,11 @@ export default function DictDetailPanel({ word }: Props) {
 
             {/* 合并添加栏：聚合全源勾选，一次合并后跳编辑页（全无勾选时 disabled） */}
             <div style={{ position: 'sticky', bottom: 0, marginTop: '16px', padding: '12px 0', background: 'var(--color-canvas)', borderTop: '1px solid var(--color-border)' }}>
+              {mergeError && (
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger)', textAlign: 'center', paddingBottom: '8px' }}>
+                  合并添加失败，请重试
+                </div>
+              )}
               <button
                 type="button"
                 disabled={!anySelected}
