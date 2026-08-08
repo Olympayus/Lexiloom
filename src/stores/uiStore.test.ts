@@ -1,0 +1,29 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import { useUiStore } from './uiStore'
+
+describe('uiStore 统一模态宿主', () => {
+  beforeEach(() => useUiStore.setState({ assignWordId: null, editorTarget: null }))
+
+  it('openAssign 打开分配分类，且关闭编辑模态', () => {
+    useUiStore.getState().openEditor({ id: 'c1', name: 'A', color: '#fff', description: null, isDefault: false } as any, 'w1')
+    useUiStore.getState().openAssign('w2')
+    const s = useUiStore.getState()
+    expect(s.assignWordId).toBe('w2')
+    expect(s.editorTarget).toBeNull()
+  })
+
+  it('openEditor 记录目标，且关闭分配模态', () => {
+    useUiStore.getState().openEditor(null, 'w1')
+    const s = useUiStore.getState()
+    expect(s.editorTarget).toEqual({ category: null, wordId: 'w1' })
+    expect(s.assignWordId).toBeNull()
+  })
+
+  it('closeModals 全部关闭', () => {
+    useUiStore.getState().openAssign('w1')
+    useUiStore.getState().closeModals()
+    const s = useUiStore.getState()
+    expect(s.assignWordId).toBeNull()
+    expect(s.editorTarget).toBeNull()
+  })
+})
