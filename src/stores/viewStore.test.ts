@@ -32,4 +32,12 @@ describe('viewStore 双视图切换（D2）', () => {
     useViewStore.getState().showDict('ball')
     expect(useViewStore.getState().dictWord).toBe('ball')
   })
+
+  it('editorMode 初始 false，setEditorMode 切换', () => {
+    expect(useViewStore.getState().editorMode).toBe(false)
+    useViewStore.getState().setEditorMode(true)
+    expect(useViewStore.getState().editorMode).toBe(true)
+    useViewStore.getState().setEditorMode(false)
+    expect(useViewStore.getState().editorMode).toBe(false)
+  })
 })

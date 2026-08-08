@@ -1,5 +1,9 @@
 import type { DictionaryField } from '../types/dictionary'
 
+// 词性显示归一化：ecdict 源内形容词码为 a/a.，统一展示为 adj.（与 wordnet POS_DISPLAY 一致）
+const POS_DISPLAY: Record<string, string> = { a: 'adj.', 'a.': 'adj.' }
+const normalizePos = (raw: string): string => POS_DISPLAY[raw.toLowerCase()] ?? raw
+
 // 词性前缀（ecdict 行首，含点号，保留原样标签）。
 // 注意：交替必须「最长前缀优先」——否则 'vi. 跑' 会先匹配 'v'，label 错成 'v'、释义错成 'i. 跑'。
 const POS_RE = /^(vt|vi|adj|adv|aux|prep|conj|pron|abbr|num|art|int|ad|n|v|a)\.?/i
@@ -68,7 +72,7 @@ export function buildEcdictFields(input: {
       if (m) {
         const rest = line.slice(m[0].length).replace(/^[,，:：\s]+/, '')
         if (rest) {
-          const pos = getPos(m[0])
+          const pos = getPos(normalizePos(m[0]))
           for (const part of rest.split(',').map(s => s.trim()).filter(Boolean)) {
             pos.children!.push({ key: 'chinese_definition', value: part })
           }
@@ -86,7 +90,7 @@ export function buildEcdictFields(input: {
       if (!m) { addToSupplementary(line); continue }
       const rest = line.slice(m[0].length).replace(/^[\s:]+/, '')
       if (!rest) continue
-      getPos(m[0]).children!.push({ key: 'english_definition', value: rest })
+      getPos(normalizePos(m[0])).children!.push({ key: 'english_definition', value: rest })
     }
   }
 

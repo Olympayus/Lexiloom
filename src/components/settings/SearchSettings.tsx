@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useSettingsStore, type DisplayFieldKey, type OnlineSourceKey } from '../../stores/settingsStore'
 import { Toggle } from '../ui/Toggle'
 import Icon from '../icons'
+import { tooltipPosition } from '../../lib/tooltipPosition'
 
 // 词典返回词条字段（规格 §7.3）
 const FIELD_ROWS: { key: DisplayFieldKey; label: string }[] = [
@@ -25,8 +26,8 @@ const ONLINE_SOURCES: { key: OnlineSourceKey; name: string; url: string }[] = [
 
 // 词典字段覆盖说明（规格 §7.3 悬浮框内容）
 const TOOLTIP_DICTS: { name: string; lines: string[] }[] = [
-  { name: 'ECDICT', lines: ['✓ 音标 ✓ 词性 ✓ 中文释义', '✓ 英文释义 ✓ 例句 ✗ 词形变化', '✗ 词源'] },
-  { name: '牛津高阶（在线）', lines: ['✓ 音标 ✓ 词性 ✓ 中文释义', '✓ 英文释义 ✓ 例句 ✓ 词形变化', '✓ 词源'] },
+  { name: 'ECDICT', lines: ['✓ 音标 ✓ 词性 ✓ 中文释义', '✓ 英文释义 ✓ 词形变化 ✗ 例句', '✗ 词源'] },
+  { name: 'WordNet', lines: ['✗ 音标 ✓ 词性 ✗ 中文释义', '✓ 英文释义 ✓ 近义词 ✓ 例句', '✗ 词形变化 ✗ 词源'] },
 ]
 
 const SECTION_TITLE: React.CSSProperties = { fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }
@@ -49,7 +50,11 @@ export default function SearchSettings() {
     clearTimeout(hideTimer.current)
     showTimer.current = setTimeout(() => {
       const rect = infoRef.current?.getBoundingClientRect()
-      if (rect) setTooltip({ visible: true, x: rect.right + 8, y: rect.top })
+      if (!rect) return
+      const panelWidth = 320
+      const gap = 8
+      const pos = tooltipPosition({ left: rect.left, right: rect.right, top: rect.top }, panelWidth, gap, window.innerWidth)
+      setTooltip({ visible: true, x: pos.x, y: pos.y })
     }, 300)
   }
   const handleInfoLeave = () => {
@@ -108,7 +113,7 @@ export default function SearchSettings() {
           position: 'fixed', left: tooltip.x, top: tooltip.y, zIndex: 'var(--z-toast)',
           background: 'var(--color-surface)', border: '1px solid var(--color-border)',
           borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-overlay)',
-          padding: '16px', maxWidth: '360px', fontSize: 'var(--text-sm)',
+          padding: '16px', width: '320px', fontSize: 'var(--text-sm)',
         }}>
           <div style={{ fontWeight: 'var(--weight-semibold)', marginBottom: '8px', color: 'var(--color-text-primary)' }}>词典字段覆盖说明</div>
           {TOOLTIP_DICTS.map(d => (

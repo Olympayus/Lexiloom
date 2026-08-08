@@ -8,18 +8,18 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core'
 import { useWordStore } from '../../stores/wordStore'
+import { useViewStore } from '../../stores/viewStore'
 import { getDefinitions } from '../../services/fieldService'
 import { formatPhonetic } from '../../lib/phonetic'
 import { sortTreeByTemplate, ROOT_FIELD_KEYS, ALLOWED_CHILD_KEYS } from '../../lib/fieldOrder'
+import { hasFieldChanges } from '../../lib/fieldChanges'
 import { Button } from '../ui/Button'
 import EmptyState from '../ui/EmptyState'
 import Icon from '../icons'
 import CategoryCapsule from './CategoryCapsule'
-import CategoryEditorModal from './CategoryEditorModal'
-import CategoryAssignModal from './CategoryAssignModal'
 import { useCategoryStore } from '../../stores/categoryStore'
+import { useUiStore } from '../../stores/uiStore'
 import type { FieldDefinition, FieldValue } from '../../types/field'
-import type { Category } from '../../types/category'
 
 type FieldState = 'original' | 'edited' | 'personal'
 const fieldState = (fv: FieldValue): FieldState =>
@@ -258,6 +258,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
     <div
       ref={setRefs}
       className="group"
+      data-field-edit={isEditing ? 'true' : undefined}
       style={
         isPosPane
           ? { ...paneStyle, ...draggingStyle }
@@ -650,7 +651,8 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
 export default function WordWorkbench() {
   const { words, selectedWordId, fieldValues, updateFieldValue, deleteWord, addFieldValue, deleteFieldValue, reorderFieldValues } = useWordStore()
   const [defs, setDefs] = useState<FieldDefinition[]>([])
-  const [editorMode, setEditorMode] = useState(false)
+  const editorMode = useViewStore(s => s.editorMode)
+  const setEditorMode = useViewStore(s => s.setEditorMode)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [entryValue, setEntryValue] = useState('')  // 进入编辑时的值
@@ -660,12 +662,10 @@ export default function WordWorkbench() {
   const [saved, setSaved] = useState(false)
   const [fadeIn, setFadeIn] = useState(true)
   const [insertIndicator, setInsertIndicator] = useState<InsertIndicator | null>(null)
-  const [editorOpen, setEditorOpen] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
-  const [assignOpen, setAssignOpen] = useState(false)
   const [capsuleExpanded, setCapsuleExpanded] = useState(false)
 
   const { categories, wordCategoryIds, loadWordCategories } = useCategoryStore()
+  const { openAssign, openEditor } = useUiStore()
 
   const selectedWord = words.find(w => w.id === selectedWordId)
 
@@ -692,6 +692,31 @@ export default function WordWorkbench() {
     const raf = requestAnimationFrame(() => setFadeIn(true))
     return () => cancelAnimationFrame(raf)
   }, [selectedWordId])
+
+  // Esc 关闭工作台浮层（三点菜单 / 添加子词条 / 添加字段选择器）
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMenuOpenId(null)
+        setChildMenuId(null)
+        setAddFieldOpen(false)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
+
+  // 内联编辑点外关闭：点击编辑卡外部且未改动时退出编辑（有改动保持，供继续编辑/保存）
+  useEffect(() => {
+    if (!editingId) return
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as HTMLElement
+      if (target.closest('[data-field-edit]')) return   // 编辑卡内（输入/保存/取消）不处理
+      if (!hasFieldChanges(editValue, entryValue)) setEditingId(null)
+    }
+    window.addEventListener('pointerdown', onPointerDown)
+    return () => window.removeEventListener('pointerdown', onPointerDown)
+  }, [editingId, editValue, entryValue])
 
   if (!selectedWord) {
     return (
@@ -874,6 +899,14 @@ export default function WordWorkbench() {
         background: 'var(--color-surface)',
       }}
     >
+      {/* 工作台浮层点外关闭：全屏透明遮罩（三点菜单 / 添加子词条 / 添加字段选择器） */}
+      {(menuOpenId || childMenuId || addFieldOpen) && (
+        <div
+          className="fixed inset-0"
+          style={{ zIndex: 'var(--z-base)' }}
+          onClick={() => { setMenuOpenId(null); setChildMenuId(null); setAddFieldOpen(false) }}
+        />
+      )}
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '24px 32px 48px' }}>
         {/* 单词标题区（规格 §5.1） */}
         <div style={{ marginBottom: '12px' }}>
@@ -915,7 +948,7 @@ export default function WordWorkbench() {
                 <CategoryCapsule
                   key={cat.id}
                   category={cat}
-                  onClick={() => { setEditingCategory(cat); setEditorOpen(true) }}
+                  onClick={() => openEditor(cat, selectedWord.id)}
                 />
               ))}
               {showMoreCapsules && (
@@ -947,7 +980,7 @@ export default function WordWorkbench() {
                 <CategoryCapsule
                   key={cat.id}
                   category={cat}
-                  onClick={() => { setEditingCategory(cat); setEditorOpen(true) }}
+                  onClick={() => openEditor(cat, selectedWord.id)}
                 />
               ))}
               {/* 「+」虚线圆钮：新建/选择分类（规格 §5.1） */}
@@ -955,7 +988,7 @@ export default function WordWorkbench() {
                 type="button"
                 title="添加分类"
                 aria-label="添加分类"
-                onClick={() => { setAssignOpen(true); setCapsuleExpanded(false) }}
+                onClick={() => { openAssign(selectedWord.id); setCapsuleExpanded(false) }}
                 style={{
                   width: '24px',
                   height: '24px',
@@ -1158,20 +1191,6 @@ export default function WordWorkbench() {
           <Icon name="trash" size={16} />
           删除单词
         </button>
-
-        <CategoryAssignModal
-          open={assignOpen}
-          wordId={selectedWord.id}
-          onClose={() => setAssignOpen(false)}
-          onCreateNew={() => { setAssignOpen(false); setEditingCategory(null); setEditorOpen(true) }}
-        />
-        <CategoryEditorModal
-          open={editorOpen}
-          category={editingCategory}
-          wordId={selectedWord.id}
-          onClose={() => setEditorOpen(false)}
-          onSaved={() => setCapsuleExpanded(false)}
-        />
       </div>
     </div>
   )

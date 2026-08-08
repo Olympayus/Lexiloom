@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import type { SidebarMode } from '../lib/sidebar'
 
 export type DisplayFieldKey =
@@ -30,17 +31,43 @@ const DEFAULT_ONLINE_SOURCES: Record<OnlineSourceKey, boolean> = {
   oxford: true, longman: true, collins: true, merriam: true,
 }
 
-export const useSettingsStore = create<SettingsStore>((set) => ({
-  settingsOpen: false,
-  displayFields: DEFAULT_DISPLAY_FIELDS,
-  onlineDictEnabled: false,
-  onlineSources: DEFAULT_ONLINE_SOURCES,
-  sidebarMode: 'alphabet',
-
-  openSettings: () => set({ settingsOpen: true }),
-  closeSettings: () => set({ settingsOpen: false }),
-  setDisplayField: (key, on) => set(s => ({ displayFields: { ...s.displayFields, [key]: on } })),
-  setOnlineDictEnabled: (on) => set({ onlineDictEnabled: on }),
-  setOnlineSource: (key, checked) => set(s => ({ onlineSources: { ...s.onlineSources, [key]: checked } })),
-  setSidebarMode: (mode) => set({ sidebarMode: mode }),
-}))
+export const useSettingsStore = create<SettingsStore>()(
+  persist(
+    (set) => ({
+      settingsOpen: false,
+      displayFields: DEFAULT_DISPLAY_FIELDS,
+      onlineDictEnabled: false,
+      onlineSources: DEFAULT_ONLINE_SOURCES,
+      sidebarMode: 'alphabet',
+      openSettings: () => set({ settingsOpen: true }),
+      closeSettings: () => set({ settingsOpen: false }),
+      setDisplayField: (key, on) => set(s => ({ displayFields: { ...s.displayFields, [key]: on } })),
+      setOnlineDictEnabled: (on) => set({ onlineDictEnabled: on }),
+      setOnlineSource: (key, checked) => set(s => ({ onlineSources: { ...s.onlineSources, [key]: checked } })),
+      setSidebarMode: (mode) => set({ sidebarMode: mode }),
+    }),
+    {
+      name: 'lexiloom-settings',
+      version: 1,
+      storage: createJSONStorage(() => localStorage),
+      migrate: (state) => state as SettingsStore,  // version 1: pass-through, reserved for future migrations
+      onRehydrateStorage: () => (_, error) => {
+        if (error) {
+          // 损坏/缺失数据 → 回退默认值
+          useSettingsStore.setState({
+            displayFields: DEFAULT_DISPLAY_FIELDS,
+            onlineDictEnabled: false,
+            onlineSources: DEFAULT_ONLINE_SOURCES,
+            sidebarMode: 'alphabet',
+          })
+        }
+      },
+      partialize: (s) => ({
+        displayFields: s.displayFields,
+        onlineDictEnabled: s.onlineDictEnabled,
+        onlineSources: s.onlineSources,
+        sidebarMode: s.sidebarMode,
+      }),
+    }
+  )
+)

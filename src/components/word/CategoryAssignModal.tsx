@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useFocusTrap } from '../../lib/useFocusTrap'
 import { useCategoryStore } from '../../stores/categoryStore'
+import Icon from '../icons'
 import { Button } from '../ui/Button'
 
 interface Props {
@@ -13,7 +14,7 @@ interface Props {
 export default function CategoryAssignModal({ open, wordId, onClose, onCreateNew }: Props) {
   const { categories, wordCategoryIds, assignToWord, removeFromWord } = useCategoryStore()
 
-  // Esc 关闭（§11 a11y 键盘可达；模态仅在 workbench 视图渲染，无与词典详情 Esc 冲突）
+  // Esc 关闭（§11 a11y 键盘可达）
   useEffect(() => {
     if (!open) return
     const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -45,8 +46,16 @@ export default function CategoryAssignModal({ open, wordId, onClose, onCreateNew
       style={{ position: 'fixed', inset: 0, background: 'var(--color-scrim)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
     >
       <div style={{ width: '360px', padding: '24px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-overlay)' }}>
-        <div style={{ fontFamily: 'var(--font-serif)', fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)', marginBottom: '16px' }}>
-          选择分类
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div style={{ fontFamily: 'var(--font-serif)', fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)' }}>选择分类</div>
+          <button
+            type="button" aria-label="关闭" title="关闭" onClick={onClose}
+            style={{ width: '28px', height: '28px', border: 'none', background: 'transparent', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-secondary)' }}
+          >
+            <Icon name="close" size={18} />
+          </button>
         </div>
 
         <div style={{ maxHeight: '280px', overflowY: 'auto', marginBottom: '16px' }}>

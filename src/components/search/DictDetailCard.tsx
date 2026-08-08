@@ -1,10 +1,12 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useImperativeHandle } from 'react'
 import type { ReactNode } from 'react'
+import type * as React from 'react'
 import type { DictionaryEntry, DictionaryField } from '../../types/dictionary'
-import type { Word } from '../../types/word'
 import type { FieldSource } from '../../types/field'
+import type { MergeFieldInput } from '../../services/wordService'
 import { useWordStore } from '../../stores/wordStore'
 import { useSettingsStore } from '../../stores/settingsStore'
+import { ensureWord } from '../../lib/ensureWord'
 import { mergeEntryFields, flattenTree, buildMergeInputs, toggleSubtreeSelection } from '../../lib/dictPlan'
 import type { FlatNode } from '../../lib/dictPlan'
 
@@ -12,7 +14,11 @@ interface Props {
   word: string
   source: string
   entries: DictionaryEntry[]
-  onAdded: (wordId: string) => void
+}
+
+// 受控句柄：面板合并按钮经 ref 调用 buildInputs 取当前勾选构建的 merge 输入
+export interface DictDetailCardHandle {
+  buildInputs: () => MergeFieldInput[] | null
 }
 
 // 来源名称映射
@@ -57,8 +63,13 @@ function countItems(node: FlatNode): number {
   return node.children.reduce((sum, c) => sum + countItems(c), 0)
 }
 
-export default function DictDetailCard({ word: word_, source: source_, entries, onAdded }: Props) {
-  const addWord = useWordStore(s => s.addWord)
+export default function DictDetailCard({
+  word: word_, source: source_, entries,
+  onSelectionChange, ref,
+}: Props & {
+  onSelectionChange?: (source: string, count: number) => void
+  ref?: React.Ref<DictDetailCardHandle>
+}) {
   const mergeWordFields = useWordStore(s => s.mergeWordFields)
   const displayFields = useSettingsStore(s => s.displayFields)
   const sourceLabel = SOURCE_NAMES[source_] || source_
@@ -109,6 +120,16 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
     setSelected(all)
   }, [word_, source_, flat])
 
+  // 受控句柄：面板合并按钮经 ref 取当前勾选构建的 merge 输入（无勾选返回 null）
+  useImperativeHandle(ref, () => ({
+    buildInputs: () => selected.size === 0 ? null : buildMergeInputs(visible, selected, source_ as FieldSource),
+  }), [visible, selected, source_])
+
+  // 勾选数变化上报面板（面板合并按钮 disabled 态）
+  useEffect(() => {
+    onSelectionChange?.(source_, selected.size)
+  }, [selected, source_, onSelectionChange])
+
   const toggle = (key: string) => {
     setSelected(prev => {
       const next = new Set(prev)
@@ -122,24 +143,27 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
     setSelected(prev => toggleSubtreeSelection(prev, allNodeKeys, key))
   }
 
+  // 免跳转添加：合并成功后卡片内「已添加 ✓」反馈（1.5s）；失败则短暂错误提示（2.5s，规格：失败不跳转）
+  const [added, setAdded] = useState(false)
+  const [error, setError] = useState(false)
   const handleAdd = async () => {
-    // 1. 确保词条存在（如不存在则创建）
-    let word = await addWord(word_)
+    const inputs = buildMergeInputs(visible, selected, source_ as FieldSource)
+    if (inputs.length === 0) return
+    const word = await ensureWord(word_)
     if (!word) {
-      const existing = useWordStore.getState().words.find(w =>
-        (w as Word).lemma.toLowerCase() === word_.toLowerCase()
-      )
-      if (existing) word = existing as Word
-      else return
+      setError(true)
+      window.setTimeout(() => setError(false), 2500)
+      return
     }
-
-    // 2. 由可见树 + 勾选集构建 merge 输入（displayFields 过滤已由 visible 完成）
-    const selectedFieldInputs = buildMergeInputs(visible, selected, source_ as FieldSource)
-
-    // 3. 执行合并
-    const ok = await mergeWordFields(word.id, selectedFieldInputs)
-    // 4. 成功 → 通知面板回编辑视图并定位新词（D2）
-    if (ok) onAdded(word.id)
+    const ok = await mergeWordFields(word.id, inputs)
+    if (ok) {
+      setError(false)
+      setAdded(true)
+      window.setTimeout(() => setAdded(false), 1500)
+    } else {
+      setError(true)
+      window.setTimeout(() => setError(false), 2500)
+    }
   }
 
   // 叶子值渲染（音标/例句/词形变化项等特殊排版）
@@ -256,14 +280,18 @@ export default function DictDetailCard({ word: word_, source: source_, entries, 
       </div>
 
       {/* 添加到词库按钮 */}
-      <div className="px-4 py-3 flex justify-end"
+      <div className="px-4 py-3 flex items-center justify-end gap-2"
         style={{ borderTop: '1px solid var(--color-border)', background: 'var(--color-canvas)' }}>
+        {error && (
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger)' }}>添加失败，请重试</span>
+        )}
         <button
           className="px-4 py-1.5 rounded text-sm font-medium transition-opacity hover:opacity-90"
           style={{ background: accent.color, color: 'white' }}
           onClick={handleAdd}
+          disabled={added || selected.size === 0}
         >
-          添加到词库
+          {added ? '已添加 ✓' : '添加到词库'}
         </button>
       </div>
     </div>

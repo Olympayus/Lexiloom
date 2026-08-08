@@ -3,8 +3,11 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useWordStore } from '../../stores/wordStore'
 import { useCategoryStore } from '../../stores/categoryStore'
+import { useViewStore } from '../../stores/viewStore'
+import { useUiStore } from '../../stores/uiStore'
 import SidebarToolbar from './SidebarToolbar'
 import WordListItem from '../word/WordListItem'
+import ContextMenu, { type MenuItem } from '../ui/ContextMenu'
 import { vocabularySearch } from '../../lib/search'
 import { groupByLetter, groupByCategory, type SidebarMode } from '../../lib/sidebar'
 import type { WordWithPreview } from '../../types/word'
@@ -55,6 +58,49 @@ export default function WordList({
   }, [filter, words])
 
   const categoryById = useMemo(() => new Map(categories.map(c => [c.id, c])), [categories])
+
+  // 右键菜单状态：单词菜单 / 分类菜单（分类组头右键）
+  const [menu, setMenu] = useState<null
+    | { x: number; y: number; kind: 'word'; word: WordWithPreview }
+    | { x: number; y: number; kind: 'category'; category: Category }>(null)
+  const showWorkbench = useViewStore(s => s.showWorkbench)
+  const setEditorMode = useViewStore(s => s.setEditorMode)
+  const { openAssign, openEditor } = useUiStore()
+  const { deleteWord } = useWordStore()
+  const { removeFromWord, deleteCategory } = useCategoryStore()
+
+  const wordMenuItems = (word: WordWithPreview): MenuItem[] => {
+    const cats = (wordCategoryMap[word.id] ?? [])
+      .map(id => categoryById.get(id))
+      .filter((c): c is Category => Boolean(c))
+    return [
+      { key: 'edit', label: '编辑', onSelect: () => { void selectWord(word.id); showWorkbench(); setEditorMode(true) } },
+      { key: 'assign', label: '添加到…', onSelect: () => openAssign(word.id) },
+      {
+        key: 'remove', label: '从…中移除', disabled: cats.length === 0,
+        children: [
+          ...cats.map(c => ({ key: `rm-${c.id}`, label: c.name, onSelect: () => { void removeFromWord(word.id, c.id) } })),
+          { key: 'more', label: '更多…', onSelect: () => openAssign(word.id) },
+        ],
+      },
+      {
+        key: 'delete', label: '删除单词', danger: true,
+        onSelect: () => {
+          if (window.confirm(`确定删除单词“${word.lemma}”吗？此操作不可撤销。`)) void deleteWord(word.id)
+        },
+      },
+    ]
+  }
+
+  const categoryMenuItems = (category: Category): MenuItem[] => [
+    { key: 'edit', label: '编辑分类', onSelect: () => openEditor(category, null) },
+    {
+      key: 'delete', label: '删除分类', danger: true,
+      onSelect: () => {
+        if (window.confirm(`确定删除分类“${category.name}”吗？将从所有单词移除该分类。`)) void deleteCategory(category.id)
+      },
+    },
+  ]
 
   // 分组：字母模式按首字母；分类模式按分类（含「未分类」）
   const groups = useMemo(() => {
@@ -158,6 +204,11 @@ export default function WordList({
       <div
         key={row.key}
         onClick={() => toggleGroup(row.key)}
+        onContextMenu={row.type === 'category' ? (e) => {
+          e.preventDefault()
+          const c = categoryById.get(row.key.replace(/^cat:/, ''))
+          if (c) setMenu({ x: e.clientX, y: e.clientY, kind: 'category', category: c })
+        } : undefined}
         onKeyDown={e => {
           if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleGroup(row.key) }
         }}
@@ -202,7 +253,8 @@ export default function WordList({
         selected={row.word.id === selectedWordId}
         collapsed={collapsed}
         mode={mode}
-        onClick={() => selectWord(row.word.id)}
+        onClick={() => { void selectWord(row.word.id); showWorkbench() }}
+        onContextMenu={(e) => { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY, kind: 'word', word: row.word }) }}
       />
     )
   }
@@ -240,6 +292,14 @@ export default function WordList({
           rows.map(renderRow)
         )}
       </div>
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          items={menu.kind === 'word' ? wordMenuItems(menu.word) : categoryMenuItems(menu.category)}
+          onClose={() => setMenu(null)}
+        />
+      )}
     </div>
   )
 }

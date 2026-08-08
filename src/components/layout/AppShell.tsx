@@ -8,6 +8,9 @@ import { useWordStore } from '../../stores/wordStore'
 import { useViewStore } from '../../stores/viewStore'
 import SettingsPanel from '../settings/SettingsPanel'
 import { useSettingsStore } from '../../stores/settingsStore'
+import { useUiStore } from '../../stores/uiStore'
+import CategoryAssignModal from '../word/CategoryAssignModal'
+import CategoryEditorModal from '../word/CategoryEditorModal'
 import { fitCollapsedWidth, measureMaxWordWidth, resolveSidebarWordFont, COLLAPSED_CHROME_ALPHABET, COLLAPSED_CHROME_CATEGORY } from '../../lib/sidebar'
 
 // 规格 §2：侧边栏展开宽度 300px；收起宽度内容自适应（D1）
@@ -19,6 +22,7 @@ export default function AppShell() {
   const dictWord = useViewStore(s => s.dictWord)
   const [collapsed, setCollapsed] = useState(false)
   const mode = useSettingsStore(s => s.sidebarMode)
+  const { assignWordId, editorTarget, closeModals, openEditor } = useUiStore()
 
   // D1：收起宽度 = clamp(最长单词渲染宽度 + 实际 chrome, 120px, 240px)，加词/删词重算，150ms 过渡
   const sidebarWidth = useMemo(() => {
@@ -32,7 +36,7 @@ export default function AppShell() {
     <div className="h-screen flex flex-col" style={{ background: 'var(--color-canvas)' }}>
       {/* 全局顶栏：始终可见，不随侧边栏折叠（规格 §2） */}
       <header className="shrink-0">
-        <TopBar />
+        <TopBar sidebarWidth={sidebarWidth} />
       </header>
 
       <div className="flex-1 flex overflow-hidden">
@@ -65,6 +69,21 @@ export default function AppShell() {
       </div>
 
       <SettingsPanel />
+
+      <CategoryAssignModal
+        open={!!assignWordId}
+        wordId={assignWordId ?? ''}
+        onClose={closeModals}
+        onCreateNew={() => openEditor(null, assignWordId)}
+      />
+      {editorTarget && (
+        <CategoryEditorModal
+          open={!!editorTarget}
+          category={editorTarget.category}
+          wordId={editorTarget.wordId ?? ''}
+          onClose={closeModals}
+        />
+      )}
     </div>
   )
 }
