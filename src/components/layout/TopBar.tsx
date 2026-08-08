@@ -89,7 +89,7 @@ export default function TopBar() {
         toggleMaximize()
       }}
       style={{
-        height: '56px', display: 'grid', gridTemplateColumns: '1fr auto 1fr',
+        height: '56px', display: 'grid', gridTemplateColumns: 'auto 1fr auto',
         alignItems: 'center', gap: '12px', padding: '0 8px 0 16px',
         position: 'relative', zIndex: 'var(--z-sticky)',
         background: 'var(--color-canvas)', borderBottom: '1px solid var(--color-border)',
@@ -119,8 +119,8 @@ export default function TopBar() {
         </button>
       </div>
 
-      {/* 中：搜索框绝对居中、胶囊圆角（40px 高，聚焦边框 brand） */}
-      <div style={{ justifySelf: 'center', width: 'min(960px, 100%)' }}>
+      {/* 中：搜索框居中，宽度随中间 1fr 栏伸缩（上限 960px） */}
+      <div style={{ justifySelf: 'center', width: '100%', maxWidth: '960px' }}>
         <div className="relative">
           <div style={{
             display: 'flex', alignItems: 'center', gap: '10px', height: '40px', padding: '0 14px',
