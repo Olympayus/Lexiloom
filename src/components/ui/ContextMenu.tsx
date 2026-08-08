@@ -69,13 +69,16 @@ export default function ContextMenu({ x, y, items, onClose }: Props) {
       }}
     >
       {items.map(item => (
-        <div key={item.key} style={{ position: 'relative' }}>
+        <div
+          key={item.key}
+          style={{ position: 'relative' }}
+          onMouseEnter={() => setSub(item.children ? item.key : null)}
+          onMouseLeave={() => setSub(prev => prev === item.key ? null : prev)}
+        >
           <button
             type="button"
             disabled={item.disabled}
             onClick={() => { if (!item.children) { item.onSelect?.(); onClose() } }}
-            onMouseEnter={() => setSub(item.children ? item.key : null)}
-            onMouseLeave={() => setSub(prev => prev === item.key ? null : prev)}
             style={itemStyle(item)}
           >
             <span>{item.label}</span>
