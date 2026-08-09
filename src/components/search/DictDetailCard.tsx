@@ -9,6 +9,7 @@ import { useSettingsStore } from '../../stores/settingsStore'
 import { ensureWord } from '../../lib/ensureWord'
 import { mergeEntryFields, flattenTree, buildMergeInputs, toggleSubtreeSelection, shouldNumberField } from '../../lib/dictPlan'
 import type { FlatNode } from '../../lib/dictPlan'
+import PosTag from '../ui/PosTag'
 
 interface Props {
   word: string
@@ -216,16 +217,9 @@ export default function DictDetailCard({
               className="mt-0.5"
             />
             {isPos ? (
-              // 词性窗格：胶囊标签 + 计数（与工作台分类胶囊一致的视觉语言）
+              // 词性窗格：方角深蓝描边标签（⑤ 新语言）+ 计数
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '4px',
-                  height: '20px', padding: '0 10px', borderRadius: 'var(--radius-full)',
-                  fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)',
-                  background: accent.bg, color: accent.color, border: '1px solid ' + accent.border,
-                }}>
-                  {node.field.value}
-                </span>
+                <PosTag value={node.field.value} />
                 <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
                   {countItems(node)} 项
                 </span>
@@ -233,7 +227,7 @@ export default function DictDetailCard({
             ) : (
               <div className="flex-1">
                 {label && (
-                  <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>{numLabel}</span>
+                  <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px', fontWeight: 700, letterSpacing: '0.5px' }}>{numLabel}</span>
                 )}
                 {!isContainer && renderValue(node)}
               </div>
