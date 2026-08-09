@@ -1,6 +1,6 @@
 import { useWordStore } from '../../stores/wordStore'
 
-// 规格 §4.5：仅显示「共 N 个单词」；收起态字号 10px、padding 8px 4px
+// 规格 §4.5：显示「单词总数: n」；收起态字号 10px、padding 8px 4px
 export default function SidebarFooter({ collapsed }: { collapsed: boolean }) {
   const count = useWordStore(s => s.words.length)
   return (
@@ -17,7 +17,10 @@ export default function SidebarFooter({ collapsed }: { collapsed: boolean }) {
         textOverflow: 'ellipsis',
       }}
     >
-      共 {count} 个单词
+      单词总数:{' '}
+      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-text-primary)', fontWeight: 'var(--weight-semibold)' }}>
+        {count}
+      </span>
     </div>
   )
 }
