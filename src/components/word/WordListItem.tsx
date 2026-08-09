@@ -3,7 +3,6 @@ import type { WordWithPreview } from '../../types/word'
 import type { Category } from '../../types/category'
 import type { SidebarMode } from '../../lib/sidebar'
 import { formatPhonetic } from '../../lib/phonetic'
-import PosTag from '../ui/PosTag'
 
 interface Props {
   word: WordWithPreview
@@ -109,7 +108,7 @@ export default function WordListItem({ word, categories, selected, collapsed, mo
             }}>
               {word.lemma}
             </div>
-            {/* 行 2：左 音标·词性标签（可换行）｜右 分类胶囊（右对齐） */}
+            {/* 行 2：左 音标·词性（可换行）｜右 分类胶囊（右对齐）；词性与音标同为纯文本，无边框 */}
             <div style={{
               display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginTop: '3px',
             }}>
@@ -126,7 +125,12 @@ export default function WordListItem({ word, categories, selected, collapsed, mo
                   <span style={{ color: 'var(--color-text-tertiary)', fontSize: '12px', flexShrink: 0 }}>·</span>
                 )}
                 {(word.partOfSpeechTags ?? []).map((p, i) => (
-                  <PosTag key={i} value={p} size="sm" bold={false} />
+                  <span key={i} style={{
+                    fontFamily: 'var(--font-phonetic)', fontSize: 'var(--text-sm)',
+                    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap',
+                  }}>
+                    {p}
+                  </span>
                 ))}
               </div>
               {categories.length > 0 && (
