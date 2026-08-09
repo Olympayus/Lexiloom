@@ -133,35 +133,36 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
   const state = fieldState(fv)
   const draggingStyle = isDragging ? { transform: 'scale(1.02)', boxShadow: 'var(--shadow-raised)' } : null
 
-  // 子级渲染（#2 + #3）：词性父下中/英释义独立编号（每个词性从 1 重计）；每个子级外包连接横线「┗━」+ 相对定位
+  // ②a：叶子容器（子项均为终端项）不渲染树状分支/连接横线，子项平铺成无框列表
+  const hasTerminalChildren = hasChildren && fv.children!.every(c => !(c.children && c.children.length > 0))
   const renderedChildren = hasChildren
-    ? (() => {
-        let zhNum = 0
-        let enNum = 0
-        return fv.children!.map(child => {
-          const cKey = childKey(child)
-          let labelOverride: string | null = null
-          if (isPosPane) {
-            if (cKey === 'chinese_definition') { zhNum += 1; labelOverride = `中文释义(${zhNum})` }
-            else if (cKey === 'english_definition') { enNum += 1; labelOverride = `英文释义(${enNum})` }
-          }
-          return (
-            <div key={child.id} style={{ position: 'relative' }}>
-              <div
-                style={{
-                  position: 'absolute',
-                  left: '-8px',
-                  top: '12px',
-                  width: '8px',
-                  borderTop: '1px solid var(--color-border)',
-                  pointerEvents: 'none',
-                }}
-              />
-              <FieldCard fv={child} depth={depth + 1} {...rest} labelOverride={labelOverride} />
-            </div>
-          )
-        })
-      })()
+    ? hasTerminalChildren
+      ? fv.children!.map(child => (
+          <FieldCard key={child.id} fv={child} depth={depth + 1} {...rest} labelOverride={null} />
+        ))
+      : (() => {
+          let zhNum = 0
+          let enNum = 0
+          return fv.children!.map(child => {
+            const cKey = childKey(child)
+            let labelOverride: string | null = null
+            if (isPosPane) {
+              if (cKey === 'chinese_definition') { zhNum += 1; labelOverride = `中文释义(${zhNum})` }
+              else if (cKey === 'english_definition') { enNum += 1; labelOverride = `英文释义(${enNum})` }
+            }
+            return (
+              <div key={child.id} style={{ position: 'relative' }}>
+                <div
+                  style={{
+                    position: 'absolute', left: '-8px', top: '12px', width: '8px',
+                    borderTop: '1px solid var(--color-border)', pointerEvents: 'none',
+                  }}
+                />
+                <FieldCard fv={child} depth={depth + 1} {...rest} labelOverride={labelOverride} />
+              </div>
+            )
+          })
+        })()
     : null
 
   // 普通模式「更多操作」三点（按钮 + 下拉菜单）：叶子/容器复用同一 JSX，仅包装位置不同
@@ -299,7 +300,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
           }}
         />
       )}
-      <div style={{ display: 'flex', alignItems: isPosPane ? 'center' : 'baseline', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: isPosPane ? 'center' : 'baseline', gap: '8px' }}>
         <button
           type="button"
           ref={setActivatorNodeRef}
@@ -309,8 +310,8 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
           aria-label="拖动排序"
           className="opacity-0 group-hover:opacity-100"
           style={{
-            width: '24px',
-            height: '24px',
+            width: '16px',
+            height: '16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -325,7 +326,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
             transition: 'opacity var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
           }}
         >
-          <Icon name="grip" size={16} />
+          <Icon name="grip" size={14} />
         </button>
         {isPosPane ? (
           isEditing ? (
@@ -364,12 +365,13 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
                   alignItems: 'center',
                   height: '20px',
                   padding: '0 10px',
-                  borderRadius: 'var(--radius-full)',
+                  borderRadius: 'var(--radius-sm)',
                   fontSize: 'var(--text-xs)',
-                  fontWeight: 'var(--weight-medium)',
-                  background: 'var(--color-pos-soft)',
+                  fontWeight: 700,
+                  letterSpacing: '0.5px',
+                  background: 'transparent',
                   color: 'var(--color-pos)',
-                  border: '1px solid color-mix(in srgb, var(--color-pos) 45%, transparent)',
+                  border: '1.5px solid var(--color-pos)',
                   whiteSpace: 'nowrap',
                   flexShrink: 0,
                   cursor: 'pointer',
@@ -397,7 +399,8 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
                   minWidth: isLevel1 ? undefined : '80px',
                   flexShrink: 0,
                   fontSize: isLevel1 ? 'var(--text-sm)' : 'var(--text-xs)',
-                  fontWeight: 'var(--weight-medium)',
+                  fontWeight: 700,
+                  letterSpacing: '0.5px',
                   color: 'var(--color-text-secondary)',
                 }}
               >
@@ -561,7 +564,9 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
         </button>
       )}
       {hasChildren && (
-        <div style={{ marginLeft: '6px', paddingLeft: '8px', borderLeft: '1px solid var(--color-border)', marginTop: '8px' }}>
+        <div style={hasTerminalChildren
+          ? { marginTop: '4px' }
+          : { marginLeft: '6px', paddingLeft: '8px', borderLeft: '1px solid var(--color-border)', marginTop: '8px' }}>
           {renderedChildren}
         </div>
       )}
