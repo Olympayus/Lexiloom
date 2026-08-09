@@ -77,6 +77,8 @@ interface FieldCardProps {
   childMenuId: string | null
   onToggleChildMenu: (id: string) => void
   labelOverride?: string | null
+  hoveredId: string | null
+  onHover: (id: string | null) => void
 }
 
 // 单个字段卡片：grip 拖拽（仅 grip 激活拖拽，点击/编辑不受影响）+ 同级插入指示线（规格 §5.5）
@@ -85,6 +87,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
     defs, editorMode, editingId, editValue, menuOpenId, insertIndicator,
     onStartEdit, onEditValueChange, onSave, onCancelEdit, onToggleMenu,
     onAddChild, onDelete, childMenuId, onToggleChildMenu, labelOverride,
+    hoveredId, onHover,
   } = rest
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({ id: fv.id })
   const { setNodeRef: setDropRef } = useDroppable({ id: `drop-${fv.id}` })
@@ -131,6 +134,13 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
       ? '添加子词条'
       : '添加项'
   const state = fieldState(fv)
+  // ③ hover 作用域：某词条按钮可见 ⇔ hovered 节点是该词条自身或其任一后代（即「当前 + 祖先链」）
+  const containsId = (node: FieldValue, id: string | null): boolean => {
+    if (!id) return false
+    if (node.id === id) return true
+    return (node.children ?? []).some(c => containsId(c, id))
+  }
+  const showsButtons = containsId(fv, hoveredId)
   const draggingStyle = isDragging ? { transform: 'scale(1.02)', boxShadow: 'var(--shadow-raised)' } : null
 
   // ②a：叶子容器（子项均为终端项）不渲染树状分支/连接横线，子项平铺成无框列表
@@ -173,13 +183,14 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
         title="更多操作"
         aria-label="更多操作"
         onClick={() => onToggleMenu(fv.id)}
-        className="opacity-0 group-hover:opacity-100"
         style={{
           width: '24px',
           height: '24px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          opacity: showsButtons ? 1 : 0,
+          pointerEvents: showsButtons ? 'auto' : 'none',
           border: 'none',
           background: 'transparent',
           borderRadius: 'var(--radius-sm)',
@@ -258,7 +269,8 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
   return (
     <div
       ref={setRefs}
-      className="group"
+      onMouseEnter={() => onHover(fv.id)}
+      onMouseLeave={() => onHover(null)}
       data-field-edit={isEditing ? 'true' : undefined}
       style={
         isPosPane
@@ -308,13 +320,14 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
           {...attributes}
           title="拖动排序"
           aria-label="拖动排序"
-          className="opacity-0 group-hover:opacity-100"
           style={{
             width: '16px',
             height: '16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            opacity: showsButtons ? 1 : 0,
+            pointerEvents: showsButtons ? 'auto' : 'none',
             border: 'none',
             background: 'transparent',
             borderRadius: 'var(--radius-sm)',
@@ -490,7 +503,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
               </span>
             )}
             {/* 叶子节点垃圾桶：flex 行末、角标之后（容器节点垃圾桶为卡片右下绝对定位） */}
-            {childDefs.length === 0 && (
+            {childDefs.length === 0 && showsButtons && (
               <button
                 type="button"
                 title="删除"
@@ -528,13 +541,13 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
         )}
       </div>
       {/* 容器节点三点：普通模式，卡片直接子级，绝对定位锚定卡片（卡片恒 position: relative）右上角 */}
-      {!editorMode && childDefs.length > 0 && (
+      {!editorMode && childDefs.length > 0 && showsButtons && (
         <div style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 'var(--z-dropdown)' }}>
           {threeDotMenu}
         </div>
       )}
       {/* 容器节点垃圾桶：卡片直接子级，绝对定位锚定卡片（卡片恒 position: relative）右下角，与左下「+ 添加」按钮对侧 */}
-      {editorMode && childDefs.length > 0 && (
+      {editorMode && childDefs.length > 0 && showsButtons && (
         <button
           type="button"
           title="删除"
@@ -571,7 +584,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
         </div>
       )}
       {/* 每卡「+ 添加子词条」菜单（Task 10 §Step 2）：编者模式可用，按 ALLOWED_CHILD_KEYS 过滤 */}
-      {editorMode && childDefs.length > 0 && (
+      {editorMode && childDefs.length > 0 && showsButtons && (
         <div style={{ position: 'relative', marginTop: '8px' }}>
           <button
             type="button"
@@ -663,6 +676,7 @@ export default function WordWorkbench() {
   const [entryValue, setEntryValue] = useState('')  // 进入编辑时的值
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const [childMenuId, setChildMenuId] = useState<string | null>(null)
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [addFieldOpen, setAddFieldOpen] = useState(false)
   const [saved, setSaved] = useState(false)
   const [fadeIn, setFadeIn] = useState(true)
@@ -892,6 +906,8 @@ export default function WordWorkbench() {
     onDelete: handleDeleteField,
     childMenuId,
     onToggleChildMenu: (id) => setChildMenuId(childMenuId === id ? null : id),
+    hoveredId,
+    onHover: setHoveredId,
   }
 
   return (
