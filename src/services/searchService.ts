@@ -1,5 +1,6 @@
 import { EcdictProvider } from '../providers/ecdict'
 import { WordNetProvider } from '../providers/wordnet'
+import { sortLemmasByRelevance } from '../lib/lemmaSort'
 import type { DictionaryEntry } from '../types/dictionary'
 
 const ecdict = new EcdictProvider()
@@ -13,11 +14,12 @@ export async function searchLemmas(query: string): Promise<string[]> {
     wordnet.searchLemmas(query),
   ])
   const seen = new Set<string>()
-  return [...ecdictResults, ...wordnetResults].filter(w => {
+  const deduped = [...ecdictResults, ...wordnetResults].filter(w => {
     if (seen.has(w)) return false
     seen.add(w)
     return true
-  }).slice(0, 20)
+  })
+  return sortLemmasByRelevance(query, deduped).slice(0, 20)
 }
 
 // 阶段二：精确查询单词详情
