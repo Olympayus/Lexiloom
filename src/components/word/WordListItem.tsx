@@ -3,7 +3,7 @@ import type { WordWithPreview } from '../../types/word'
 import type { Category } from '../../types/category'
 import type { SidebarMode } from '../../lib/sidebar'
 import { formatPhonetic } from '../../lib/phonetic'
-import Icon from '../icons'
+import PosTag from '../ui/PosTag'
 
 interface Props {
   word: WordWithPreview
@@ -22,8 +22,6 @@ function hexToRgb(hex: string): string {
 }
 
 export default function WordListItem({ word, categories, selected, collapsed, mode, onClick, onContextMenu }: Props) {
-  // 音标释义行（规格 §4.2）：{音标} · {词性} {首释义}，· 仅在两者都存在时显示
-  const hasMeta = Boolean(word.phonetic || word.partOfSpeech || word.chineseDefinition)
   const collapsedDots = categories.slice(0, 3)   // 收起态色圈限 3 个：匹配 COLLAPSED_CHROME_ALPHABET 的 3 色圈宽度（27px）
   const lineRef = useRef<HTMLDivElement>(null)
 
@@ -103,6 +101,7 @@ export default function WordListItem({ word, categories, selected, collapsed, mo
       ) : (
         <>
           <div style={{ flex: 1, minWidth: 0 }}>
+            {/* 行 1：单词 */}
             <div style={{
               fontFamily: 'var(--font-serif)', fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)',
               color: 'var(--color-text-primary)', lineHeight: 1.3,
@@ -110,37 +109,41 @@ export default function WordListItem({ word, categories, selected, collapsed, mo
             }}>
               {word.lemma}
             </div>
-            {hasMeta && (
-              <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {word.phonetic && <span style={{ fontFamily: 'var(--font-phonetic)' }}>{formatPhonetic(word.phonetic)}</span>}
-                {word.phonetic && (word.partOfSpeech || word.chineseDefinition) && <span> · </span>}
-                {word.partOfSpeech && <span>{word.partOfSpeech}</span>}
-                {word.partOfSpeech && word.chineseDefinition && <span> </span>}
-                {word.chineseDefinition && <span>{word.chineseDefinition}</span>}
-              </div>
-            )}
-            {categories.length > 0 && (
-              <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
-                {categories.map(c => (
-                  <span key={c.id} style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '4px', height: '18px', padding: '0 8px',
-                    borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)',
-                    background: `rgba(${hexToRgb(c.color)}, 0.12)`, color: c.color, whiteSpace: 'nowrap',
+            {/* 行 2：左 音标·词性标签（可换行）｜右 分类胶囊（右对齐） */}
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginTop: '3px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px', flexWrap: 'wrap', minWidth: 0 }}>
+                {word.phonetic && (
+                  <span style={{
+                    fontFamily: 'var(--font-phonetic)', fontSize: 'var(--text-sm)',
+                    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap',
                   }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: c.color, flexShrink: 0 }} />
-                    {c.name}
+                    {formatPhonetic(word.phonetic)}
                   </span>
+                )}
+                {word.phonetic && (word.partOfSpeechTags?.length ?? 0) > 0 && (
+                  <span style={{ color: 'var(--color-text-tertiary)', fontSize: '12px', flexShrink: 0 }}>·</span>
+                )}
+                {(word.partOfSpeechTags ?? []).map((p, i) => (
+                  <PosTag key={i} value={p} size="sm" bold={false} />
                 ))}
               </div>
-            )}
-          </div>
-          {/* 悬停箭头（规格 §4.4）：opacity 0→1 */}
-          <div className="opacity-0 group-hover:opacity-100" style={{
-            position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
-            color: 'var(--color-text-tertiary)', transition: 'opacity var(--duration-fast) var(--ease-smooth)',
-            pointerEvents: 'none',
-          }}>
-            <Icon name="arrow-right" size={14} />
+              {categories.length > 0 && (
+                <div style={{ display: 'flex', gap: '4px', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  {categories.map(c => (
+                    <span key={c.id} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '4px', height: '18px', padding: '0 8px',
+                      borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)',
+                      background: `rgba(${hexToRgb(c.color)}, 0.12)`, color: c.color, whiteSpace: 'nowrap',
+                    }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: c.color, flexShrink: 0 }} />
+                      {c.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}

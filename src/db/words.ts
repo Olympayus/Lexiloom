@@ -43,33 +43,34 @@ export async function getAllWords(): Promise<DbResult<Word[]>> {
 async function queryWordPreviews(filter: string | null): Promise<WordWithPreview[]> {
   const db = getDb()
   const fieldDefs = await db.select<{ id: string; key: string }[]>(
-    `SELECT id, key FROM field_definitions WHERE key IN ('chinese_definition', 'part_of_speech', 'phonetic')`
+    `SELECT id, key FROM field_definitions WHERE key IN ('part_of_speech', 'phonetic')`
   )
   const defMap = new Map<string, string>()
   fieldDefs.forEach(fd => defMap.set(fd.key, fd.id))
-  const chineseDefId = defMap.get('chinese_definition')
   const posId = defMap.get('part_of_speech')
   const phoneticId = defMap.get('phonetic')
 
   const filterParam = filter ? `%${filter}%` : null
-  // 每个 (word_id, field_id) 组取 display_order 最小者（首条）作为预览，与工作台展示顺序一致；
-  // 不能用 MAX(value)——多值时按字典序取会选错「首释义」。
+  // 预览：音标取首条；词性聚合该词全部 value（按 displayOrder 序去重，| 分隔），映射为 partOfSpeechTags。
+  // 不再取首中文释义（④ 已从侧边栏移除展示）；筛选仍走 field_values.value，不受影响。
   const rows = await db.select<Record<string, any>[]>(
     `SELECT w.*,
-            MAX(CASE WHEN fv.field_id = ?1 AND fv.rn = 1 THEN fv.value END) as chinese_definition,
-            MAX(CASE WHEN fv.field_id = ?2 AND fv.rn = 1 THEN fv.value END) as part_of_speech,
-            MAX(CASE WHEN fv.field_id = ?3 AND fv.rn = 1 THEN fv.value END) as phonetic
+            MAX(CASE WHEN fv.field_id = ?1 AND fv.rn = 1 THEN fv.value END) as phonetic,
+            (SELECT GROUP_CONCAT(value, '|') FROM (
+               SELECT DISTINCT fv3.value
+               FROM field_values fv3
+               WHERE fv3.word_id = w.id AND fv3.field_id = ?2
+               GROUP BY fv3.value ORDER BY MIN(fv3.display_order)
+             )) as pos_values
      FROM words w
      LEFT JOIN (
        SELECT fv2.*, ROW_NUMBER() OVER (PARTITION BY fv2.word_id, fv2.field_id ORDER BY fv2.display_order, fv2.id) AS rn
        FROM field_values fv2
      ) fv ON fv.word_id = w.id
-     ${filterParam ? 'WHERE w.lemma LIKE ?4 OR fv.value LIKE ?4' : ''}
+     ${filterParam ? 'WHERE w.lemma LIKE ?3 OR fv.value LIKE ?3' : ''}
      GROUP BY w.id
      ORDER BY w.updated_at DESC`,
-    filterParam
-      ? [chineseDefId || '', posId || '', phoneticId || '', filterParam]
-      : [chineseDefId || '', posId || '', phoneticId || '']
+    filterParam ? [phoneticId || '', posId || '', filterParam] : [phoneticId || '', posId || '']
   )
   return rows.map(r => ({
     id: r.id,
@@ -78,9 +79,8 @@ async function queryWordPreviews(filter: string | null): Promise<WordWithPreview
     language: r.language,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
-    chineseDefinition: r.chinese_definition || undefined,
-    partOfSpeech: r.part_of_speech || undefined,
     phonetic: r.phonetic || undefined,
+    partOfSpeechTags: r.pos_values ? r.pos_values.split('|') : [],
   }))
 }
 

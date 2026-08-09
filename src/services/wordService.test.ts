@@ -185,12 +185,12 @@ describe('wordService 词操作', () => {
     expect(await deleteWord(w.data.id)).toBe(true)
   })
 
-  it('getPreviews 返回首条释义预览', async () => {
+  it('getPreviews 返回词性标签预览', async () => {
     const w = await wordsDb.createWord({ lemma: 'run' })
     if (!w.ok) throw new Error('createWord failed')
-    await fieldsDb.insertFieldValue({ wordId: w.data.id, fieldId: 'f_chinese_definition', value: '跑步', source: 'ecdict' })
+    await fieldsDb.insertFieldValue({ wordId: w.data.id, fieldId: 'f_part_of_speech', value: 'v.', source: 'ecdict' })
     const previews = await getPreviews()
     const p = previews.find(x => x.id === w.data.id)
-    expect(p?.chineseDefinition).toBe('跑步')
+    expect(p?.partOfSpeechTags).toEqual(['v.'])
   })
 })

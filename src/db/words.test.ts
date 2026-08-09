@@ -22,17 +22,16 @@ describe('db/words', () => {
     expect(r.data.normalizedLemma).toBe('apple')
   })
 
-  it('getWordsWithPreviews 聚合中文释义与词性', async () => {
+  it('getWordsWithPreviews 聚合全部词性标签（按 displayOrder 序去重）', async () => {
     const wordResult = await wordsDb.createWord({ lemma: 'run' })
     if (!wordResult.ok) throw new Error('createWord failed')
     const word = wordResult.data
-    await fieldsDb.insertFieldValue({ wordId: word.id, fieldId: 'f_chinese_definition', value: '跑步', source: 'ecdict' })
-    await fieldsDb.insertFieldValue({ wordId: word.id, fieldId: 'f_part_of_speech', value: 'v.', source: 'ecdict' })
+    await fieldsDb.insertFieldValue({ wordId: word.id, fieldId: 'f_part_of_speech', value: 'v.', source: 'ecdict', displayOrder: 0 })
+    await fieldsDb.insertFieldValue({ wordId: word.id, fieldId: 'f_part_of_speech', value: 'n.', source: 'ecdict', displayOrder: 1 })
     const r = await wordsDb.getWordsWithPreviews()
     if (!r.ok) throw new Error('getWordsWithPreviews failed')
     const w = r.data.find(x => x.id === word.id)!
-    expect(w.chineseDefinition).toBe('跑步')
-    expect(w.partOfSpeech).toBe('v.')
+    expect(w.partOfSpeechTags).toEqual(['v.', 'n.'])
   })
 
   it('searchWords 按 lemma 过滤', async () => {
@@ -66,16 +65,5 @@ describe('db/words', () => {
     if (!r.ok) throw new Error('getWordsWithPreviews failed')
     const p = r.data.find(x => x.id === w.data.id)!
     expect(p.phonetic).toBe('/əbˈzɜːv/')
-  })
-
-  it('多中文释义取 display_order 最小者（首释义，非 MAX 字典序）', async () => {
-    const w = await wordsDb.createWord({ lemma: 'atmosphere' })
-    if (!w.ok) throw new Error('createWord failed')
-    await fieldsDb.insertFieldValue({ wordId: w.data.id, fieldId: 'f_chinese_definition', value: '大气', source: 'ecdict', displayOrder: 0 })
-    await fieldsDb.insertFieldValue({ wordId: w.data.id, fieldId: 'f_chinese_definition', value: '气氛', source: 'wordnet', displayOrder: 1 })
-    const r = await wordsDb.getWordsWithPreviews()
-    if (!r.ok) throw new Error('getWordsWithPreviews failed')
-    const p = r.data.find(x => x.id === w.data.id)!
-    expect(p.chineseDefinition).toBe('大气')
   })
 })

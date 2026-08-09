@@ -13,7 +13,6 @@ export interface CreateWordInput {
 }
 
 export interface WordWithPreview extends Word {
-  chineseDefinition?: string
-  partOfSpeech?: string
+  partOfSpeechTags?: string[]
   phonetic?: string
 }
