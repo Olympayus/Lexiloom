@@ -270,7 +270,6 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
     <div
       ref={setRefs}
       onMouseEnter={() => onHover(fv.id)}
-      onMouseLeave={() => onHover(null)}
       data-field-edit={isEditing ? 'true' : undefined}
       style={
         isPosPane
@@ -912,6 +911,7 @@ export default function WordWorkbench() {
 
   return (
     <div
+      onMouseLeave={() => setHoveredId(null)}
       style={{
         opacity: fadeIn ? 1 : 0,
         transition: 'opacity 100ms var(--ease-smooth)',
