@@ -4,6 +4,7 @@ import SearchSuggestions from '../search/SearchSuggestions'
 import { searchLemmas } from '../../services/searchService'
 import { useViewStore } from '../../stores/viewStore'
 import { useSettingsStore } from '../../stores/settingsStore'
+import { useClickOutside } from '../../lib/useClickOutside'
 import Icon from '../icons'
 
 // 全局顶栏（规格 §3）：Logo 32×32 / 主搜索框 40px / 设置按钮；建议下拉 → 词典详情视图（D2）
@@ -21,6 +22,12 @@ export default function TopBar({ sidebarWidth }: { sidebarWidth: number }) {
   const showWorkbench = useViewStore(s => s.showWorkbench)
   const openSettings = useSettingsStore(s => s.openSettings)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  // 建议下拉点外关闭：用 document 级 pointerdown 监听（既有 useClickOutside 模式）。
+  // 之前用全屏遮罩 onClick，但遮罩位于 data-tauri-drag-region 顶栏内，mousedown 被窗口拖拽吞掉、click 不触发，导致点空白不关闭。
+  const searchRef = useRef<HTMLDivElement>(null)
+  const closeSuggestions = useCallback(() => setShowSuggestions(false), [])
+  useClickOutside(searchRef, closeSuggestions, showSuggestions)
 
   // 窗口最大化状态同步（自绘标题栏需要，最大/还原图标切换）
   useEffect(() => {
@@ -126,7 +133,7 @@ export default function TopBar({ sidebarWidth }: { sidebarWidth: number }) {
           width: `min(960px, max(320px, calc(100vw - ${(sidebarWidth + 16) * 2}px)))`,
         }}
       >
-        <div className="relative">
+        <div className="relative" ref={searchRef}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: '10px', height: '40px', padding: '0 14px',
             background: 'var(--color-surface)',
@@ -153,16 +160,13 @@ export default function TopBar({ sidebarWidth }: { sidebarWidth: number }) {
           </div>
 
           {showSuggestions && (
-            <>
-              <div style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-base)' }} onClick={() => setShowSuggestions(false)} />
-              <SearchSuggestions
-                suggestions={suggestions}
-                selectedIndex={selectedIndex}
-                onSelect={handleSelectWord}
-                onHover={i => setSelectedIndex(i)}
-                query={query}
-              />
-            </>
+            <SearchSuggestions
+              suggestions={suggestions}
+              selectedIndex={selectedIndex}
+              onSelect={handleSelectWord}
+              onHover={i => setSelectedIndex(i)}
+              query={query}
+            />
           )}
           {searchError && !showSuggestions && (
             <div style={{
