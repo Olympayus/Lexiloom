@@ -18,7 +18,7 @@ export default function PosTag({ value, size = 'md', bold = true }: Props) {
       color: 'var(--color-pos)',
       background: 'transparent',
       fontSize: size === 'sm' ? 11 : 12,
-      fontWeight: bold ? 700 : 600,
+      fontWeight: bold ? 700 : 'var(--weight-regular)',
       lineHeight: 1,
     }}>
       {value}
