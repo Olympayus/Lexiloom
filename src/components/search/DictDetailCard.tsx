@@ -7,7 +7,7 @@ import type { MergeFieldInput } from '../../services/wordService'
 import { useWordStore } from '../../stores/wordStore'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { ensureWord } from '../../lib/ensureWord'
-import { mergeEntryFields, flattenTree, buildMergeInputs, toggleSubtreeSelection } from '../../lib/dictPlan'
+import { mergeEntryFields, flattenTree, buildMergeInputs, toggleSubtreeSelection, shouldNumberField } from '../../lib/dictPlan'
 import type { FlatNode } from '../../lib/dictPlan'
 
 interface Props {
@@ -193,8 +193,6 @@ export default function DictDetailCard({
 
   // 递归渲染 flat 树：词性/容器节点整棵勾选，普通节点单项勾选
   const renderFlat = (nodes: FlatNode[]): ReactNode => {
-    const keyCounts = new Map<string, number>()
-    for (const n of nodes) keyCounts.set(n.field.key, (keyCounts.get(n.field.key) ?? 0) + 1)
     const seen = new Map<string, number>()
 
     return nodes.map(node => {
@@ -203,11 +201,8 @@ export default function DictDetailCard({
       const idx = seen.get(node.field.key) ?? 0
       seen.set(node.field.key, idx + 1)
       const label = fieldLabel(node.field.key)
-      // #2 中/英释义按词性独立编号：释义始终显示 (n)，非释义节点仅在同类多于 1 时显示编号
-      const isDefinition = node.field.key === 'chinese_definition' || node.field.key === 'english_definition'
-      const showNum = isDefinition
-        ? true
-        : Boolean(label) && (keyCounts.get(node.field.key) ?? 0) > 1
+      // 编号规则：仅中/英释义带 (n)，按词性独立从 1 重计；近义词/例句等一律不加编号
+      const showNum = shouldNumberField(node.field.key)
       const numLabel = showNum ? `${label}(${idx + 1})` : label
       const onToggle = () => (isContainer ? toggleSubtree(node.key) : toggle(node.key))
 

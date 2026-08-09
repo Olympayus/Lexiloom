@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mergeEntryFields, flattenTree, buildMergeInputs, toggleSubtreeSelection } from './dictPlan'
+import { mergeEntryFields, flattenTree, buildMergeInputs, toggleSubtreeSelection, shouldNumberField } from './dictPlan'
 import type { DictionaryField } from '../types/dictionary'
 
 const fields: DictionaryField[] = [
@@ -46,6 +46,18 @@ describe('buildMergeInputs', () => {
   it('勾选子但漏勾父：自动隐式补选祖先（保证无游离释义）', () => {
     const inputs = buildMergeInputs(fields, new Set(['0-1-0']), 'wordnet')
     expect(inputs.map(i => i.key)).toEqual(['part_of_speech', 'english_definition', 'synonyms'])
+  })
+})
+
+describe('shouldNumberField', () => {
+  it('仅中/英释义带编号；近义词/例句等不编号', () => {
+    expect(shouldNumberField('chinese_definition')).toBe(true)
+    expect(shouldNumberField('english_definition')).toBe(true)
+    expect(shouldNumberField('synonyms')).toBe(false)
+    expect(shouldNumberField('example_sentence')).toBe(false)
+    expect(shouldNumberField('phonetic')).toBe(false)
+    expect(shouldNumberField('exchange')).toBe(false)
+    expect(shouldNumberField('part_of_speech')).toBe(false)
   })
 })
 

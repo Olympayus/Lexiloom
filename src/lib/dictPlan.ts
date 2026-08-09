@@ -20,6 +20,11 @@ export function mergeEntryFields(fields: DictionaryField[]): DictionaryField[] {
   return out
 }
 
+// 编号规则：仅中/英释义显示 (n) 编号；近义词/例句/音标等一律不加（需求：仅中英释义编号）
+export function shouldNumberField(key: string): boolean {
+  return key === 'chinese_definition' || key === 'english_definition'
+}
+
 export interface FlatNode {
   key: string
   field: DictionaryField
