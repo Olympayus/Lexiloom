@@ -12,7 +12,7 @@ describe('posDisplay', () => {
 })
 
 describe('buildWordnetFields', () => {
-  it('同词性 synset 并入同一父；words→近义词项；examples→例句项', () => {
+  it('同词性 synset 并入同一父；近义词/例句各自挂在对应释义下', () => {
     const fields = buildWordnetFields('run', [
       { pos: 'n', definition: 'a score in baseball', words: 'run\nscore', examples: 'He hit a run.\nThey scored.' },
       { pos: 'n', definition: 'a regular trip', words: 'trip' },
@@ -20,15 +20,35 @@ describe('buildWordnetFields', () => {
     ])
     const pos = fields.filter(f => f.key === 'part_of_speech')
     expect(pos.map(p => p.value)).toEqual(['n.', 'v.'])
-    expect(pos[0].children!.filter(c => c.key === 'english_definition')).toHaveLength(2)
-    const syn = pos[0].children!.find(c => c.key === 'synonyms')!
-    expect(syn.children!.map(s => s.value)).toEqual(['score']) // 排除词条自身
-    const ex = pos[0].children!.find(c => c.key === 'example_sentence')!
-    expect(ex.children!.map(e => e.value)).toEqual(['He hit a run.', 'They scored.'])
+
+    // 词性下只有释义；近义词/例句不再直属词性，而归到各自释义下
+    const defs = pos[0].children!.filter(c => c.key === 'english_definition')
+    expect(defs).toHaveLength(2)
+
+    const def1 = defs[0]
+    expect(def1.value).toBe('a score in baseball')
+    expect(def1.children!.map(c => c.key)).toEqual(['example_sentence', 'synonyms'])
+    const ex1 = def1.children!.find(c => c.key === 'example_sentence')!
+    expect(ex1.children!.map(e => e.value)).toEqual(['He hit a run.', 'They scored.'])
+    const syn1 = def1.children!.find(c => c.key === 'synonyms')!
+    expect(syn1.children!.map(s => s.value)).toEqual(['score']) // 排除词条自身
+
+    const def2 = defs[1]
+    expect(def2.value).toBe('a regular trip')
+    expect(def2.children!.map(c => c.key)).toEqual(['synonyms'])
+    const syn2 = def2.children!.find(c => c.key === 'synonyms')!
+    expect(syn2.children!.map(s => s.value)).toEqual(['trip'])
   })
-  it('无近义词/例句时不产生容器', () => {
+  it('无近义词/例句时释义为叶子（不产生容器）', () => {
     const fields = buildWordnetFields('cat', [{ pos: 'n', definition: 'a small animal' }])
     const pos = fields[0]
     expect(pos.children!.map(c => c.key)).toEqual(['english_definition'])
+    expect(pos.children![0].children).toBeUndefined()
+  })
+  it('无释义但有近义词时兜底挂词性下，不产生游离节点', () => {
+    const fields = buildWordnetFields('x', [{ pos: 'n', definition: '', words: 'x\nalt' }])
+    const pos = fields[0]
+    const syn = pos.children!.find(c => c.key === 'synonyms')!
+    expect(syn.children!.map(s => s.value)).toEqual(['alt'])
   })
 })

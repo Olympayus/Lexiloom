@@ -27,19 +27,32 @@ export function buildWordnetFields(word: string, synsets: SynsetInput[]): Dictio
   }
 
   for (const synset of synsets) {
-    const children: DictionaryField[] = []
-    if (synset.definition) children.push({ key: 'english_definition', value: synset.definition })
+    const defText = (synset.definition ?? '').trim()
     const wordsList = synset.words
       ? synset.words.split('\n').map(w => w.trim()).filter(w => w && w.toLowerCase() !== word.toLowerCase())
       : []
-    if (wordsList.length) {
-      children.push({ key: 'synonyms', value: '', children: wordsList.map(w => ({ key: 'synonym_item', value: w })) })
-    }
     const examples = synset.examples ? synset.examples.split('\n').filter(Boolean) : []
+
+    // 近义词/例句按释义归组：挂在对应 english_definition 下（schema 约定释义下才允许例句/近义词）。
+    // 这样入库后 sortTreeByTemplate 按 DEFINITION_CHILD_RANK 保持每个释义各自的例句/近义词，不被打散。
+    const defChildren: DictionaryField[] = []
     if (examples.length) {
-      children.push({ key: 'example_sentence', value: '', children: examples.map(ex => ({ key: 'example', value: ex })) })
+      defChildren.push({ key: 'example_sentence', value: '', children: examples.map(ex => ({ key: 'example', value: ex })) })
     }
-    getPos(posDisplay(synset.pos)).children!.push(...children)
+    if (wordsList.length) {
+      defChildren.push({ key: 'synonyms', value: '', children: wordsList.map(w => ({ key: 'synonym_item', value: w })) })
+    }
+
+    if (defText) {
+      getPos(posDisplay(synset.pos)).children!.push(
+        defChildren.length
+          ? { key: 'english_definition', value: defText, children: defChildren }
+          : { key: 'english_definition', value: defText }
+      )
+    } else if (defChildren.length) {
+      // 兜底：无释义但带近义词/例句时直接挂词性下，避免节点游离
+      getPos(posDisplay(synset.pos)).children!.push(...defChildren)
+    }
   }
   return fields
 }
