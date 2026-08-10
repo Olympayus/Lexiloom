@@ -1,12 +1,22 @@
 import type { DictionaryField } from '../types/dictionary'
 
-// 词性显示归一化：ecdict 源内形容词码为 a/a.，统一展示为 adj.（与 wordnet POS_DISPLAY 一致）
-const POS_DISPLAY: Record<string, string> = { a: 'adj.', 'a.': 'adj.' }
-const normalizePos = (raw: string): string => POS_DISPLAY[raw.toLowerCase()] ?? raw
+// 词性显示归一化：ecdict 翻译行（中文释义）用带点码（n.），释义行（英文释义）用无点码（n/s/v），
+// 同一词性两种写法并存会拆成两个词性父。统一为带点规范形式（与 wordnet POS_DISPLAY 的
+// n. / v. / adj. / adv. 一致），使中英释义并入同一词性（搜索页与工作台均合并展示）。
+const POS_DISPLAY: Record<string, string> = {
+  n: 'n.', v: 'v.', a: 'adj.', adj: 'adj.', s: 'adj.', adv: 'adv.',
+  vt: 'vt.', vi: 'vi.', aux: 'aux.', prep: 'prep.', conj: 'conj.',
+  pron: 'pron.', abbr: 'abbr.', num: 'num.', art: 'art.', int: 'int.', ad: 'ad.',
+}
+const normalizePos = (raw: string): string => {
+  const code = raw.toLowerCase().replace(/\.$/, '')   // 去尾点后查规范码
+  return POS_DISPLAY[code] ?? raw
+}
 
 // 词性前缀（ecdict 行首，含点号，保留原样标签）。
 // 注意：交替必须「最长前缀优先」——否则 'vi. 跑' 会先匹配 'v'，label 错成 'v'、释义错成 'i. 跑'。
-const POS_RE = /^(vt|vi|adj|adv|aux|prep|conj|pron|abbr|num|art|int|ad|n|v|a)\.?/i
+// 含 's'（wordnet 形容词卫星码）：definition 列大量 's ...' 英文释义此前误入 supplementary，现归 adj.（translation 列无 's ' 行，无误匹配风险）。
+const POS_RE = /^(vt|vi|adj|adv|aux|prep|conj|pron|abbr|num|art|int|ad|n|v|a|s)\.?/i
 
 // exchange 前缀 → 中文标注（修正后，spec §5.3）
 const EXCHANGE_LABELS: Record<string, string> = {

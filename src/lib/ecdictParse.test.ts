@@ -44,11 +44,36 @@ describe('buildEcdictFields', () => {
     const fields = buildEcdictFields({
       word: 'run',
       translation: 'n. 跑',
-      definition: 'n. a score in baseball\\nn. a regular trip',
+      definition: 'n a score in baseball\\nn a regular trip',   // 真实数据释义行为无点码
       phonetic: null, exchange: null,
     })
     const pos = fields.find(f => f.key === 'part_of_speech')
+    expect(pos?.value).toBe('n.')   // n（无点）与 n.（有点）归并为一个词性父
     expect(pos?.children?.map(c => c.key)).toEqual(['chinese_definition', 'english_definition', 'english_definition'])
+  })
+  it('中英释义同一词性合并：翻译行带点(n.)与释义行无点(n)归并', () => {
+    const fields = buildEcdictFields({
+      word: 'dread',
+      translation: 'n. 恐惧\\nv. 害怕',
+      definition: 'n fearful expectation\\nv be afraid of',
+      phonetic: null, exchange: null,
+    })
+    const pos = fields.filter(f => f.key === 'part_of_speech')
+    expect(pos.map(p => p.value)).toEqual(['n.', 'v.'])
+    expect(pos[0].children!.map(c => c.key)).toEqual(['chinese_definition', 'english_definition'])
+    expect(pos[1].children!.map(c => c.key)).toEqual(['chinese_definition', 'english_definition'])
+  })
+  it('s 形容词卫星码归一为 adj.（与 wordnet 一致）', () => {
+    const fields = buildEcdictFields({
+      word: 'dread',
+      translation: 'a. 可怕的',
+      definition: 's causing fear',
+      phonetic: null, exchange: null,
+    })
+    const pos = fields.filter(f => f.key === 'part_of_speech')
+    expect(pos).toHaveLength(1)
+    expect(pos[0].value).toBe('adj.')
+    expect(pos[0].children!.map(c => c.key)).toEqual(['chinese_definition', 'english_definition'])
   })
   it('exchange 标签修正（spec §5.3 全前缀）：p/i/d→时态、3/s/f→人称/复数、r/t/b/z→级、0/1 过滤', () => {
     const items = parseExchangeItems('p:ran/i:running/d:run/0:run/1:d/3:runs/s:runs/f:aces/r:better/t:best/b:balder/z:baldest')
