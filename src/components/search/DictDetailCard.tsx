@@ -235,7 +235,7 @@ export default function DictDetailCard({
           </label>
 
           {isContainer && (
-            <div className="ml-6 pl-4 mt-1 space-y-1"
+            <div className="ml-3 pl-2 mt-1 space-y-1"
               style={{ borderLeft: '2px solid var(--color-border)' }}>
               {renderFlat(node.children)}
             </div>

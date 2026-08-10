@@ -311,7 +311,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
           }}
         />
       )}
-      <div style={{ display: 'flex', alignItems: isPosPane ? 'center' : 'baseline', gap: '8px' }}>
+      <div style={{ display: 'flex', alignItems: isPosPane ? 'center' : 'baseline', gap: '4px' }}>
         <button
           type="button"
           ref={setActivatorNodeRef}
@@ -320,8 +320,8 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
           title="拖动排序"
           aria-label="拖动排序"
           style={{
-            width: '16px',
-            height: '16px',
+            width: '12px',
+            height: '14px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -338,7 +338,7 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
             transition: 'opacity var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
           }}
         >
-          <Icon name="grip" size={14} />
+          <Icon name="grip" size={11} />
         </button>
         {isPosPane ? (
           isEditing ? (
