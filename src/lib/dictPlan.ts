@@ -25,6 +25,19 @@ export function shouldNumberField(key: string): boolean {
   return key === 'chinese_definition' || key === 'english_definition'
 }
 
+// ②a 判定：是否以无框平铺渲染子级。词性窗格永不平铺（保留词性→释义树与中/英释义编号）；
+// 仅非词性容器且全部子级为终端项（无子级）时平铺。
+export function shouldFlattenChildren(
+  isPosPane: boolean,
+  hasChildren: boolean,
+  children: readonly unknown[],
+): boolean {
+  return !isPosPane && hasChildren && children.every(c => {
+    const kids = (c as { children?: unknown[] }).children
+    return !(kids && kids.length > 0)
+  })
+}
+
 export interface FlatNode {
   key: string
   field: DictionaryField

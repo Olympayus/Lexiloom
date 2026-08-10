@@ -13,6 +13,7 @@ import { getDefinitions } from '../../services/fieldService'
 import { formatPhonetic } from '../../lib/phonetic'
 import { sortTreeByTemplate, ROOT_FIELD_KEYS, ALLOWED_CHILD_KEYS } from '../../lib/fieldOrder'
 import { hasFieldChanges } from '../../lib/fieldChanges'
+import { shouldFlattenChildren } from '../../lib/dictPlan'
 import { Button } from '../ui/Button'
 import EmptyState from '../ui/EmptyState'
 import Icon from '../icons'
@@ -143,8 +144,9 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
   const showsButtons = containsId(fv, hoveredId)
   const draggingStyle = isDragging ? { transform: 'scale(1.02)', boxShadow: 'var(--shadow-raised)' } : null
 
-  // ②a：叶子容器（子项均为终端项）不渲染树状分支/连接横线，子项平铺成无框列表
-  const hasTerminalChildren = hasChildren && fv.children!.every(c => !(c.children && c.children.length > 0))
+  // ②a：叶子容器（子项均为终端项）不渲染树状分支/连接横线，子项平铺成无框列表。
+  // 词性窗格永不平铺（保留词性→释义树与中/英释义编号，保证 ecdict/wordnet 编号一致）。
+  const hasTerminalChildren = shouldFlattenChildren(isPosPane, Boolean(hasChildren), fv.children!)
   const renderedChildren = hasChildren
     ? hasTerminalChildren
       ? fv.children!.map(child => (

@@ -203,7 +203,8 @@ export default function DictDetailCard({
       seen.set(node.field.key, idx + 1)
       const label = fieldLabel(node.field.key)
       // 编号规则：仅中/英释义带 (n)，按词性独立从 1 重计；近义词/例句等一律不加编号
-      const showNum = shouldNumberField(node.field.key)
+      const isDefinition = shouldNumberField(node.field.key)
+      const showNum = isDefinition
       const numLabel = showNum ? `${label}(${idx + 1})` : label
       const onToggle = () => (isContainer ? toggleSubtree(node.key) : toggle(node.key))
 
@@ -229,7 +230,8 @@ export default function DictDetailCard({
                 {label && (
                   <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px', fontWeight: 700, letterSpacing: '0.5px' }}>{numLabel}</span>
                 )}
-                {!isContainer && renderValue(node)}
+                {/* 释义节点即使带子级（wordnet 释义内嵌例句/近义词）也显示释义文字；其余容器不显示空值 */}
+                {(!isContainer || isDefinition) && renderValue(node)}
               </div>
             )}
           </label>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mergeEntryFields, flattenTree, buildMergeInputs, toggleSubtreeSelection, shouldNumberField } from './dictPlan'
+import { mergeEntryFields, flattenTree, buildMergeInputs, toggleSubtreeSelection, shouldNumberField, shouldFlattenChildren } from './dictPlan'
 import type { DictionaryField } from '../types/dictionary'
 
 const fields: DictionaryField[] = [
@@ -58,6 +58,24 @@ describe('shouldNumberField', () => {
     expect(shouldNumberField('phonetic')).toBe(false)
     expect(shouldNumberField('exchange')).toBe(false)
     expect(shouldNumberField('part_of_speech')).toBe(false)
+  })
+})
+
+describe('shouldFlattenChildren', () => {
+  const leaf = (key: string) => ({ key, value: 'x' })
+  const nested = (key: string) => ({ key, value: '', children: [{ key: 'item', value: 'y' }] })
+
+  it('词性窗格永不平铺（保留词性→释义树与中/英释义编号）', () => {
+    expect(shouldFlattenChildren(true, true, [leaf('chinese_definition'), leaf('english_definition')])).toBe(false)
+  })
+  it('非词性容器且子项全为终端项时平铺', () => {
+    expect(shouldFlattenChildren(false, true, [leaf('example'), leaf('example')])).toBe(true)
+  })
+  it('子项含子级时不平铺（保留树状）', () => {
+    expect(shouldFlattenChildren(false, true, [nested('synonyms')])).toBe(false)
+  })
+  it('无子级时不平铺', () => {
+    expect(shouldFlattenChildren(false, false, [])).toBe(false)
   })
 })
 
