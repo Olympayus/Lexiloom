@@ -59,6 +59,10 @@ AppShell 三区：TopBar（48px，常驻）/ 侧边栏（300px，可收起 120�
 
 ## 开发约定 Conventions
 
+### 行尾统一 Line Endings
+
+仓库内文本文件一律 LF（`.gitattributes` 的 `* text=auto` 自动规范化，`add` 时自动转换）；不要手动改行尾、不要提交 CRLF 文件。二进制扩展名（png / ico / exe 等）已在 `.gitattributes` 声明，不参与规范化。
+
 ### 添加内置字段 Adding a New Built-in Field
 
 1. 在 `src/types/field.ts` 的 `FieldKey` 联合类型中加入新键；
