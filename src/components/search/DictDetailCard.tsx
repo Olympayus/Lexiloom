@@ -6,6 +6,8 @@ import type { FieldSource } from '../../types/field'
 import type { MergeFieldInput } from '../../services/wordService'
 import { useWordStore } from '../../stores/wordStore'
 import { useSettingsStore } from '../../stores/settingsStore'
+import { isFieldVisible } from '../../lib/fieldTree'
+import type { DisplayFieldKey } from '../../stores/settingsStore'
 import { ensureWord } from '../../lib/ensureWord'
 import { mergeEntryFields, flattenTree, buildMergeInputs, toggleSubtreeSelection, shouldNumberField } from '../../lib/dictPlan'
 import type { FlatNode } from '../../lib/dictPlan'
@@ -87,12 +89,15 @@ export default function DictDetailCard({
   // displayFields 隐藏的字段类型不渲染、不进入勾选（等价原逐项 displayFields 判断）
   const visible = useMemo(() => {
     const keyAllowed = (key: string) => {
-      const map: Record<string, boolean> = {
-        phonetic: displayFields.phonetic, part_of_speech: true,
-        chinese_definition: displayFields.chinese_definition, english_definition: displayFields.english_definition,
-        example: displayFields.example, exchange: displayFields.exchange,
+      const control: Record<string, DisplayFieldKey> = {
+        phonetic: 'phonetic', part_of_speech: 'part_of_speech',
+        chinese_definition: 'chinese_definition', english_definition: 'english_definition',
+        example: 'example', example_sentence: 'example',
+        synonyms: 'synonyms', synonym_item: 'synonyms',
+        exchange: 'exchange',
       }
-      return map[key] ?? true
+      const c = control[key]
+      return c ? isFieldVisible(c, displayFields) : true
     }
     const filter = (nodes: DictionaryField[]): DictionaryField[] =>
       nodes
