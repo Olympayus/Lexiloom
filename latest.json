@@ -1,11 +1,11 @@
 {
-  "version": "0.3.4",
-  "notes": "v0.3.4 — 修复：词典就地直读安装目录（更换安装位置/干净机器不再丢失词典）；新增：应用内自更新（设置→关于→检查更新 / 启动检测）；新增：卸载时可选是否删除个人数据",
-  "pub_date": "2026-08-11T04:51:17.681Z",
+  "version": "0.4.0",
+  "notes": "v0.4.0 — 修复：合并添加多词源词性错位（ecdict 释义不再错误挂到其它词性）；设置面板：词典返回词条改为树形分块（词性→释义→例句/近义词，关闭父级自动一并关闭子级、重新开启可恢复），新增「近义词」显示开关、移除无效果的「词源」开关，分类管理每行常驻显示词数计数、编辑/删除按钮悬停浮现；界面：顶部搜索框垂直瘦身（标题栏 48px / 搜索框 32px）、搜索框宽度不再随侧边栏收起而放大，单词标题衬线字体改为 Palatino Linotype，移除侧边栏小搜索框下方分割线；其他：关于页「检查更新」改为真正的按钮、版本状态文字并列显示，设置存储升级 v2 自动迁移",
+  "pub_date": "2026-08-11T13:18:57.820Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRRThYcVB4eXdQZFFNeVBaWFFjWFYyUHRCTThheklVTlh4RlZpRGhiUlN1NzBlTEZDRjkzNDRXSVBiby9oSytDSlY4WWNhRFhvMWJmSjBZVy9SekdKb0tTSCswKzZvc0FzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NDIzNzk1CWZpbGU6TGV4aWxvb21fMC4zLjRfeDY0LXNldHVwLmV4ZQpGd3pldkFUQWFiNTRKMGhyd01hODhWM3BoVnJPditaZmRuVi8ya0pSR0JvejZHc2Vua0orVXRYUGNGVUJKMjYwQmx2VEZXNWpVL0M1Z1EyRk1mU1BDZz09Cg==",
-      "url": "https://github.com/Olympayus/Lexiloom/releases/download/v0.3.4/Lexiloom_0.3.4_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRRThYcVB4eXdQZGZFWmdOV2I5WmI1U0pxTGgzUTA0c0R5L0ZNeWFpS1AwQWFVUXlJMlZkaXRHWUF3YWdXSXFPRFRxM2lJdzQzVGFXcWU0MUV0dk40WXVSZUZSVHNNVlE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NDU0MjMyCWZpbGU6TGV4aWxvb21fMC40LjBfeDY0LXNldHVwLmV4ZQoyODRWOVhNVDdkUXhKVkVuRHVBTk5WdElLOGRTYkd2VzljZ0hyWTQwYTFTTFVPOEdjZU9JczJtNHJ5UE9MbFhJcFlqZTBqK3lTTlhMVGJvNFUyejdDUT09Cg==",
+      "url": "https://github.com/Olympayus/Lexiloom/releases/download/v0.4.0/Lexiloom_0.4.0_x64-setup.exe"
     }
   }
 }
