@@ -141,6 +141,12 @@ npm run tauri build -- --bundles nsis   # 网络受限时只打 NSIS（MSI 需�
 - 确认 README 的版本徽章、安装表文件名与 Release 实际产物一致；
 - 可选：删除已合并的本地分支 `git branch -d vX.Y.Z`（若其尚未合入 `origin/vX.Y.Z`，`-d` 会拒绝，需 `-D` 强制删除——前提是内容已在 `origin/main` 上确认无丢失）。
 
+### 发布常见坑（速查）
+
+- **打包签名**：构建前设置 `export TAURI_SIGNING_PRIVATE_KEY="$(cat Lexiloom.key)"` 与 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD="<密码>"`（私钥用 `Lexiloom.key`，配对公钥 `750F2CC78F7AF104`）。
+- **push 标签**：分支与标签同名时用 `git push origin tag vX.Y.Z`（或 `git push origin refs/tags/vX.Y.Z`）。
+- **gh release**：用单行短命令；changelog 先写文件再 `--notes-file` 引用；`.exe` 与 `.exe.sig` 分条上传。
+
 ---
 
 ## 备注 Notes
