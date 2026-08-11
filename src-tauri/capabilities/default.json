@@ -11,6 +11,7 @@
     "sql:allow-load",
     "sql:allow-execute",
     "sql:allow-select",
+    "updater:default",
     "core:window:allow-start-dragging",
     "core:window:allow-minimize",
     "core:window:allow-toggle-maximize",
