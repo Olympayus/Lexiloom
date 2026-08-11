@@ -5,7 +5,7 @@ const DEFAULT = {
   settingsOpen: false,
   displayFields: {
     phonetic: true, part_of_speech: true, chinese_definition: true,
-    english_definition: true, example: true, exchange: true, etymology: true,
+    english_definition: true, example: true, exchange: true, synonyms: true,
   },
   onlineDictEnabled: false,
   onlineSources: { oxford: true, longman: true, collins: true, merriam: true },
@@ -65,7 +65,7 @@ describe('settingsStore（规格 §7）', () => {
     expect(parsed.state.settingsOpen).toBeUndefined()
   })
 
-  it('恢复：localStorage 有值时 rehydrate 还原', async () => {
+  it('恢复：localStorage v1 数据 rehydrate 并迁移（剔除 etymology、补齐 synonyms）', async () => {
     localStorage.setItem('lexiloom-settings', JSON.stringify({
       state: {
         displayFields: { phonetic: false, part_of_speech: true, chinese_definition: true, english_definition: true, example: true, exchange: true, etymology: true },
@@ -79,5 +79,7 @@ describe('settingsStore（规格 §7）', () => {
     expect(s.sidebarMode).toBe('category')
     expect(s.onlineDictEnabled).toBe(true)
     expect(s.displayFields.phonetic).toBe(false)
+    expect(s.displayFields.synonyms).toBe(true)
+    expect('etymology' in s.displayFields).toBe(false)
   })
 })

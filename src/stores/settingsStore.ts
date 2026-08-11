@@ -4,7 +4,7 @@ import type { SidebarMode } from '../lib/sidebar'
 
 export type DisplayFieldKey =
   | 'phonetic' | 'part_of_speech' | 'chinese_definition'
-  | 'english_definition' | 'example' | 'exchange' | 'etymology'
+  | 'english_definition' | 'example' | 'exchange' | 'synonyms'
 
 export type OnlineSourceKey = 'oxford' | 'longman' | 'collins' | 'merriam'
 
@@ -25,7 +25,7 @@ export interface SettingsStore {
 // 默认（规格 §7）：词典返回词条全开、在线词典关闭（来源全选）、字母模式、抽屉关闭
 const DEFAULT_DISPLAY_FIELDS: Record<DisplayFieldKey, boolean> = {
   phonetic: true, part_of_speech: true, chinese_definition: true,
-  english_definition: true, example: true, exchange: true, etymology: true,
+  english_definition: true, example: true, exchange: true, synonyms: true,
 }
 const DEFAULT_ONLINE_SOURCES: Record<OnlineSourceKey, boolean> = {
   oxford: true, longman: true, collins: true, merriam: true,
@@ -48,9 +48,15 @@ export const useSettingsStore = create<SettingsStore>()(
     }),
     {
       name: 'lexiloom-settings',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => localStorage),
-      migrate: (state) => state as SettingsStore,  // version 1: pass-through, reserved for future migrations
+      migrate: (persisted) => {
+        const state = (persisted ?? {}) as Partial<SettingsStore> & { displayFields?: Record<string, boolean> }
+        const fields: Record<string, boolean> = { ...DEFAULT_DISPLAY_FIELDS, ...(state.displayFields ?? {}) }
+        delete fields.etymology
+        if (fields.synonyms === undefined) fields.synonyms = true
+        return { ...state, displayFields: fields } as SettingsStore
+      },
       onRehydrateStorage: () => (_, error) => {
         if (error) {
           // 损坏/缺失数据 → 回退默认值
