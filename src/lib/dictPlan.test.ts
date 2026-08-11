@@ -40,8 +40,8 @@ describe('buildMergeInputs', () => {
     const sel = new Set(['0', '0-1', '0-1-0'])
     const inputs = buildMergeInputs(fields, sel, 'ecdict')
     expect(inputs.map(i => i.key)).toEqual(['part_of_speech', 'english_definition', 'synonyms'])
-    expect(inputs[1].tempId).toBe('0-1')
-    expect(inputs[2].parentTempId).toBe('0-1')
+    expect(inputs[1].tempId).toBe('ecdict:0-1')
+    expect(inputs[2].parentTempId).toBe('ecdict:0-1')
   })
   it('勾选子但漏勾父：自动隐式补选祖先（保证无游离释义）', () => {
     const inputs = buildMergeInputs(fields, new Set(['0-1-0']), 'wordnet')

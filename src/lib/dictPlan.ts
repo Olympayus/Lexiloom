@@ -82,8 +82,8 @@ export function buildMergeInputs(fields: DictionaryField[], selected: Set<string
         key: n.field.key,
         value: n.field.value,
         source,
-        tempId: n.key,
-        ...(n.parentKey ? { parentTempId: n.parentKey } : {}),
+        tempId: `${source}:${n.key}`,
+        ...(n.parentKey ? { parentTempId: `${source}:${n.parentKey}` } : {}),
       })
       walk(n.children)
     }

@@ -176,6 +176,35 @@ describe('wordService.mergeFields 显式父子匹配键', () => {
     expect(syn.parentId).toBe(def.id)
     expect(item.parentId).toBe(syn.id)
   })
+
+  it('双源一次合并：跨源同路径 tempId 不覆盖（合并添加词性错位回归）', async () => {
+    const w = await wordsDb.createWord({ lemma: 'grand-repro' })
+    if (!w.ok) throw new Error('createWord failed')
+    // ecdict：'0'=n.、'1'=adj.；wordnet：'0'=adj.、'1'=n.（同路径不同词性 → 触发旧 bug）
+    const ok = await mergeFields(w.data.id, [
+      { key: 'part_of_speech', value: 'n.', source: 'ecdict', tempId: 'ecdict:0' },
+      { key: 'chinese_definition', value: '大钢琴', source: 'ecdict', tempId: 'ecdict:0-0', parentTempId: 'ecdict:0' },
+      { key: 'part_of_speech', value: 'adj.', source: 'ecdict', tempId: 'ecdict:1' },
+      { key: 'chinese_definition', value: '壮丽的', source: 'ecdict', tempId: 'ecdict:1-0', parentTempId: 'ecdict:1' },
+      { key: 'part_of_speech', value: 'adj.', source: 'wordnet', tempId: 'wordnet:0' },
+      { key: 'english_definition', value: 'large and impressive', source: 'wordnet', tempId: 'wordnet:0-0', parentTempId: 'wordnet:0' },
+      { key: 'part_of_speech', value: 'n.', source: 'wordnet', tempId: 'wordnet:1' },
+      { key: 'english_definition', value: 'a piano with strings', source: 'wordnet', tempId: 'wordnet:1-0', parentTempId: 'wordnet:1' },
+    ])
+    expect(ok).toBe(true)
+    const r = await getFieldValuesForWord(w.data.id)
+    if (!r.ok) throw new Error('getFieldValuesForWord failed')
+    const posRows = r.data.filter(fv => fv.fieldId === 'f_part_of_speech')
+    const adj = posRows.find(p => p.value === 'adj.')!
+    const n = posRows.find(p => p.value === 'n.')!
+    // ecdict 中文释义必须挂在对应词性下（旧实现：挂错）
+    const zhuangli = r.data.find(fv => fv.fieldId === 'f_chinese_definition' && fv.value === '壮丽的')!
+    const dagangqin = r.data.find(fv => fv.fieldId === 'f_chinese_definition' && fv.value === '大钢琴')!
+    expect(zhuangli.parentId).toBe(adj.id)
+    expect(dagangqin.parentId).toBe(n.id)
+    // wordnet 英文释义同样归位
+    expect(r.data.find(fv => fv.fieldId === 'f_english_definition' && fv.value === 'a piano with strings')!.parentId).toBe(n.id)
+  })
 })
 
 describe('wordService 词操作', () => {
