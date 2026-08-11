@@ -5,11 +5,12 @@ import { searchLemmas } from '../../services/searchService'
 import { useViewStore } from '../../stores/viewStore'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { useClickOutside } from '../../lib/useClickOutside'
+import { SIDEBAR_EXPANDED_WIDTH } from '../../lib/sidebar'
 import Icon from '../icons'
 
 // 全局顶栏（规格 §3）：Logo 32×32 / 主搜索框 40px / 设置按钮；建议下拉 → 词典详情视图（D2）
 // 自绘标题栏（Task 15）：header 为拖拽区 + 内置窗口控制；搜索框绝对居中、胶囊圆角
-export default function TopBar({ sidebarWidth }: { sidebarWidth: number }) {
+export default function TopBar() {
   const appWindow = getCurrentWindow()
   const [isMaximized, setIsMaximized] = useState(false)
   const [query, setQuery] = useState('')
@@ -96,7 +97,7 @@ export default function TopBar({ sidebarWidth }: { sidebarWidth: number }) {
         toggleMaximize()
       }}
       style={{
-        height: '56px', display: 'flex', alignItems: 'center', gap: '12px',
+        height: '48px', display: 'flex', alignItems: 'center', gap: '12px',
         padding: '0 8px 0 16px',
         position: 'relative', zIndex: 'var(--z-sticky)',
         background: 'var(--color-canvas)', borderBottom: '1px solid var(--color-border)',
@@ -130,19 +131,19 @@ export default function TopBar({ sidebarWidth }: { sidebarWidth: number }) {
       <div
         style={{
           position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-          width: `min(960px, max(320px, calc(100vw - ${(sidebarWidth + 16) * 2}px)))`,
+          width: `min(960px, max(320px, calc(100vw - ${(SIDEBAR_EXPANDED_WIDTH + 16) * 2}px)))`,
         }}
       >
         <div className="relative" ref={searchRef}>
           <div style={{
-            display: 'flex', alignItems: 'center', gap: '10px', height: '40px', padding: '0 14px',
+            display: 'flex', alignItems: 'center', gap: '8px', height: '32px', padding: '0 12px',
             background: 'var(--color-surface)',
             border: `1px solid ${focused ? 'var(--color-brand)' : 'var(--color-border)'}`,
             borderRadius: 'var(--radius-full)',   // Chrome 式胶囊圆角（原 radius-lg）
             transition: 'border-color var(--duration-fast) var(--ease-smooth)',
           }}>
             <span style={{ color: 'var(--color-text-tertiary)', display: 'flex' }}>
-              <Icon name="search" size={20} />
+              <Icon name="search" size={16} />
             </span>
             <input
               value={query}
@@ -153,7 +154,7 @@ export default function TopBar({ sidebarWidth }: { sidebarWidth: number }) {
               placeholder="添加或查询单词..."
               style={{
                 flex: 1, border: 'none', outline: 'none', background: 'transparent',
-                fontSize: 'var(--text-base)', color: 'var(--color-text-primary)',
+                fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)',
                 fontFamily: 'var(--font-sans)',
               }}
             />
@@ -210,19 +211,19 @@ export default function TopBar({ sidebarWidth }: { sidebarWidth: number }) {
         </button>
 
         <button type="button" title="最小化" aria-label="最小化" onClick={() => void appWindow.minimize()}
-          style={{ width: '30px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', outline: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
+          style={{ width: '30px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', outline: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
           <Icon name="minimize" size={14} />
         </button>
         <button type="button" title={isMaximized ? '还原' : '最大化'} aria-label={isMaximized ? '还原' : '最大化'} onClick={toggleMaximize}
-          style={{ width: '30px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', outline: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
+          style={{ width: '30px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', outline: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
           <Icon name={isMaximized ? 'restore' : 'maximize'} size={14} />
         </button>
         <button type="button" title="关闭" aria-label="关闭" onClick={() => void appWindow.close()}
-          style={{ width: '30px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', outline: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
+          style={{ width: '30px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', outline: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-danger)'; e.currentTarget.style.color = 'white' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-secondary)' }}>
           <Icon name="close" size={14} />

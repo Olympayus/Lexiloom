@@ -3,6 +3,8 @@ import type { Category } from '../types/category'
 
 export type SidebarMode = 'alphabet' | 'category'
 
+export const SIDEBAR_EXPANDED_WIDTH = 300
+
 export interface LetterGroup {
   letter: string
   words: WordWithPreview[]

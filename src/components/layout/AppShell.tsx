@@ -11,10 +11,7 @@ import { useSettingsStore } from '../../stores/settingsStore'
 import { useUiStore } from '../../stores/uiStore'
 import CategoryAssignModal from '../word/CategoryAssignModal'
 import CategoryEditorModal from '../word/CategoryEditorModal'
-import { fitCollapsedWidth, measureMaxWordWidth, resolveSidebarWordFont, COLLAPSED_CHROME_ALPHABET, COLLAPSED_CHROME_CATEGORY } from '../../lib/sidebar'
-
-// 规格 §2：侧边栏展开宽度 300px；收起宽度内容自适应（D1）
-const SIDEBAR_EXPANDED_WIDTH = 300
+import { fitCollapsedWidth, measureMaxWordWidth, resolveSidebarWordFont, COLLAPSED_CHROME_ALPHABET, COLLAPSED_CHROME_CATEGORY, SIDEBAR_EXPANDED_WIDTH } from '../../lib/sidebar'
 
 export default function AppShell() {
   const words = useWordStore(s => s.words)
@@ -36,7 +33,7 @@ export default function AppShell() {
     <div className="h-screen flex flex-col" style={{ background: 'var(--color-canvas)' }}>
       {/* 全局顶栏：始终可见，不随侧边栏折叠（规格 §2） */}
       <header className="shrink-0">
-        <TopBar sidebarWidth={sidebarWidth} />
+        <TopBar />
       </header>
 
       <div className="flex-1 flex overflow-hidden">
