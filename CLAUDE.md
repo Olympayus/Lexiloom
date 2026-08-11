@@ -71,7 +71,7 @@ AppShell 三区：TopBar（56px，常驻）/ 侧边栏（300px，可收起 120�
 ## 版本发布工作流 Release Workflow
 
 > 用途：每次**更新软件后**（改代码 → 重打安装包 → 上架）的固定流程。新代理接手后续版本时照此执行。
-> **git 边界**：add / commit / 本地 merge 可自行执行；**push 与 `gh release`（公开发布）必须由用户亲自执行**。
+> **git 边界**：add / commit 可自行执行；**本地 merge、push 与 `gh release`（公开发布）必须由用户亲自执行**。
 
 ### 第 1 步 · 开发与验证
 
