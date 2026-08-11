@@ -91,6 +91,15 @@ AppShell 三区：TopBar（48px，常驻）/ 侧边栏（300px，可收起 120�
 
 ### 第 4 步 · 重新打包安装包
 
+> **签名要求（v0.3.4+ 自更新）**：每次打包都会为更新产物签名，构建前需先设置签名密钥环境变量（私钥为加密的 rsign 密钥，需密码）：
+>
+> ```bash
+> export TAURI_SIGNING_PRIVATE_KEY="$(cat Lexiloom.key)"
+> export TAURI_SIGNING_PRIVATE_KEY_PASSWORD="<密钥密码>"
+> ```
+>
+> 私钥 `Lexiloom.key` 与公钥 `Lexiloom.key.pub` 不入 git（见 .gitignore）；公钥已内嵌 `src-tauri/tauri.conf.json` 的 `updater.pubkey`。忘记密码需重新生成密钥对并同步更新 pubkey。
+
 ```bash
 npm run tauri build          # 完整打包（MSI + NSIS）
 npm run tauri build -- --bundles nsis   # 网络受限时只打 NSIS（MSI 需联网下载 WiX，可能失败）
