@@ -13,7 +13,7 @@ const FIELD_ROWS: { key: DisplayFieldKey; label: string }[] = [
   { key: 'english_definition', label: '英文释义' },
   { key: 'example', label: '例句' },
   { key: 'exchange', label: '词形变化' },
-  { key: 'etymology', label: '词源' },
+  { key: 'synonyms', label: '近义词' },
 ]
 
 // 在线词典来源（规格 §7.3）
