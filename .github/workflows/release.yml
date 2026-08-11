@@ -1,0 +1,59 @@
+name: Build macOS installer
+
+# 触发：手动运行 或 push `v*` 标签（如 v0.3.4）。
+# 在 GitHub 托管的 macOS 上构建 dmg，挂到 GitHub Release。
+#
+# 为什么只出 macOS：Windows 安装包由发布者本地构建，其签名与 latest.json 一致；
+# CI 构建的包签名不同，若同时挂 Windows 会破坏自更新签名校验。
+#
+# 需要的仓库 Secrets：
+#   TAURI_SIGNING_PRIVATE_KEY         — Lexiloom.key 的内容（更新签名私钥）
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD— 私钥密码（生成时设定）
+# Apple 代码签名未配置（需 Apple Developer 证书）：macOS 用户首次需 右键→打开 绕过 Gatekeeper。
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install deps
+        run: npm install
+
+      - name: Build dictionary DBs (gitignored, required)
+        run: npm run build:dictionaries
+
+      - name: Build macOS installer
+        run: npm run tauri build
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lexiloom-macos
+          path: |
+            src-tauri/target/release/bundle/**/*.dmg
+            src-tauri/target/release/bundle/**/*.sig
+          if-no-files-found: warn
+
+      - name: Attach to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            src-tauri/target/release/bundle/**/*.dmg
+            src-tauri/target/release/bundle/**/*.sig
