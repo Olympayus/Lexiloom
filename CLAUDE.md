@@ -80,7 +80,11 @@ AppShell 三区：TopBar（48px，常驻）/ 侧边栏（300px，可收起 120�
 
 ### 第 2 步 · 同步版本号
 
-三处必须一致：`package.json`、`src-tauri/Cargo.toml`、`src-tauri/tauri.conf.json`（`src-tauri/Cargo.lock` 根部若记录了也同步）。
+**切分支时同步**：创建版本分支（`git checkout -b vX.Y.Z`）后立即升到新版本，开发期间构建 / 关于页即显示新版本号。
+
+四处必须一致：`package.json`、`src-tauri/Cargo.toml`、`src-tauri/tauri.conf.json`、`src-tauri/Cargo.lock`（`name = "app"` 条目）。
+
+硬性要求：发布构建（第 4 步）前，四处版本号必须等于即将发布的版本。
 
 ### 第 3 步 · 同步文档
 
