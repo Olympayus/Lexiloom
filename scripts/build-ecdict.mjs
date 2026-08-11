@@ -1,4 +1,4 @@
-import { readFileSync, unlinkSync, writeFileSync } from 'fs'
+import { mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import initSqlJs from 'sql.js'
@@ -76,9 +76,13 @@ async function main() {
   db.run('CREATE INDEX idx_lemmas_word ON lemmas(word)')
 
   const buffer = db.export()
+  mkdirSync(dirname(OUTPUT), { recursive: true })
   writeFileSync(OUTPUT, Buffer.from(buffer))
   db.close()
   console.log(`Done: ${OUTPUT} (${(buffer.length / 1024 / 1024).toFixed(1)} MB)`)
 }
 
-main().catch(console.error)
+main().catch(e => {
+  console.error(e)
+  process.exit(1)
+})
