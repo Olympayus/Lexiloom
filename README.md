@@ -76,7 +76,7 @@ Lexiloom 是一款个人词汇知识管理桌面应用。它把**离线词典查
 |------|--------|
 | **Windows** | `Lexiloom_0.3.4_x64-setup.exe`（当前发布提供；MSI 暂未随包） |
 | **macOS** | `Lexiloom_0.3.4_x64.dmg`（在 macOS 上构建） |
-| **Linux** | `Lexiloom_0.3.4_x86_64.AppImage` / `.deb`（在 Linux 上构建） |
+| **Linux** | `Lexiloom_0.3.4_x86_64.AppImage` / `.deb`（在 Linux 上构建；暂未提供） |
 
 下载后**双击运行安装程序**，跟随向导即可完成安装；开始菜单会出现 **Lexiloom** 图标。
 
