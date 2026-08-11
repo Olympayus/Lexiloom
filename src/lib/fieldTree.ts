@@ -46,3 +46,8 @@ export function getAncestors(key: DisplayFieldKey): DisplayFieldKey[] {
 export function isFieldVisible(key: DisplayFieldKey, displayFields: Record<DisplayFieldKey, boolean>): boolean {
   return getAncestors(key).every(k => displayFields[k])
 }
+
+// 任一祖先（不含自身）关闭 → 该节点开关置灰（父关级联）；自身关闭不算祖先关闭
+export function isAncestorOff(key: DisplayFieldKey, displayFields: Record<DisplayFieldKey, boolean>): boolean {
+  return getAncestors(key).slice(0, -1).some(k => !displayFields[k])
+}

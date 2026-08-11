@@ -86,7 +86,7 @@ export default function DictDetailCard({
   // 合并同词性父（跨 entry 显示为一窗格）
   const merged = useMemo(() => mergeEntryFields(entries.flatMap(e => e.fields)), [entries])
 
-  // displayFields 隐藏的字段类型不渲染、不进入勾选（等价原逐项 displayFields 判断）
+  // displayFields 级联隐藏的字段不渲染、不进入勾选
   const visible = useMemo(() => {
     const keyAllowed = (key: string) => {
       const control: Record<string, DisplayFieldKey> = {

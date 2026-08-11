@@ -55,7 +55,7 @@ npm run tauri dev
 
 ### 布局 Layout
 
-AppShell 三区：TopBar（56px，常驻）/ 侧边栏（300px，可收起 120–240px）/ 右侧（词编辑视图 ↔ 词典详情视图）。
+AppShell 三区：TopBar（48px，常驻）/ 侧边栏（300px，可收起 120–240px）/ 右侧（词编辑视图 ↔ 词典详情视图）。
 
 ## 开发约定 Conventions
 

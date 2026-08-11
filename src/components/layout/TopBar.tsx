@@ -8,7 +8,7 @@ import { useClickOutside } from '../../lib/useClickOutside'
 import { SIDEBAR_EXPANDED_WIDTH } from '../../lib/sidebar'
 import Icon from '../icons'
 
-// 全局顶栏（规格 §3）：Logo 32×32 / 主搜索框 40px / 设置按钮；建议下拉 → 词典详情视图（D2）
+// 全局顶栏（规格 §3）：Logo 32×32 / 主搜索框 32px / 设置按钮；建议下拉 → 词典详情视图（D2）
 // 自绘标题栏（Task 15）：header 为拖拽区 + 内置窗口控制；搜索框绝对居中、胶囊圆角
 export default function TopBar() {
   const appWindow = getCurrentWindow()

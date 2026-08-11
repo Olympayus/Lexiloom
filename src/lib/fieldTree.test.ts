@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getAncestors, isFieldVisible } from './fieldTree'
+import { getAncestors, isFieldVisible, isAncestorOff } from './fieldTree'
 
 const ALL_ON = {
   phonetic: true, part_of_speech: true, chinese_definition: true,
@@ -29,5 +29,35 @@ describe('isFieldVisible 级联', () => {
     expect(isFieldVisible('chinese_definition', f)).toBe(false)
     expect(isFieldVisible('english_definition', f)).toBe(false)
     expect(isFieldVisible('phonetic', f)).toBe(true)
+  })
+})
+
+describe('isAncestorOff 祖先关闭判定', () => {
+  it('全开 → 所有节点 ancestorOff 为 false', () => {
+    expect(isAncestorOff('phonetic', ALL_ON)).toBe(false)
+    expect(isAncestorOff('part_of_speech', ALL_ON)).toBe(false)
+    expect(isAncestorOff('chinese_definition', ALL_ON)).toBe(false)
+    expect(isAncestorOff('english_definition', ALL_ON)).toBe(false)
+    expect(isAncestorOff('example', ALL_ON)).toBe(false)
+    expect(isAncestorOff('synonyms', ALL_ON)).toBe(false)
+    expect(isAncestorOff('exchange', ALL_ON)).toBe(false)
+  })
+  it('english_definition 关 → example/synonyms 为 true（祖先关）；chinese_definition 为 false（兄弟不受影响）', () => {
+    const f = { ...ALL_ON, english_definition: false }
+    expect(isAncestorOff('example', f)).toBe(true)
+    expect(isAncestorOff('synonyms', f)).toBe(true)
+    expect(isAncestorOff('chinese_definition', f)).toBe(false)
+  })
+  it('english_definition 自身关 → 其 own isAncestorOff 为 false（关键回归：自身关闭不禁止自身开关）', () => {
+    const f = { ...ALL_ON, english_definition: false }
+    expect(isAncestorOff('english_definition', f)).toBe(false)
+  })
+  it('example 自身关 → 其 own isAncestorOff 为 false（例句开关可重新开启）', () => {
+    const f = { ...ALL_ON, example: false }
+    expect(isAncestorOff('example', f)).toBe(false)
+  })
+  it('phonetic 关 → 自身 false（根节点无祖先）', () => {
+    const f = { ...ALL_ON, phonetic: false }
+    expect(isAncestorOff('phonetic', f)).toBe(false)
   })
 })

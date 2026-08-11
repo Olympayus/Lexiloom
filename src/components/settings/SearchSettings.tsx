@@ -4,7 +4,7 @@ import { useSettingsStore, type OnlineSourceKey } from '../../stores/settingsSto
 import { Toggle } from '../ui/Toggle'
 import Icon from '../icons'
 import { tooltipPosition } from '../../lib/tooltipPosition'
-import { FIELD_TREE, getAncestors, type FieldTreeNode } from '../../lib/fieldTree'
+import { FIELD_TREE, isAncestorOff, type FieldTreeNode } from '../../lib/fieldTree'
 
 // 在线词典来源（规格 §7.3）
 const ONLINE_SOURCES: { key: OnlineSourceKey; name: string; url: string }[] = [
@@ -26,8 +26,7 @@ const SECTION_TITLE: React.CSSProperties = { fontSize: 'var(--text-sm)', fontWei
 function FieldRow({ node }: { node: FieldTreeNode }) {
   const displayFields = useSettingsStore(s => s.displayFields)
   const setDisplayField = useSettingsStore(s => s.setDisplayField)
-  const chain = getAncestors(node.key)
-  const ancestorOff = chain.slice(1).some(k => !displayFields[k])
+  const ancestorOff = isAncestorOff(node.key, displayFields)
   const effective = !ancestorOff && displayFields[node.key]
   const isParent = !!node.children && node.children.length > 0
 
