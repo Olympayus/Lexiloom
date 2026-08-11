@@ -52,7 +52,7 @@ export const useSettingsStore = create<SettingsStore>()(
       storage: createJSONStorage(() => localStorage),
       migrate: (persisted) => {
         const state = (persisted ?? {}) as Partial<SettingsStore> & { displayFields?: Record<string, boolean> }
-        const fields: Record<string, boolean> = { ...DEFAULT_DISPLAY_FIELDS, ...(state.displayFields ?? {}) }
+        const fields: Record<string, boolean> = { ...DEFAULT_DISPLAY_FIELDS, ...(state.displayFields) }
         delete fields.etymology
         if (fields.synonyms === undefined) fields.synonyms = true
         return { ...state, displayFields: fields } as SettingsStore
