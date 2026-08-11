@@ -10,7 +10,7 @@ interface Props {
 
 export default function SidebarToolbar({ collapsed, filter, onFilterChange, onToggleMode, onToggleCollapse }: Props) {
   return (
-    <div className="flex items-center gap-2 px-3 py-3 shrink-0" style={{ borderBottom: '1px solid var(--color-border)' }}>
+    <div className="flex items-center gap-2 px-3 py-3 shrink-0">
       {/* 筛选搜索（规格 §4.1）：展开态输入框+图标；收起态仅图标 18px */}
       <div
         className="flex items-center gap-2 h-8 px-2.5"
