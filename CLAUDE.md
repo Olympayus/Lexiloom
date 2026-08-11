@@ -101,14 +101,32 @@ npm run tauri build -- --bundles nsis   # 网络受限时只打 NSIS（MSI 需�
 
 > 注意：`tauri.conf.json` 改动需**完全重启** `npm run tauri dev` 才生效（热更新不读配置）。
 
-### 第 5 步 · 发布 GitHub Release（用户执行）
+### 第 5 步 · 生成更新清单 + 发布 GitHub Release（用户执行）
 
-```bash
-git push origin main
-git tag v<version> && git push origin v<version>
-gh release create v<version> "src-tauri/target/release/bundle/nsis/Lexiloom_<version>_x64-setup.exe" \
-  --title "Lexiloom v<version>" --notes "<changelog>"
-```
+1. 生成 `latest.json`（自更新 endpoint 读取，必须含签名）：
+   ```bash
+   node scripts/write-latest-json.mjs   # 按已构建产物生成平台条目（Windows 必有）
+   # 手工填写 latest.json 的 notes 字段
+   git add latest.json && git commit -m "chore: update latest.json for v<version>"
+   ```
+2. 发布：
+   ```bash
+   git push origin main
+   git tag v<version> && git push origin v<version>
+   gh release create v<version> \
+     "src-tauri/target/release/bundle/nsis/Lexiloom_<version>_x64-setup.exe" \
+     "src-tauri/target/release/bundle/nsis/Lexiloom_<version>_x64-setup.exe.sig" \
+     --title "Lexiloom v<version>" --notes "<changelog>"
+   ```
+
+### 第 5b 步 · macOS 发布（Mac 上执行，仅需发布 macOS 更新时）
+
+1. Mac 上 `TAURI_SIGNING_PRIVATE_KEY="$(cat Lexiloom.key)" TAURI_SIGNING_PRIVATE_KEY_PASSWORD=<密码> npm run tauri build`；
+2. 核对 `bundle/dmg/Lexiloom_<v>_aarch64.dmg.sig` / `Lexiloom_<v>_x64.dmg.sig` 命名与 `write-latest-json.mjs` 的假设一致（不一致则调整脚本模式匹配）；
+3. Mac 上 `node scripts/write-latest-json.mjs` 重新生成 latest.json（含 darwin 条目）并 commit；
+4. Apple 代码签名 + 公证 dmg（Gatekeeper）；
+5. 上传 dmg 到 GitHub Release；
+6. macOS 真机验证应用内更新（装旧版 → 检查更新 → 升级成功、数据保留）。
 
 ### 第 6 步 · 收尾
 
