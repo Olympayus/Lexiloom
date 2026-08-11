@@ -1,20 +1,10 @@
 import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useSettingsStore, type DisplayFieldKey, type OnlineSourceKey } from '../../stores/settingsStore'
+import { useSettingsStore, type OnlineSourceKey } from '../../stores/settingsStore'
 import { Toggle } from '../ui/Toggle'
 import Icon from '../icons'
 import { tooltipPosition } from '../../lib/tooltipPosition'
-
-// 词典返回词条字段（规格 §7.3）
-const FIELD_ROWS: { key: DisplayFieldKey; label: string }[] = [
-  { key: 'phonetic', label: '音标' },
-  { key: 'part_of_speech', label: '词性' },
-  { key: 'chinese_definition', label: '中文释义' },
-  { key: 'english_definition', label: '英文释义' },
-  { key: 'example', label: '例句' },
-  { key: 'exchange', label: '词形变化' },
-  { key: 'synonyms', label: '近义词' },
-]
+import { FIELD_TREE, getAncestors, type FieldTreeNode } from '../../lib/fieldTree'
 
 // 在线词典来源（规格 §7.3）
 const ONLINE_SOURCES: { key: OnlineSourceKey; name: string; url: string }[] = [
@@ -32,9 +22,55 @@ const TOOLTIP_DICTS: { name: string; lines: string[] }[] = [
 
 const SECTION_TITLE: React.CSSProperties = { fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }
 
-export default function SearchSettings() {
+// 树形开关行：父级行名加粗，子条目装入分块外框；父关 → 后代置灰禁用（Model B，不改存储）
+function FieldRow({ node }: { node: FieldTreeNode }) {
   const displayFields = useSettingsStore(s => s.displayFields)
   const setDisplayField = useSettingsStore(s => s.setDisplayField)
+  const chain = getAncestors(node.key)
+  const ancestorOff = chain.slice(1).some(k => !displayFields[k])
+  const effective = !ancestorOff && displayFields[node.key]
+  const isParent = !!node.children && node.children.length > 0
+
+  return (
+    <div>
+      <div
+        style={{
+          display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 8px',
+          borderRadius: 'var(--radius-md)',
+          transition: 'background-color var(--duration-fast) var(--ease-smooth)',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+      >
+        <span style={{
+          fontSize: 'var(--text-sm)',
+          fontWeight: isParent ? 'var(--weight-semibold)' : 'var(--weight-regular)',
+          color: 'var(--color-text-primary)',
+        }}>
+          {node.label}
+        </span>
+        <span style={{ flex: 1 }} />
+        <Toggle
+          checked={effective}
+          disabled={ancestorOff}
+          onChange={on => setDisplayField(node.key, on)}
+          aria-label={`${node.label}开关`}
+        />
+      </div>
+      {isParent && (
+        <div style={{
+          border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)',
+          background: 'var(--color-surface-raised)', padding: '4px 0',
+          margin: '4px 0 6px',
+        }}>
+          {node.children!.map(c => <FieldRow key={c.key} node={c} />)}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function SearchSettings() {
   const onlineDictEnabled = useSettingsStore(s => s.onlineDictEnabled)
   const setOnlineDictEnabled = useSettingsStore(s => s.setOnlineDictEnabled)
   const onlineSources = useSettingsStore(s => s.onlineSources)
@@ -77,15 +113,7 @@ export default function SearchSettings() {
             <Icon name="info" size={16} />
           </span>
         </div>
-        {FIELD_ROWS.map((row, i) => (
-          <div key={row.key} style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '12px 0', borderBottom: i === FIELD_ROWS.length - 1 ? 'none' : '1px solid var(--color-border)',
-          }}>
-            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)' }}>{row.label}</span>
-            <Toggle checked={displayFields[row.key]} onChange={on => setDisplayField(row.key, on)} aria-label={`${row.label}开关`} />
-          </div>
-        ))}
+        {FIELD_TREE.map(node => <FieldRow key={node.key} node={node} />)}
       </div>
 
       {/* 在线词典查询：与「词典返回词条」同级标题（规格 §7.3 勘误） */}
