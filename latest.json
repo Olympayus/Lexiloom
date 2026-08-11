@@ -1,0 +1,11 @@
+{
+  "version": "0.3.4",
+  "notes": "v0.3.4 — 修复：词典就地直读安装目录（更换安装位置/干净机器不再丢失词典）；新增：应用内自更新（设置→关于→检查更新 / 启动检测）；新增：卸载时可选是否删除个人数据",
+  "pub_date": "2026-08-11T04:51:17.681Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRRThYcVB4eXdQZFFNeVBaWFFjWFYyUHRCTThheklVTlh4RlZpRGhiUlN1NzBlTEZDRjkzNDRXSVBiby9oSytDSlY4WWNhRFhvMWJmSjBZVy9SekdKb0tTSCswKzZvc0FzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NDIzNzk1CWZpbGU6TGV4aWxvb21fMC4zLjRfeDY0LXNldHVwLmV4ZQpGd3pldkFUQWFiNTRKMGhyd01hODhWM3BoVnJPditaZmRuVi8ya0pSR0JvejZHc2Vua0orVXRYUGNGVUJKMjYwQmx2VEZXNWpVL0M1Z1EyRk1mU1BDZz09Cg==",
+      "url": "https://github.com/Olympayus/Lexiloom/releases/download/v0.3.4/Lexiloom_0.3.4_x64-setup.exe"
+    }
+  }
+}

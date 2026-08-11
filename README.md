@@ -4,7 +4,7 @@
 
 Lexiloom 是一款个人词汇知识管理桌面应用。它把**离线词典查询**与**结构化词汇管理**合二为一：搜索并合并 ECDICT / WordNet 的权威释义，再用分层字段、分类系统把你自己的理解沉淀成长期可复用的知识。
 
-![version](https://img.shields.io/badge/version-0.3.3-4A6FA5)
+![version](https://img.shields.io/badge/version-0.3.4-4A6FA5)
 ![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 ![offline](https://img.shields.io/badge/offline-first-yes-6B8E7F)
 
@@ -74,11 +74,15 @@ Lexiloom 是一款个人词汇知识管理桌面应用。它把**离线词典查
 
 | 系统 | 安装包 |
 |------|--------|
-| **Windows** | `Lexiloom_0.3.3_x64-setup.exe`（当前发布提供；MSI 暂未随包） |
-| **macOS** | `Lexiloom_0.3.3_x64.dmg`（在 macOS 上构建） |
-| **Linux** | `Lexiloom_0.3.3_x86_64.AppImage` / `.deb`（在 Linux 上构建） |
+| **Windows** | `Lexiloom_0.3.4_x64-setup.exe`（当前发布提供；MSI 暂未随包） |
+| **macOS** | `Lexiloom_0.3.4_x64.dmg`（在 macOS 上构建） |
+| **Linux** | `Lexiloom_0.3.4_x86_64.AppImage` / `.deb`（在 Linux 上构建） |
 
 下载后**双击运行安装程序**，跟随向导即可完成安装；开始菜单会出现 **Lexiloom** 图标。
+
+### 应用内更新
+
+安装后无需手动卸载重装：启动时若检测到新版本会弹窗提示，也可在 **设置 → 关于 → 检查更新** 手动检测并直接升级；更新过程保留你的个人词库数据。
 
 ### 从源码构建（开发者）
 
@@ -105,7 +109,7 @@ Lexiloom 是一款个人词汇知识管理桌面应用。它把**离线词典查
 
 **Linux**：使用发行版的软件包管理器移除（如 `sudo apt remove lexiloom`）。
 
-> **注意**：卸载程序不会删除你的个人数据（词库数据库与设置）。如需彻底清除，请手动删除数据目录，见下一节"数据与隐私-词库数据库"。
+> **注意**：卸载时勾选框可让你选择**是否同时删除个人数据**（词库数据库与设置）。默认不勾选，个人数据会保留，重装后仍可读回；勾选后彻底删除。备份只需复制 `lexiloom.db`。
 
 ## 数据与隐私
 
