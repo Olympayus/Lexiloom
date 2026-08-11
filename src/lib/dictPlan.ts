@@ -56,7 +56,7 @@ export function flattenTree(fields: DictionaryField[]): FlatNode[] {
   return walk(fields, null)
 }
 
-// 由勾选集构建 MergeFieldInput[]：父先子后，tempId=key，子引用父 tempId；
+// 由勾选集构建 MergeFieldInput[]：父先子后，tempId=source:key，子引用父 tempId；
 // 隐式补选已勾选节点的全部祖先（保证无游离释义不变量）。
 export function buildMergeInputs(fields: DictionaryField[], selected: Set<string>, source: FieldSource): MergeFieldInput[] {
   const flat = flattenTree(fields)

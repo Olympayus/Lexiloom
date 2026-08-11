@@ -6,6 +6,8 @@ import { deleteWord, getPreviews, mergeFields } from './wordService'
 import { clearDefinitionsCache } from './fieldService'
 import { getFieldValuesForWord } from '../db/fields'
 import * as fieldsDb from '../db/fields'
+import { flattenTree, buildMergeInputs, type FlatNode } from '../lib/dictPlan'
+import type { DictionaryField } from '../types/dictionary'
 
 vi.mock('../db/connection', () => ({
   getDb: vi.fn(),
@@ -177,32 +179,42 @@ describe('wordService.mergeFields 显式父子匹配键', () => {
     expect(item.parentId).toBe(syn.id)
   })
 
-  it('双源一次合并：跨源同路径 tempId 不覆盖（合并添加词性错位回归）', async () => {
+  it('双源一次合并：buildMergeInputs 输出不跨源覆盖（合并添加词性错位回归）', async () => {
     const w = await wordsDb.createWord({ lemma: 'grand-repro' })
     if (!w.ok) throw new Error('createWord failed')
-    // ecdict：'0'=n.、'1'=adj.；wordnet：'0'=adj.、'1'=n.（同路径不同词性 → 触发旧 bug）
-    const ok = await mergeFields(w.data.id, [
-      { key: 'part_of_speech', value: 'n.', source: 'ecdict', tempId: 'ecdict:0' },
-      { key: 'chinese_definition', value: '大钢琴', source: 'ecdict', tempId: 'ecdict:0-0', parentTempId: 'ecdict:0' },
-      { key: 'part_of_speech', value: 'adj.', source: 'ecdict', tempId: 'ecdict:1' },
-      { key: 'chinese_definition', value: '壮丽的', source: 'ecdict', tempId: 'ecdict:1-0', parentTempId: 'ecdict:1' },
-      { key: 'part_of_speech', value: 'adj.', source: 'wordnet', tempId: 'wordnet:0' },
-      { key: 'english_definition', value: 'large and impressive', source: 'wordnet', tempId: 'wordnet:0-0', parentTempId: 'wordnet:0' },
-      { key: 'part_of_speech', value: 'n.', source: 'wordnet', tempId: 'wordnet:1' },
-      { key: 'english_definition', value: 'a piano with strings', source: 'wordnet', tempId: 'wordnet:1-0', parentTempId: 'wordnet:1' },
-    ])
+    // ecdict：n.→中文释义 / adj.→中文释义；wordnet：adj.→英文释义 / n.→英文释义
+    // （两源同路径索引但词性互换 → 未命名空间化时必错位）
+    const ecdictFields: DictionaryField[] = [
+      { key: 'part_of_speech', value: 'n.', children: [{ key: 'chinese_definition', value: '大钢琴' }] },
+      { key: 'part_of_speech', value: 'adj.', children: [{ key: 'chinese_definition', value: '壮丽的' }] },
+    ]
+    const wordnetFields: DictionaryField[] = [
+      { key: 'part_of_speech', value: 'adj.', children: [{ key: 'english_definition', value: 'large and impressive' }] },
+      { key: 'part_of_speech', value: 'n.', children: [{ key: 'english_definition', value: 'a piano with strings' }] },
+    ]
+    const selectAll = (fields: DictionaryField[]) => {
+      const flat = flattenTree(fields)
+      const keys = new Set<string>()
+      const walk = (ns: FlatNode[]) => { for (const n of ns) { keys.add(n.key); walk(n.children) } }
+      walk(flat)
+      return keys
+    }
+    // 完全模拟 DictDetailPanel.handleMergeAdd：逐源 buildInputs 后拼接一次 mergeFields
+    const inputs = [
+      ...buildMergeInputs(ecdictFields, selectAll(ecdictFields), 'ecdict'),
+      ...buildMergeInputs(wordnetFields, selectAll(wordnetFields), 'wordnet'),
+    ]
+    const ok = await mergeFields(w.data.id, inputs)
     expect(ok).toBe(true)
     const r = await getFieldValuesForWord(w.data.id)
     if (!r.ok) throw new Error('getFieldValuesForWord failed')
     const posRows = r.data.filter(fv => fv.fieldId === 'f_part_of_speech')
     const adj = posRows.find(p => p.value === 'adj.')!
     const n = posRows.find(p => p.value === 'n.')!
-    // ecdict 中文释义必须挂在对应词性下（旧实现：挂错）
     const zhuangli = r.data.find(fv => fv.fieldId === 'f_chinese_definition' && fv.value === '壮丽的')!
     const dagangqin = r.data.find(fv => fv.fieldId === 'f_chinese_definition' && fv.value === '大钢琴')!
     expect(zhuangli.parentId).toBe(adj.id)
     expect(dagangqin.parentId).toBe(n.id)
-    // wordnet 英文释义同样归位
     expect(r.data.find(fv => fv.fieldId === 'f_english_definition' && fv.value === 'a piano with strings')!.parentId).toBe(n.id)
   })
 })
