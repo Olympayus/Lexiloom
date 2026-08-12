@@ -11,11 +11,12 @@ const { checkMock, relaunchMock, downloadMock, installMock, closeMock } = vi.hoi
 vi.mock('@tauri-apps/plugin-updater', () => ({ check: checkMock }))
 vi.mock('@tauri-apps/plugin-process', () => ({ relaunch: relaunchMock }))
 
+import type { Update } from '@tauri-apps/plugin-updater'
 import { checkForUpdates, downloadUpdate, installAndRelaunch, proxyHintForCheck, proxyHintForDownload } from './updater'
 
-const makeUpdate = () => ({
+const makeUpdate = (): Update => ({
   version: '0.4.1', body: '修复', download: downloadMock, install: installMock, close: closeMock,
-})
+} as unknown as Update)
 
 describe('checkForUpdates', () => {
   beforeEach(() => { checkMock.mockReset(); relaunchMock.mockReset(); downloadMock.mockReset(); installMock.mockReset(); closeMock.mockReset() })
