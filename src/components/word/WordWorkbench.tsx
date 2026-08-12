@@ -834,6 +834,21 @@ export default function WordWorkbench() {
     setActiveTab(tab)
   }
 
+  // 删除标签页：级联删除该标签页全部根容器及其子树（右键菜单「删除」/ 页底按钮共用）
+  const handleDeleteTab = async (tab: TabKey) => {
+    const roots = groups[tab] ?? []
+    if (roots.length === 0) return
+    const name = TAB_GROUPS[tab].label
+    const ok = await useUiStore.getState().confirm({
+      title: `删除「${name}」标签页`,
+      message: `将删除该标签页下全部内容（${roots.length} 个容器及其子词条），此操作不可撤销。`,
+      danger: true,
+    })
+    if (!ok) return
+    for (const fv of roots) await deleteFieldValue(fv.id)
+    if (activeTab === tab) setActiveTab(null)
+  }
+
   // 添加子词条：挂到当前节点下 → 自动进入编辑态（Task 10 §Step 2）
   const handleAddChild = async (parentFv: FieldValue, childDef: FieldDefinition) => {
     setChildMenuId(null)
@@ -998,6 +1013,32 @@ export default function WordWorkbench() {
                 >
                   {selectedWord.lemma}
                 </div>
+                {/* 删除单词：垃圾桶图标按钮（与标题稍隔开），不再用底部文字按钮 */}
+                <button
+                  type="button"
+                  title="删除单词"
+                  aria-label="删除单词"
+                  onClick={handleDelete}
+                  style={{
+                    marginLeft: '10px',
+                    width: '26px',
+                    height: '26px',
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: 'none',
+                    background: 'transparent',
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                    color: 'var(--color-text-tertiary)',
+                    transition: 'color var(--duration-fast) var(--ease-smooth), background-color var(--duration-fast) var(--ease-smooth)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-danger)'; e.currentTarget.style.background = 'color-mix(in srgb, var(--color-danger) 8%, transparent)' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-tertiary)'; e.currentTarget.style.background = 'transparent' }}
+                >
+                  <Icon name="trash" size={16} />
+                </button>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
@@ -1132,6 +1173,7 @@ export default function WordWorkbench() {
           missing={missingTabs(contentRoots, keyOfFv)}
           onSelect={setActiveTab}
           onAddTab={handleAddTab}
+          onDeleteTab={handleDeleteTab}
         />
 
         {/* 字段列表（非编者模式默认：统一微暖背景，无竖线无角标，规格 §5.2/§5.4） */}
@@ -1166,7 +1208,15 @@ export default function WordWorkbench() {
         <div style={{ position: 'relative', marginTop: '12px' }}>
           <button
             type="button"
-            onClick={() => setAddFieldOpen(!addFieldOpen)}
+            onClick={() => {
+              if (!effectiveTab) return
+              // 主标签页：出下拉选择器；单独标签页：单一内容直接添加，不再出下拉
+              if (effectiveTab === 'main') setAddFieldOpen(!addFieldOpen)
+              else {
+                const def = defs.find(d => addableLeafKeys(effectiveTab).includes(d.key))
+                if (def) handleAddField(def)
+              }
+            }}
             style={{
               width: '100%',
               padding: '12px',
@@ -1198,7 +1248,7 @@ export default function WordWorkbench() {
             添加字段
           </button>
 
-          {addFieldOpen && (
+          {addFieldOpen && effectiveTab === 'main' && (
             <div
               style={{
                 position: 'absolute',
@@ -1246,38 +1296,40 @@ export default function WordWorkbench() {
           )}
         </div>
 
-        {/* 删除单词（最底部，危险操作，低调次级钮） */}
-        <button
-          type="button"
-          onClick={handleDelete}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            margin: '24px auto 0',
-            padding: '6px 12px',
-            border: 'none',
-            background: 'transparent',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: 'var(--text-sm)',
-            color: 'var(--color-text-tertiary)',
-            cursor: 'pointer',
-            fontFamily: 'var(--font-sans)',
-            transition: 'color var(--duration-fast) var(--ease-smooth), background-color var(--duration-fast) var(--ease-smooth)',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.color = 'var(--color-danger)'
-            e.currentTarget.style.background = 'color-mix(in srgb, var(--color-danger) 8%, transparent)'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.color = 'var(--color-text-tertiary)'
-            e.currentTarget.style.background = 'transparent'
-          }}
-        >
-          <Icon name="trash" size={16} />
-          删除单词
-        </button>
+        {/* 删除此标签页（最底部，危险操作，低调次级钮；删除整个单词改由标题旁垃圾桶） */}
+        {effectiveTab && (
+          <button
+            type="button"
+            onClick={() => handleDeleteTab(effectiveTab)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              margin: '24px auto 0',
+              padding: '6px 12px',
+              border: 'none',
+              background: 'transparent',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 'var(--text-sm)',
+              color: 'var(--color-text-tertiary)',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-sans)',
+              transition: 'color var(--duration-fast) var(--ease-smooth), background-color var(--duration-fast) var(--ease-smooth)',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.color = 'var(--color-danger)'
+              e.currentTarget.style.background = 'color-mix(in srgb, var(--color-danger) 8%, transparent)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.color = 'var(--color-text-tertiary)'
+              e.currentTarget.style.background = 'transparent'
+            }}
+          >
+            <Icon name="trash" size={16} />
+            删除此标签页
+          </button>
+        )}
       </div>
     </div>
   )
