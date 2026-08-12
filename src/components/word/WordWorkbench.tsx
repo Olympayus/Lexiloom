@@ -985,7 +985,7 @@ export default function WordWorkbench() {
               </div>
               <div style={{ marginTop: 10 }}>
                 <PhoneticArea
-                  values={phoneticValues}
+                  values={phoneticValues.filter(fv => fv.value.trim())}
                   editorMode={editorMode}
                   editingId={editingId}
                   editValue={editValue}
@@ -1132,7 +1132,7 @@ export default function WordWorkbench() {
             ))}
             {sortedTabValues.length === 0 && (
               <div style={{ padding: '32px 0', textAlign: 'center', fontSize: 13, color: 'var(--color-text-tertiary)' }}>
-                该词条暂无内容，可通过右上角「+」添加词性/短语等标签页
+                该词条暂无内容，可通过标签条右侧「+」添加词性/短语等标签页
               </div>
             )}
           </div>

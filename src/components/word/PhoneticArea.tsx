@@ -77,7 +77,7 @@ export default function PhoneticArea(props: PhoneticAreaProps) {
                 autoFocus
                 value={editValue}
                 onChange={e => onEditValueChange(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') onSave(); if (e.key === 'Escape') onCancelEdit() }}
+                onKeyDown={e => { if (e.nativeEvent.isComposing) return; if (e.key === 'Enter') onSave(); if (e.key === 'Escape') onCancelEdit() }}
                 style={{
                   fontFamily: 'var(--font-phonetic)', fontSize: 15, color: 'var(--color-text-primary)',
                   border: '1px solid var(--color-brand)', borderRadius: 4, padding: '1px 6px',
