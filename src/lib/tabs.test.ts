@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { visibleTabs, defaultTab, missingTabs, groupRootsByTab, addableRootKeys, TAB_ORDER } from './tabs'
+import { visibleTabs, defaultTab, missingTabs, groupRootsByTab, addableLeafKeys, TAB_ORDER } from './tabs'
 import type { FieldValue } from '../types/field'
 
 // fieldId 直接当作字段 key 注入，keyOf 用 fieldId
@@ -35,11 +35,11 @@ describe('tabs 派生', () => {
     expect(missingTabs([], keyOf)).toEqual(TAB_ORDER)
   })
 
-  it('addableRootKeys 按标签过滤', () => {
-    expect(addableRootKeys('main')).toEqual(['part_of_speech', 'supplementary'])
-    expect(addableRootKeys('phrase')).toEqual(['phrase'])
-    expect(addableRootKeys('exchange')).toEqual(['exchange'])
-    expect(addableRootKeys('derivatives')).toEqual(['derivatives'])
+  it('addableLeafKeys：主=根容器，单独标签页=直接项', () => {
+    expect(addableLeafKeys('main')).toEqual(['part_of_speech', 'supplementary'])
+    expect(addableLeafKeys('phrase')).toEqual(['phrase_item'])
+    expect(addableLeafKeys('exchange')).toEqual(['exchange_item'])
+    expect(addableLeafKeys('derivatives')).toEqual(['derivatives_item'])
   })
 
   it('groupRootsByTab 正确分组并丢弃未知根字段', () => {

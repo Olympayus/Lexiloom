@@ -11,7 +11,7 @@ import { useWordStore } from '../../stores/wordStore'
 import { useViewStore } from '../../stores/viewStore'
 import { getDefinitions } from '../../services/fieldService'
 import { sortTreeByTemplate, ALLOWED_CHILD_KEYS } from '../../lib/fieldOrder'
-import { visibleTabs, defaultTab, missingTabs, groupRootsByTab, addableRootKeys, TAB_GROUPS, type TabKey } from '../../lib/tabs'
+import { visibleTabs, defaultTab, missingTabs, groupRootsByTab, addableLeafKeys, TAB_GROUPS, type TabKey } from '../../lib/tabs'
 import { hasFieldChanges } from '../../lib/fieldChanges'
 import { shouldFlattenChildren } from '../../lib/dictPlan'
 import { Button } from '../ui/Button'
@@ -801,10 +801,23 @@ export default function WordWorkbench() {
     await deleteWord(selectedWord.id)
   }
 
-  // 添加字段：选择定义 → 新增空个人字段 → 自动进入编辑态
+  // 添加字段：主标签页直接加根容器（词性/补充）；单独标签页直接挂项到根容器下（无则先建空容器）→ 自动进入编辑态
   const handleAddField = async (def: FieldDefinition) => {
     setAddFieldOpen(false)
-    const fv = await addFieldValue(def.id)
+    let parentId: string | null | undefined
+    // 仅当新增的是当前单独标签页的直接项时，才挂到其根容器下（音标等根级字段仍加在根）
+    if (effectiveTab && effectiveTab !== 'main' && addableLeafKeys(effectiveTab).includes(def.key)) {
+      const rootKey = TAB_GROUPS[effectiveTab].roots[0]
+      let container: FieldValue | null = contentRoots.find(fv => defKeyByFieldId.get(fv.fieldId) === rootKey) ?? null
+      if (!container) {
+        const containerDef = defs.find(d => d.key === rootKey)
+        if (!containerDef) return
+        container = await addFieldValue(containerDef.id)
+        if (!container) return
+      }
+      parentId = container.id
+    }
+    const fv = await addFieldValue(def.id, parentId)
     if (!fv) return
     // 非词性容器无值格可编辑：不进入幻影编辑态（词性有独立标签编辑路径，保留自动进入）
     if (CONTAINER_FIELD_KEYS.includes(def.key) && def.key !== 'part_of_speech') return
@@ -908,6 +921,9 @@ export default function WordWorkbench() {
   const groups = groupRootsByTab(contentRoots, keyOfFv)
   const tabRoots = effectiveTab ? (groups[effectiveTab] ?? []) : []
   const sortedTabValues = sortTreeByTemplate(keyOfFv, tabRoots)
+  // 单独标签页（短语/词形变化/派生词）：跳过根容器卡片，直接平铺其子项；主标签页渲染容器
+  const isFlatTab = effectiveTab !== null && effectiveTab !== 'main'
+  const renderValues = isFlatTab ? sortedTabValues.flatMap(c => c.children ?? []) : sortedTabValues
 
   const wordCapsules = categories.filter(c => wordCategoryIds.includes(c.id))
   const showMoreCapsules = wordCapsules.length > 4
@@ -983,20 +999,6 @@ export default function WordWorkbench() {
                   {selectedWord.lemma}
                 </div>
               </div>
-              <div style={{ marginTop: 10 }}>
-                <PhoneticArea
-                  values={phoneticValues.filter(fv => fv.id === editingId || fv.value.trim())}
-                  editorMode={editorMode}
-                  editingId={editingId}
-                  editValue={editValue}
-                  onEditValueChange={setEditValue}
-                  onStartEdit={handleStartEdit}
-                  onSave={handleSave}
-                  onCancelEdit={() => setEditingId(null)}
-                  onAdd={() => handleAddField(defs.find(d => d.key === 'phonetic')!)}
-                  onDelete={handleDeleteField}
-                />
-              </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
               {shownCapsules.map(cat => (
@@ -1068,43 +1070,57 @@ export default function WordWorkbench() {
               >
                 <Icon name="plus" size={16} />
               </button>
-              {/* 编者模式开关（规格 §5.2，交互 Task 6 接入） */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
-                <span>编者模式</span>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={editorMode}
-                  aria-label="编者模式"
-                  onClick={() => { setEditorMode(!editorMode); setMenuOpenId(null); setChildMenuId(null) }}
+            </div>
+          </div>
+          {/* 音标行 + 编者模式开关（同一行）：音标左、开关右 */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginTop: '10px' }}>
+            <PhoneticArea
+              values={phoneticValues.filter(fv => fv.id === editingId || fv.value.trim())}
+              editorMode={editorMode}
+              editingId={editingId}
+              editValue={editValue}
+              onEditValueChange={setEditValue}
+              onStartEdit={handleStartEdit}
+              onSave={handleSave}
+              onCancelEdit={() => setEditingId(null)}
+              onAdd={() => handleAddField(defs.find(d => d.key === 'phonetic')!)}
+              onDelete={handleDeleteField}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
+              <span>编者模式</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={editorMode}
+                aria-label="编者模式"
+                onClick={() => { setEditorMode(!editorMode); setMenuOpenId(null); setChildMenuId(null) }}
+                style={{
+                  width: '36px',
+                  height: '20px',
+                  background: editorMode ? 'var(--color-brand)' : 'var(--color-border-strong)',
+                  borderRadius: 'var(--radius-full)',
+                  position: 'relative',
+                  flexShrink: 0,
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  transition: 'background-color var(--duration-fast) var(--ease-smooth)',
+                }}
+              >
+                <span
                   style={{
-                    width: '36px',
-                    height: '20px',
-                    background: editorMode ? 'var(--color-brand)' : 'var(--color-border-strong)',
-                    borderRadius: 'var(--radius-full)',
-                    position: 'relative',
-                    flexShrink: 0,
-                    border: 'none',
-                    padding: 0,
-                    cursor: 'pointer',
-                    transition: 'background-color var(--duration-fast) var(--ease-smooth)',
+                    position: 'absolute',
+                    top: '2px',
+                    left: '2px',
+                    width: '16px',
+                    height: '16px',
+                    background: '#FFFFFF',
+                    borderRadius: '50%',
+                    transition: 'transform var(--duration-fast) var(--ease-smooth)',
+                    transform: editorMode ? 'translateX(16px)' : 'translateX(0)',
                   }}
-                >
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: '2px',
-                      left: '2px',
-                      width: '16px',
-                      height: '16px',
-                      background: '#FFFFFF',
-                      borderRadius: '50%',
-                      transition: 'transform var(--duration-fast) var(--ease-smooth)',
-                      transform: editorMode ? 'translateX(16px)' : 'translateX(0)',
-                    }}
-                  />
-                </button>
-              </div>
+                />
+              </button>
             </div>
           </div>
         </div>
@@ -1127,10 +1143,10 @@ export default function WordWorkbench() {
           onDragCancel={handleDragCancel}
         >
           <div style={{ marginTop: '8px' }}>
-            {sortedTabValues.map(fv => (
-              <FieldCard key={fv.id} fv={fv} depth={0} {...cardProps} />
+            {renderValues.map(fv => (
+              <FieldCard key={fv.id} fv={fv} depth={isFlatTab ? 1 : 0} {...cardProps} />
             ))}
-            {sortedTabValues.length === 0 && (
+            {renderValues.length === 0 && (
               <div style={{ padding: '32px 0', textAlign: 'center', fontSize: 13, color: 'var(--color-text-tertiary)' }}>
                 该词条暂无内容，可通过标签条右侧「+」添加词性/短语等标签页
               </div>
@@ -1191,8 +1207,8 @@ export default function WordWorkbench() {
                 zIndex: 'var(--z-dropdown)',
               }}
             >
-              {/* 根级「+ 添加字段」按当前标签作用域过滤（Task 4：主=词性+补充；短语页=仅短语） */}
-              {defs.filter(d => effectiveTab && addableRootKeys(effectiveTab).includes(d.key)).map(def => (
+              {/* 「+ 添加字段」按当前标签作用域过滤（主=词性/补充；单独标签页=直接加项） */}
+              {defs.filter(d => effectiveTab && addableLeafKeys(effectiveTab).includes(d.key)).map(def => (
                 <button
                   key={def.id}
                   type="button"
