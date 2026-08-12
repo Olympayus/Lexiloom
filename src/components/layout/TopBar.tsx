@@ -4,6 +4,7 @@ import SearchSuggestions from '../search/SearchSuggestions'
 import { searchLemmas } from '../../services/searchService'
 import { useViewStore } from '../../stores/viewStore'
 import { useSettingsStore } from '../../stores/settingsStore'
+import { useUpdaterStore } from '../../stores/updaterStore'
 import { useClickOutside } from '../../lib/useClickOutside'
 import { SIDEBAR_EXPANDED_WIDTH } from '../../lib/sidebar'
 import Icon from '../icons'
@@ -22,6 +23,9 @@ export default function TopBar() {
   const showDict = useViewStore(s => s.showDict)
   const showWorkbench = useViewStore(s => s.showWorkbench)
   const openSettings = useSettingsStore(s => s.openSettings)
+  const hasUpdate = useUpdaterStore(s => s.hasUpdateBadge)
+  const badgeVersion = useUpdaterStore(s => s.badgeVersion)
+  const openDialog = useUpdaterStore(s => s.openDialog)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   // 建议下拉点外关闭：用 document 级 pointerdown 监听（既有 useClickOutside 模式）。
@@ -184,6 +188,22 @@ export default function TopBar() {
 
       {/* 右：设置齿轮 + 窗口控制（最小化 / 最大化⇄还原 / 关闭） */}
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
+        {/* 更新徽标：静默检查发现新版时点亮，点击打开更新弹窗 */}
+        {hasUpdate && (
+          <button
+            type="button"
+            title="有可用更新，点击查看"
+            onClick={openDialog}
+            style={{
+              height: 26, marginRight: 6, padding: '0 10px', border: 'none', borderRadius: 'var(--radius-full)',
+              background: 'var(--color-brand-soft)', color: 'var(--color-brand)', fontSize: 12, fontWeight: 600,
+              cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: 'var(--font-sans)',
+            }}
+          >
+            有更新{badgeVersion ? ` v${badgeVersion}` : ''}
+          </button>
+        )}
+
         {/* 设置按钮：齿轮 20px，点击打开设置面板（规格 §3、§7.1） */}
         <button
           type="button"

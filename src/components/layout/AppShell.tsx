@@ -11,6 +11,8 @@ import { useSettingsStore } from '../../stores/settingsStore'
 import { useUiStore } from '../../stores/uiStore'
 import CategoryAssignModal from '../word/CategoryAssignModal'
 import CategoryEditorModal from '../word/CategoryEditorModal'
+import UpdateDialog from '../ui/UpdateDialog'
+import ConfirmDialog from '../ui/ConfirmDialog'
 import { fitCollapsedWidth, measureMaxWordWidth, resolveSidebarWordFont, COLLAPSED_CHROME_ALPHABET, COLLAPSED_CHROME_CATEGORY, SIDEBAR_EXPANDED_WIDTH } from '../../lib/sidebar'
 
 export default function AppShell() {
@@ -81,6 +83,9 @@ export default function AppShell() {
           onClose={closeModals}
         />
       )}
+
+      <UpdateDialog />
+      <ConfirmDialog />
     </div>
   )
 }
