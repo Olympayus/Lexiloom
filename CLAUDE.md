@@ -149,9 +149,9 @@ npm run tauri build -- --bundles nsis   # 网络受限时只打 NSIS（MSI 需�
 
 ### 发布常见坑（速查）
 
-- **打包签名**：构建前设置 `export TAURI_SIGNING_PRIVATE_KEY="$(cat Lexiloom.key)"` 与 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD="<密码>"`（私钥用 `Lexiloom.key`，配对公钥 `750F2CC78F7AF104`）。
+- **打包签名**：命令见第 4 步；私钥 `Lexiloom.key`，配对公钥 `750F2CC78F7AF104`。
 - **push 标签**：分支与标签同名时用 `git push origin tag vX.Y.Z`（或 `git push origin refs/tags/vX.Y.Z`）。
-- **gh release**：用单行短命令；changelog 先写文件再 `--notes-file` 引用；`.exe` 与 `.exe.sig` 分条上传。
+- **gh release**：changelog 先写文件再 `--notes-file` 引用；`.exe` 与 `.exe.sig` 分条上传。
 
 ---
 
