@@ -126,14 +126,11 @@ npm run tauri build -- --bundles nsis   # 网络受限时只打 NSIS（MSI 需�
    # 手工填写 latest.json 的 notes 字段
    git add latest.json && git commit -m "chore: update latest.json for v<version>"
    ```
-2. 发布：
+2. 发布（**全部单行命令**，PowerShell 可直接执行；勿用 bash 的 `\` 续行）：
    ```bash
    git push origin main
-   git tag v<version> && git push origin v<version>
-   gh release create v<version> \
-     "src-tauri/target/release/bundle/nsis/Lexiloom_<version>_x64-setup.exe" \
-     "src-tauri/target/release/bundle/nsis/Lexiloom_<version>_x64-setup.exe.sig" \
-     --title "Lexiloom v<version>" --notes "<changelog>"
+   git tag v<version> && git push origin refs/tags/v<version>
+   gh release create v<version> "src-tauri/target/release/bundle/nsis/Lexiloom_<version>_x64-setup.exe" "src-tauri/target/release/bundle/nsis/Lexiloom_<version>_x64-setup.exe.sig" --title "Lexiloom v<version>" --notes-file <changelog>
    ```
 
 ### 第 5b 步 · macOS 发布（Mac 上执行，仅需发布 macOS 更新时）
