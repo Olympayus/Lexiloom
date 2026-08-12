@@ -985,7 +985,7 @@ export default function WordWorkbench() {
               </div>
               <div style={{ marginTop: 10 }}>
                 <PhoneticArea
-                  values={phoneticValues.filter(fv => fv.value.trim())}
+                  values={phoneticValues.filter(fv => fv.id === editingId || fv.value.trim())}
                   editorMode={editorMode}
                   editingId={editingId}
                   editValue={editValue}
