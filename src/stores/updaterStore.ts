@@ -31,6 +31,7 @@ interface UpdateStore {
 
 let stallTimer: ReturnType<typeof setInterval> | undefined
 let lastProgress = 0
+let cancelled = false
 const clearStallTimer = () => { if (stallTimer) clearInterval(stallTimer); stallTimer = undefined }
 
 export const useUpdaterStore = create<UpdateStore>((set, get) => {
@@ -80,6 +81,7 @@ export const useUpdaterStore = create<UpdateStore>((set, get) => {
     startDownload: async () => {
       const { update } = get()
       if (!update) return
+      cancelled = false
       set({ phase: 'downloading', downloadedBytes: 0, contentLength: undefined, percent: null, stalled: false })
       lastProgress = Date.now()
       clearStallTimer()
@@ -90,17 +92,26 @@ export const useUpdaterStore = create<UpdateStore>((set, get) => {
           set({ downloadedBytes: p.downloadedBytes, contentLength: p.contentLength, percent: p.percent, stalled: false })
         })
         clearStallTimer()
+        if (cancelled) {
+          set({ phase: 'idle', open: false })
+          return
+        }
         set({ phase: 'installing' })
         await installAndRelaunch(update)
         set({ phase: 'done' })
       } catch (e) {
         clearStallTimer()
+        if (cancelled) {
+          set({ phase: 'idle', open: false })
+          return
+        }
         set({ phase: 'error', errorMessage: e instanceof Error ? e.message : String(e), errorHint: proxyHintForDownload() })
       }
     },
 
     cancelDownload: async () => {
       const { update } = get()
+      cancelled = true
       clearStallTimer()
       if (update) await update.close()
       set({ phase: 'idle', open: false, downloadedBytes: 0, contentLength: undefined, percent: null, stalled: false })

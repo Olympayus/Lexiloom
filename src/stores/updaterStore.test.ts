@@ -157,4 +157,25 @@ describe('updaterStore', () => {
     expect(useUpdaterStore.getState().phase).toBe('idle')
     void p // 不 await：download 永不结束，cancel 后由 update.close 中止
   })
+
+  it('cancelDownload: 取消后下载 reject 不覆盖为 error（保持 idle）', async () => {
+    const update = makeUpdate()
+    checkForUpdatesMock.mockResolvedValue({ status: 'update-available', version: '0.4.1', notes: 'n', update })
+    await useUpdaterStore.getState().checkManually()
+
+    let rejectDownload!: (e: Error) => void
+    downloadUpdateMock.mockImplementation(async () => {
+      await new Promise<void>((_, reject) => { rejectDownload = reject })
+    })
+
+    const p = useUpdaterStore.getState().startDownload()
+    await useUpdaterStore.getState().cancelDownload()
+    expect(update.close).toHaveBeenCalledTimes(1)
+
+    rejectDownload(new Error('aborted'))
+    await p
+    const s = useUpdaterStore.getState()
+    expect(s.phase).toBe('idle')
+    expect(s.errorMessage).toBeNull()
+  })
 })
