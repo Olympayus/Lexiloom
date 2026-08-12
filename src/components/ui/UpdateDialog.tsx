@@ -38,7 +38,7 @@ export default function UpdateDialog() {
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px 0' }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: phase === 'error' ? 'var(--color-danger)' : 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
-            {phase === 'checking' && <span className="spin" style={{ width: 14, height: 14, border: '2px solid var(--color-border-strong)', borderTopColor: 'var(--color-brand)', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.8s linear infinite' }} />}
+            {phase === 'checking' && <span style={{ width: 14, height: 14, border: '2px solid var(--color-border-strong)', borderTopColor: 'var(--color-brand)', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.8s linear infinite' }} />}
             {title}
           </div>
           <button type="button" onClick={closeDialog} aria-label="关闭"

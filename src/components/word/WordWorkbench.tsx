@@ -790,7 +790,7 @@ export default function WordWorkbench() {
   const handleDelete = async () => {
     const ok = await useUiStore.getState().confirm({
       title: '删除单词',
-      message: `确定删除单词"${selectedWord.lemma}"吗？此操作不可撤销。`,
+      message: `确定删除单词“${selectedWord.lemma}”吗？此操作不可撤销。`,
       danger: true,
     })
     if (!ok) return

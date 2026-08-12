@@ -31,7 +31,7 @@ interface UpdateStore {
 
 let stallTimer: ReturnType<typeof setInterval> | undefined
 let lastProgress = 0
-let cancelled = false
+let downloadGen = 0  // 递增代次令牌：只有最新一次 startDownload 才能写 phase
 const clearStallTimer = () => { if (stallTimer) clearInterval(stallTimer); stallTimer = undefined }
 
 export const useUpdaterStore = create<UpdateStore>((set, get) => {
@@ -66,55 +66,55 @@ export const useUpdaterStore = create<UpdateStore>((set, get) => {
     checkSilently: async () => {
       const r = await checkForUpdates()
       if (r.status === 'update-available') {
-        set({ hasUpdateBadge: true, badgeVersion: r.version, version: r.version, notes: r.notes, update: r.update })
+        set({ phase: 'available', hasUpdateBadge: true, badgeVersion: r.version, version: r.version, notes: r.notes, update: r.update })
       }
       // latest / error：静默
     },
 
     checkManually: async () => {
       const { phase } = get()
-      if (phase === 'downloading' || phase === 'installing') return  // 幂等：更新中忽略重复触发
+      if (phase === 'downloading' || phase === 'installing' || phase === 'checking') return  // 幂等：检查/更新中忽略重复触发
       set({ open: true, phase: 'checking', errorMessage: null, errorHint: null })
       applyCheck(await checkForUpdates())
     },
 
     startDownload: async () => {
-      const { update } = get()
+      const { update, phase } = get()
+      if (phase === 'downloading' || phase === 'installing') return  // 幂等：下载/安装中忽略重复触发
       if (!update) return
-      cancelled = false
+      const gen = ++downloadGen  // 本代次令牌：仅最新代次可写 phase
       set({ phase: 'downloading', downloadedBytes: 0, contentLength: undefined, percent: null, stalled: false })
       lastProgress = Date.now()
       clearStallTimer()
       stallTimer = setInterval(() => { if (Date.now() - lastProgress >= STALL_MS) set({ stalled: true }) }, 2000)
       try {
         await downloadUpdate(update, (p) => {
+          if (gen !== downloadGen) return
           lastProgress = Date.now()
           set({ downloadedBytes: p.downloadedBytes, contentLength: p.contentLength, percent: p.percent, stalled: false })
         })
+        if (gen !== downloadGen) return  // 已被取消/新下载取代：不进入 installing
         clearStallTimer()
-        if (cancelled) {
-          set({ phase: 'idle', open: false })
-          return
-        }
         set({ phase: 'installing' })
         await installAndRelaunch(update)
         set({ phase: 'done' })
       } catch (e) {
+        if (gen !== downloadGen) return  // 迟到 reject：不写 error
         clearStallTimer()
-        if (cancelled) {
-          set({ phase: 'idle', open: false })
-          return
-        }
         set({ phase: 'error', errorMessage: e instanceof Error ? e.message : String(e), errorHint: proxyHintForDownload() })
       }
     },
 
     cancelDownload: async () => {
       const { update } = get()
-      cancelled = true
+      downloadGen += 1  // 使进行中的旧下载失效
       clearStallTimer()
-      if (update) await update.close()
-      set({ phase: 'idle', open: false, downloadedBytes: 0, contentLength: undefined, percent: null, stalled: false })
+      try {
+        if (update) await update.close()
+      } finally {
+        // close() 即使 reject 也要回 idle 并清徽标/update，避免弹窗卡在 downloading
+        set({ phase: 'idle', open: false, hasUpdateBadge: false, badgeVersion: null, update: null, downloadedBytes: 0, contentLength: undefined, percent: null, stalled: false })
+      }
     },
   }
 })

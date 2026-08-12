@@ -77,6 +77,15 @@ describe('updaterStore', () => {
     expect(s.phase).toBe('idle')
   })
 
+  it('checkSilently: 有新版时 phase 置为 available（点击徽标弹窗不渲染空卡片）', async () => {
+    checkForUpdatesMock.mockResolvedValue({ status: 'update-available', version: '0.4.1', notes: 'n', update: makeUpdate() })
+    await useUpdaterStore.getState().checkSilently()
+    const s = useUpdaterStore.getState()
+    expect(s.phase).toBe('available')
+    expect(s.hasUpdateBadge).toBe(true)
+    expect(s.open).toBe(false)
+  })
+
   it('startDownload: downloading→进度累加→installing→done', async () => {
     const update = makeUpdate()
     checkForUpdatesMock.mockResolvedValue({ status: 'update-available', version: '0.4.1', notes: 'n', update })
@@ -177,5 +186,44 @@ describe('updaterStore', () => {
     const s = useUpdaterStore.getState()
     expect(s.phase).toBe('idle')
     expect(s.errorMessage).toBeNull()
+  })
+
+  it('startDownload: 取消后旧下载迟到 reject 不覆盖新下载状态（generation 隔离）', async () => {
+    const update = makeUpdate()
+    checkForUpdatesMock.mockResolvedValue({ status: 'update-available', version: '0.4.1', notes: 'n', update })
+    await useUpdaterStore.getState().checkManually()
+
+    // 下载 A：挂起，稍后手动 reject
+    let rejectA!: (e: Error) => void
+    downloadUpdateMock.mockImplementationOnce(async () => {
+      await new Promise<void>((_, reject) => { rejectA = reject })
+    })
+    // 下载 B：先报进度再挂起，稍后手动 resolve
+    let resolveB!: () => void
+    downloadUpdateMock.mockImplementationOnce(async (_u, onProgress) => {
+      onProgress({ downloadedBytes: 80, contentLength: 100, percent: 0.8 })
+      await new Promise<void>((res) => { resolveB = res })
+    })
+    installAndRelaunchMock.mockResolvedValue(undefined)
+
+    const pA = useUpdaterStore.getState().startDownload()
+    await useUpdaterStore.getState().cancelDownload()
+    expect(useUpdaterStore.getState().phase).toBe('idle')
+
+    // 重新检查以再次获得 update，启动下载 B
+    await useUpdaterStore.getState().checkManually()
+    const pB = useUpdaterStore.getState().startDownload()
+    expect(useUpdaterStore.getState().phase).toBe('downloading')
+
+    // 下载 A 迟到 reject：不得把 B 覆盖为 error/idle
+    rejectA(new Error('aborted'))
+    await pA
+    expect(useUpdaterStore.getState().phase).toBe('downloading')
+    expect(useUpdaterStore.getState().errorMessage).toBeNull()
+
+    resolveB()
+    await pB
+    expect(useUpdaterStore.getState().phase).toBe('done')
+    expect(useUpdaterStore.getState().downloadedBytes).toBe(80)
   })
 })

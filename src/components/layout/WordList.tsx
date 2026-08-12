@@ -86,7 +86,7 @@ export default function WordList({
       {
         key: 'delete', label: '删除单词', danger: true,
         onSelect: async () => {
-          if (await useUiStore.getState().confirm({ title: '删除单词', message: `确定删除单词"${word.lemma}"吗？此操作不可撤销。`, danger: true })) void deleteWord(word.id)
+          if (await useUiStore.getState().confirm({ title: '删除单词', message: `确定删除单词“${word.lemma}”吗？此操作不可撤销。`, danger: true })) void deleteWord(word.id)
         },
       },
     ]
@@ -97,7 +97,7 @@ export default function WordList({
     {
       key: 'delete', label: '删除分类', danger: true,
       onSelect: async () => {
-        if (await useUiStore.getState().confirm({ title: '删除分类', message: `确定删除分类"${category.name}"吗？将从所有单词移除该分类。`, danger: true })) void deleteCategory(category.id)
+        if (await useUiStore.getState().confirm({ title: '删除分类', message: `确定删除分类“${category.name}”吗？将从所有单词移除该分类。`, danger: true })) void deleteCategory(category.id)
       },
     },
   ]
