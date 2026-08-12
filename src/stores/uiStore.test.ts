@@ -27,3 +27,20 @@ describe('uiStore 统一模态宿主', () => {
     expect(s.editorTarget).toBeNull()
   })
 })
+
+describe('confirm', () => {
+  it('confirm 返回 Promise，resolveConfirm(true) 后 resolve true 并清空', async () => {
+    useUiStore.setState({ confirmReq: null })
+    const p = useUiStore.getState().confirm({ title: '删除', message: '确定？', danger: true })
+    expect(useUiStore.getState().confirmReq?.title).toBe('删除')
+    useUiStore.getState().resolveConfirm(true)
+    await expect(p).resolves.toBe(true)
+    expect(useUiStore.getState().confirmReq).toBeNull()
+  })
+
+  it('resolveConfirm(false) resolve false', async () => {
+    const p = useUiStore.getState().confirm({ title: 't', message: 'm' })
+    useUiStore.getState().resolveConfirm(false)
+    await expect(p).resolves.toBe(false)
+  })
+})
