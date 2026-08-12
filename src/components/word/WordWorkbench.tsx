@@ -770,7 +770,7 @@ export default function WordWorkbench() {
     if (!fv) return
     // 词性空标签校验（Task 10 §Step 4）：词性父必须有非空标签
     if (defKeyByFieldId.get(fv.fieldId) === 'part_of_speech' && !editValue.trim()) {
-      window.alert('词性标签不能为空')
+      await useUiStore.getState().confirm({ title: '词性标签不能为空', message: '请为词性填写标签后再保存。', alertMode: true })
       return
     }
     if (editValue === entryValue) { setEditingId(null); return }  // 未真实修改：不置位
@@ -788,7 +788,12 @@ export default function WordWorkbench() {
   }
 
   const handleDelete = async () => {
-    if (!window.confirm(`确定删除单词“${selectedWord.lemma}”吗？此操作不可撤销。`)) return
+    const ok = await useUiStore.getState().confirm({
+      title: '删除单词',
+      message: `确定删除单词"${selectedWord.lemma}"吗？此操作不可撤销。`,
+      danger: true,
+    })
+    if (!ok) return
     await deleteWord(selectedWord.id)
   }
 
@@ -822,10 +827,12 @@ export default function WordWorkbench() {
     setMenuOpenId(null)
     const name = defs.find(d => d.id === fv.fieldId)?.name ?? (fv.value || '字段')
     const hasKids = !!(fv.children && fv.children.length > 0)
-    const msg = hasKids
-      ? `删除「${name}」及其全部子词条？此操作不可撤销。`
-      : `删除「${name}」？此操作不可撤销。`
-    if (!window.confirm(msg)) return
+    const ok = await useUiStore.getState().confirm({
+      title: `删除「${name}」`,
+      message: hasKids ? '该词条包含子词条，将一并删除。此操作不可撤销。' : '此操作不可撤销。',
+      danger: true,
+    })
+    if (!ok) return
     await deleteFieldValue(fv.id)
   }
 

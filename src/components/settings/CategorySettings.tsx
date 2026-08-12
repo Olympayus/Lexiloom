@@ -93,7 +93,7 @@ export default function CategorySettings() {
             cat={cat}
             count={countFor(cat.id)}
             onEdit={() => openEditor(cat, null)}
-            onDelete={() => { if (window.confirm(`确定删除分类“${cat.name}”吗？将从所有单词移除该分类。`)) void deleteCategory(cat.id) }}
+            onDelete={async () => { if (await useUiStore.getState().confirm({ title: '删除分类', message: `确定删除分类"${cat.name}"吗？将从所有单词移除该分类。`, danger: true })) void deleteCategory(cat.id) }}
           />
         ))
       )}

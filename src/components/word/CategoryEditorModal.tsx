@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, type CSSProperties } from 'react'
 import { useFocusTrap } from '../../lib/useFocusTrap'
 import { useCategoryStore } from '../../stores/categoryStore'
+import { useUiStore } from '../../stores/uiStore'
 import type { Category } from '../../types/category'
 import Icon from '../icons'
 import { Button } from '../ui/Button'
@@ -74,7 +75,7 @@ export default function CategoryEditorModal({ open, category, wordId, onClose, o
 
   const handleDelete = async () => {
     if (!category) return
-    if (!window.confirm(`确定删除分类“${category.name}”吗？将从所有单词移除该分类。`)) return
+    if (!(await useUiStore.getState().confirm({ title: '删除分类', message: `确定删除分类"${category.name}"吗？将从所有单词移除该分类。`, danger: true }))) return
     await deleteCategory(category.id)
     onClose()
   }
