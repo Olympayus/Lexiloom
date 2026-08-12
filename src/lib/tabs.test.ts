@@ -1,0 +1,53 @@
+import { describe, it, expect } from 'vitest'
+import { visibleTabs, defaultTab, missingTabs, groupRootsByTab, addableRootKeys, TAB_ORDER } from './tabs'
+import type { FieldValue } from '../types/field'
+
+// fieldId 直接当作字段 key 注入，keyOf 用 fieldId
+const kv = (id: string): FieldValue => ({
+  id, wordId: 'w', fieldId: id, value: '', source: 'ecdict', edited: false,
+  originalValue: null, displayOrder: 0, parentId: null, createdAt: 0, updatedAt: 0, children: [],
+})
+const keyOf = (fv: FieldValue) => fv.fieldId
+
+describe('tabs 派生', () => {
+  it('只含词性 → 仅主标签页可见，默认主标签页，缺失其余三个', () => {
+    const roots = [kv('part_of_speech')]
+    expect(visibleTabs(roots, keyOf)).toEqual(['main'])
+    expect(defaultTab(roots, keyOf)).toBe('main')
+    expect(missingTabs(roots, keyOf)).toEqual(['phrase', 'exchange', 'derivatives'])
+  })
+
+  it('只含短语 → 主标签页不可见，默认第一个可见=短语', () => {
+    const roots = [kv('phrase')]
+    expect(visibleTabs(roots, keyOf)).toEqual(['phrase'])
+    expect(defaultTab(roots, keyOf)).toBe('phrase')
+  })
+
+  it('补充存在即可见主标签页（词性+补充任一）', () => {
+    const roots = [kv('supplementary')]
+    expect(visibleTabs(roots, keyOf)).toEqual(['main'])
+    expect(defaultTab(roots, keyOf)).toBe('main')
+  })
+
+  it('无任何内容 → 默认 null，缺失全部', () => {
+    expect(visibleTabs([], keyOf)).toEqual([])
+    expect(defaultTab([], keyOf)).toBeNull()
+    expect(missingTabs([], keyOf)).toEqual(TAB_ORDER)
+  })
+
+  it('addableRootKeys 按标签过滤', () => {
+    expect(addableRootKeys('main')).toEqual(['part_of_speech', 'supplementary'])
+    expect(addableRootKeys('phrase')).toEqual(['phrase'])
+    expect(addableRootKeys('exchange')).toEqual(['exchange'])
+    expect(addableRootKeys('derivatives')).toEqual(['derivatives'])
+  })
+
+  it('groupRootsByTab 正确分组并丢弃未知根字段', () => {
+    const roots = [kv('part_of_speech'), kv('phrase'), kv('exchange'), kv('unknown')]
+    const g = groupRootsByTab(roots, keyOf)
+    expect(g.main).toHaveLength(1)
+    expect(g.phrase).toHaveLength(1)
+    expect(g.exchange).toHaveLength(1)
+    expect(g.derivatives).toHaveLength(0)
+  })
+})
