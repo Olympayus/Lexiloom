@@ -1143,8 +1143,16 @@ export default function WordWorkbench() {
           onDragCancel={handleDragCancel}
         >
           <div style={{ marginTop: '8px' }}>
-            {renderValues.map(fv => (
-              <FieldCard key={fv.id} fv={fv} depth={isFlatTab ? 1 : 0} {...cardProps} />
+            {isFlatTab && renderValues.length > 0 && (
+              /* 单独标签页：子项平铺进容器卡片（保留容器抬升底色 + 边框 + 柔和阴影，去掉标题框） */
+              <div style={{ background: 'var(--color-surface-raised)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-raised)', padding: '4px 10px' }}>
+                {renderValues.map(fv => (
+                  <FieldCard key={fv.id} fv={fv} depth={1} {...cardProps} />
+                ))}
+              </div>
+            )}
+            {!isFlatTab && renderValues.map(fv => (
+              <FieldCard key={fv.id} fv={fv} depth={0} {...cardProps} />
             ))}
             {renderValues.length === 0 && (
               <div style={{ padding: '32px 0', textAlign: 'center', fontSize: 13, color: 'var(--color-text-tertiary)' }}>
