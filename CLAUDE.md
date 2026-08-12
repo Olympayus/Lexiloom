@@ -105,6 +105,7 @@ AppShell 三区：TopBar（48px，常驻）/ 侧边栏（300px，可收起 120�
 > export TAURI_SIGNING_PRIVATE_KEY="$(cat Lexiloom.key)"
 > export TAURI_SIGNING_PRIVATE_KEY_PASSWORD="<密钥密码>"
 > ```
+> PowerShell 终端：`$env:TAURI_SIGNING_PRIVATE_KEY = (Get-Content Lexiloom.key -Raw).Trim()` + `$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = "<密钥密码>"`（bash `export` 在 PowerShell 不可用）。
 >
 > 私钥 `Lexiloom.key` 与公钥 `Lexiloom.key.pub` 不入 git（见 .gitignore）；公钥已内嵌 `src-tauri/tauri.conf.json` 的 `updater.pubkey`。忘记密码需重新生成密钥对并同步更新 pubkey。
 
