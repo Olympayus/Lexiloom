@@ -6,12 +6,14 @@ import SearchSettings from './SearchSettings'
 import SidebarSettings from './SidebarSettings'
 import CategorySettings from './CategorySettings'
 import AboutSettings from './AboutSettings'
+import DataSettings from './DataSettings'
 
-type SectionKey = 'search' | 'sidebar' | 'category' | 'about'
+type SectionKey = 'search' | 'sidebar' | 'category' | 'data' | 'about'
 const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: 'search', label: '搜索设置' },
   { key: 'sidebar', label: '侧边栏显示' },
   { key: 'category', label: '分类管理' },
+  { key: 'data', label: '数据' },
   { key: 'about', label: '关于' },
 ]
 
@@ -124,6 +126,7 @@ export default function SettingsPanel() {
             {active === 'search' && <SearchSettings />}
             {active === 'sidebar' && <SidebarSettings />}
             {active === 'category' && <CategorySettings />}
+            {active === 'data' && <DataSettings />}
             {active === 'about' && <AboutSettings />}
           </div>
         </div>
