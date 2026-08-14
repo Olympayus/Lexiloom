@@ -39,10 +39,14 @@ export async function pickAndPlanImport(): Promise<{ ok: boolean; error?: string
 }
 
 export async function applyImport(path: string): Promise<{ ok: boolean; error?: string }> {
+  let txStarted = false
   try {
     const json = await readTextFile(path)
     const incoming = decodeLibrary(json)
     const db = getDb()
+    // 原子导入：整批写入包在一个事务里，任一行失败即 ROLLBACK，避免留下半合并词库
+    await db.execute('BEGIN')
+    txStarted = true
     // LWW：仅当 incoming.updatedAt 严格大于库内值才覆盖；否则保留库内新数据（对应 planImport 的 skipped）
     const upsertLww = (table: string, cols: string[], values: any[]) =>
       db.execute(
@@ -69,8 +73,15 @@ export async function applyImport(path: string): Promise<{ ok: boolean; error?: 
         [wc.wordId, wc.categoryId]
       )
     }
+    await db.execute('COMMIT')
     return { ok: true }
   } catch (e) {
+    if (txStarted) {
+      try {
+        const db = getDb()
+        await db.execute('ROLLBACK')
+      } catch { /* ROLLBACK 失败不应掩盖原始错误 */ }
+    }
     return { ok: false, error: e instanceof Error ? e.message : String(e) }
   }
 }

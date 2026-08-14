@@ -3,6 +3,7 @@ import { save } from '@tauri-apps/plugin-dialog'
 import { writeTextFile } from '@tauri-apps/plugin-fs'
 import { getDb } from '../db/connection'
 import { encodeLibrary, type LibrarySnapshot } from '../lib/libraryCodec'
+import pkg from '../../package.json'
 
 async function readSnapshot(): Promise<LibrarySnapshot> {
   const db = getDb()
@@ -20,12 +21,12 @@ async function readSnapshot(): Promise<LibrarySnapshot> {
 export async function exportLibrary(): Promise<{ ok: boolean; error?: string; path?: string }> {
   try {
     const path = await save({
-      defaultPath: `lexiloom-backup-v0.4.2.json`,
+      defaultPath: `lexiloom-backup-v${pkg.version}.json`,
       filters: [{ name: 'Lexiloom 备份', extensions: ['json'] }],
     })
     if (!path) return { ok: false } // 用户取消
     const snapshot = await readSnapshot()
-    const json = encodeLibrary(snapshot, '0.4.2')
+    const json = encodeLibrary(snapshot, pkg.version)
     await writeTextFile(path, json)
     return { ok: true, path }
   } catch (e) {

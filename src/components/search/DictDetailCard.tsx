@@ -230,16 +230,19 @@ export default function DictDetailCard({
       const isDefinition = shouldNumberField(node.field.key)
       const collapsed = isContainer && collapsedKeys.has(node.key)
       const label = fieldLabel(node.field.key) + (isDefinition ? `(${seenIndex(node.field.key) + 1})` : '')
+      // 复选框可访问名：词性用「词性 <tag>」，其余优先字段标签、其次字段值、最后字段 key
+      const checkboxLabel = isPos ? `词性 ${node.field.value}` : (label || node.field.value || node.field.key)
 
       return (
         <div key={node.key}>
           <div
             className="flex items-start gap-2 cursor-pointer rounded px-1"
-            onClick={() => isContainer && toggleCollapse(node.key)}
+            onClick={() => (isContainer ? toggleCollapse(node.key) : toggle(node.key))}
             style={{ padding: '6px 4px' }}
           >
             <input
               type="checkbox"
+              aria-label={checkboxLabel}
               checked={selected.has(node.key)}
               onClick={e => e.stopPropagation()}
               onChange={isContainer ? () => toggleSubtree(node.key) : () => toggle(node.key)}
@@ -248,7 +251,15 @@ export default function DictDetailCard({
             {isPos
               ? <div className="flex items-center gap-1.5"><PosTag value={node.field.value} /><span style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>{countItems(node)} 项</span></div>
               : inlineContent(node, label)}
-            {isContainer && <span className="ml-auto" style={{ color: 'var(--color-text-tertiary)', fontSize: 11 }}>{collapsed ? '▸' : '▾'}</span>}
+            {isContainer && (
+              <button
+                type="button"
+                aria-label={collapsed ? '展开分组' : '折叠分组'}
+                onClick={e => { e.stopPropagation(); toggleCollapse(node.key) }}
+                className="ml-auto"
+                style={{ border: 'none', background: 'transparent', padding: '0 2px', cursor: 'pointer', color: 'var(--color-text-tertiary)', fontSize: 11, fontFamily: 'var(--font-sans)' }}
+              >{collapsed ? '▸' : '▾'}</button>
+            )}
           </div>
           {isContainer && !collapsed && (
             <div style={{ paddingLeft: 16 }}>{renderFlat(node.children)}</div>
@@ -282,7 +293,7 @@ export default function DictDetailCard({
           className="ml-auto text-xs font-medium"
           style={{ color: accent.color, padding: '4px 10px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', background: 'transparent', border: '1px solid transparent' }}
           onClick={handleAdd}
-          disabled={added}
+          disabled={added || selected.size === 0}
         >{added ? '已添加 ✓' : '＋ 添加此词典'}</button>
         <button
           aria-label={collapsed ? '展开' : '折叠'}

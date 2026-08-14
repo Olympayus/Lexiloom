@@ -18,21 +18,30 @@ interface Props {
 // 点胶囊 showDict 重查该词，网络随词刷新。
 export default function SemanticNetwork({ word, onCountChange }: Props) {
   const [data, setData] = useState<RelatedWords | null>(null)
+  const [error, setError] = useState(false)
   const showDict = useViewStore(s => s.showDict)
 
-  // 换词取消过期请求；数据就绪后上报徽章计数（全组词条总数）
+  // 换词取消过期请求；数据就绪后上报徽章计数（全组词条总数）；失败进入 error 态（如 wordnet.db 未生成）
   useEffect(() => {
     let cancelled = false
     setData(null)
+    setError(false)
     relatedWords(word)
       .then(d => {
         if (cancelled) return
         setData(d)
         onCountChange?.(Object.values(d.groups).reduce((sum, g) => sum + g.length, 0))
       })
-      .catch(console.error)
+      .catch(e => {
+        console.error(e)
+        if (!cancelled) setError(true)
+      })
     return () => { cancelled = true }
   }, [word, onCountChange])
+
+  if (error) {
+    return <div style={{ fontSize: 13, color: 'var(--color-danger)', padding: '20px 0' }}>语义网络数据加载失败，请先构建本地词典库（npm run build:dictionaries）</div>
+  }
 
   if (!data) {
     return <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', padding: '20px 0' }}>加载中…</div>

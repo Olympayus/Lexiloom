@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { exportLibrary } from '../../services/exportService'
 import { pickAndPlanImport, applyImport } from '../../services/importService'
 import type { ImportPlan } from '../../lib/libraryCodec'
+import { useWordStore } from '../../stores/wordStore'
+import { useCategoryStore } from '../../stores/categoryStore'
 
 export default function DataSettings() {
   const [busy, setBusy] = useState(false)
@@ -15,7 +17,7 @@ export default function DataSettings() {
     `新增 ${p.newWords} 词 / 更新 ${p.updatedWords} 词，新增分类 ${p.newCategories}、字段定义 ${p.newFieldDefinitions}、字段值 ${p.newFieldValues}、词分类 ${p.newWordCategories}，跳过 ${p.skipped}`
 
   const handleExport = async () => {
-    setBusy(true); setError('')
+    setBusy(true); setError(''); setStatus('')
     const r = await exportLibrary()
     setBusy(false)
     if (r.ok) setStatus(`已导出：${r.path}`)
@@ -23,7 +25,7 @@ export default function DataSettings() {
   }
 
   const handlePick = async () => {
-    setBusy(true); setError(''); setPlan(null); setPendingPath(null)
+    setBusy(true); setError(''); setStatus(''); setPlan(null); setPendingPath(null)
     const r = await pickAndPlanImport()
     setBusy(false)
     if (r.ok && r.plan) { setPlan(r.plan); setPendingPath(r.path ?? null) }
@@ -32,10 +34,16 @@ export default function DataSettings() {
 
   const handleApply = async () => {
     if (!pendingPath) return
-    setBusy(true); setError('')
+    setBusy(true); setError(''); setStatus('')
     const r = await applyImport(pendingPath)
     setBusy(false)
-    if (r.ok) { setStatus('导入完成'); setPlan(null); setPendingPath(null) }
+    if (r.ok) {
+      setStatus('导入完成'); setPlan(null); setPendingPath(null)
+      // 导入后刷新侧边栏/工作台数据，让新词与分类即时可见（与 IndexPage 启动加载一致）
+      await useWordStore.getState().loadWords()
+      await useCategoryStore.getState().loadCategories()
+      await useCategoryStore.getState().loadWordCategoryMap()
+    }
     else if (r.error) setError(r.error)
   }
 

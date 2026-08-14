@@ -28,8 +28,11 @@ describe('rankChineseResults', () => {
     expect(result).not.toContain('pie')
   })
   it('ranks exact translation match first', () => {
-    const result = rankChineseResults(rows, '苹果')
-    expect(result[0]).toBe('apple') // translation 恰好以「苹果」开头且等于整行前段
+    const result = rankChineseResults([
+      { word: 'apple', translation: '苹果；苹果树' },
+      { word: 'exactmatch', translation: '苹果' },
+    ], '苹果')
+    expect(result[0]).toBe('exactmatch') // translation.trim() === query 的精确匹配排在仅包含之上
   })
   it('ranks earlier match position higher', () => {
     const early = rankChineseResults(

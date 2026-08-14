@@ -181,14 +181,12 @@ export default function DictDetailPanel({ word }: Props) {
                 </div>
               )}
 
-              {/* 浮动操作栏：有勾选才浮现、无计数；「清除选择」经各卡 clear 句柄清空勾选 */}
+              {/* 浮动操作栏：仅在有勾选时渲染（消除隐藏时仍占位导致的底部空隙）；「清除选择」经各卡 clear 句柄清空勾选 */}
+              {anySelected && (
               <div style={{
                 position: 'sticky', bottom: 16, width: 'fit-content', margin: '0 auto', padding: 6,
                 display: 'flex', alignItems: 'center', gap: 4,
                 background: '#2a2825', borderRadius: 'var(--radius-full)', boxShadow: 'var(--shadow-raised)',
-                transform: anySelected ? 'translateY(0)' : 'translateY(80px)',
-                opacity: anySelected ? 1 : 0, pointerEvents: anySelected ? 'auto' : 'none',
-                transition: 'transform 300ms, opacity 200ms',
               }}>
                 <button
                   type="button"
@@ -202,6 +200,7 @@ export default function DictDetailPanel({ word }: Props) {
                   style={{ width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'transparent', color: 'rgba(250,249,245,0.5)', cursor: 'pointer' }}
                 ><Icon name="close" size={13} /></button>
               </div>
+              )}
             </>
           )}
         </div>
