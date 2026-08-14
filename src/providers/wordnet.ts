@@ -13,13 +13,14 @@ export interface RelatedGroup {
 
 export interface RelatedWords {
   path: string[]
-  groups: Record<'synonyms' | 'hypernyms' | 'hyponyms' | 'antonyms' | 'partWhole', RelatedGroup[]>
+  groups: Record<'synonyms' | 'hypernyms' | 'hyponyms' | 'antonyms' | 'partWhole' | 'similarTo' | 'alsoSee', RelatedGroup[]>
 }
 
 const RELATED_LABEL: Record<string, keyof RelatedWords['groups']> = {
   '@': 'hypernyms', '@i': 'hypernyms',
   '~': 'hyponyms', '~i': 'hyponyms',
   '!': 'antonyms',
+  '&': 'similarTo', '^': 'alsoSee',
   '#m': 'partWhole', '#p': 'partWhole', '#s': 'partWhole',
   '%m': 'partWhole', '%p': 'partWhole', '%s': 'partWhole',
 }
@@ -72,7 +73,7 @@ export class WordNetProvider implements DictionaryProvider {
   }
 
   async relatedWords(word: string): Promise<RelatedWords> {
-    const empty = () => ({ path: [], groups: { synonyms: [], hypernyms: [], hyponyms: [], antonyms: [], partWhole: [] } })
+    const empty = () => ({ path: [], groups: { synonyms: [], hypernyms: [], hyponyms: [], antonyms: [], partWhole: [], similarTo: [], alsoSee: [] } })
     if (!word.trim()) return empty()
     const normalized = word.toLowerCase().trim()
     const db = await getCachedDb(toSqliteUrl(await dbPath))
@@ -85,15 +86,17 @@ export class WordNetProvider implements DictionaryProvider {
 
     // 2) 解析每个 synset 的目标 synset 词（去重）
     const resolve = async (off: number, pos: string): Promise<RelatedGroup | null> => {
+      // wn_synsets 将所有形容词（含卫星 s）统一存为 'a'，指针 to_pos 可能为 's'，查询时归一化
+      const qPos = pos === 's' ? 'a' : pos
       const rows = await db.select<{ words: string | null; definition: string | null }[]>(
-        'SELECT words, definition FROM wn_synsets WHERE synset_offset = ?1 AND pos = ?2', [off, pos]
+        'SELECT words, definition FROM wn_synsets WHERE synset_offset = ?1 AND pos = ?2', [off, qPos]
       )
       if (rows.length === 0) return null
       const ws = (rows[0].words ?? '').split('\n').map(w => w.trim().toLowerCase()).filter(Boolean)
       return { words: ws, definition: rows[0].definition ?? undefined }
     }
 
-    const groups: Record<string, RelatedGroup[]> = { synonyms: [], hypernyms: [], hyponyms: [], antonyms: [], partWhole: [] }
+    const groups: Record<string, RelatedGroup[]> = { synonyms: [], hypernyms: [], hyponyms: [], antonyms: [], partWhole: [], similarTo: [], alsoSee: [] }
     const seen = new Set<string>()
 
     for (const s of synsetRows) {

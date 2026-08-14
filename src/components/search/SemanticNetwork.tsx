@@ -6,6 +6,7 @@ import { useViewStore } from '../../stores/viewStore'
 const LABELS: Record<keyof RelatedWords['groups'], string> = {
   synonyms: '同义词', hypernyms: '上位词', hyponyms: '下位词',
   antonyms: '反义词', partWhole: '整体 · 部分',
+  similarTo: '相似词', alsoSee: '参见',
 }
 
 interface Props {
