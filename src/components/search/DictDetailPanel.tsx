@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import DictDetailCard, { type DictDetailCardHandle } from './DictDetailCard'
+import SemanticNetwork from './SemanticNetwork'
 import { lookupWord } from '../../services/searchService'
 import { useViewStore } from '../../stores/viewStore'
 import { useWordStore } from '../../stores/wordStore'
@@ -17,9 +18,6 @@ interface DetailResult {
 interface Props {
   word: string
 }
-
-// 语义网络徽章计数：Task 5 接真实数据后改为真实计数，本 Task 暂为占位值
-const NETWORK_BADGE_COUNT = 24
 
 // Tab 栏样式：active 品牌蓝下边框（方案 B mockup）
 function tabStyle(active: boolean): CSSProperties {
@@ -45,6 +43,8 @@ export default function DictDetailPanel({ word }: Props) {
   const [lookupError, setLookupError] = useState(false)
   const [mergeError, setMergeError] = useState(false)
   const [tab, setTab] = useState<'dict' | 'network'>('dict')
+  // 语义网络徽章计数：SemanticNetwork 经 onCountChange 上报 relatedWords 真实计数
+  const [networkCount, setNetworkCount] = useState(0)
   const showWorkbench = useViewStore(s => s.showWorkbench)
   const selectWord = useWordStore(s => s.selectWord)
   const mergeWordFields = useWordStore(s => s.mergeWordFields)
@@ -90,6 +90,7 @@ export default function DictDetailPanel({ word }: Props) {
     setMergeError(false)
     setResults([])
     setSelectionCounts({})
+    setNetworkCount(0)
     lookupWord(word)
       .then(r => { if (!cancelled) setResults(r) })
       .catch(e => { console.error('Word lookup failed:', e); if (!cancelled) setLookupError(true) })
@@ -134,19 +135,20 @@ export default function DictDetailPanel({ word }: Props) {
           </span>
         </div>
 
-        {/* Tab 栏：词典 | 语义网络（语义网络徽章为占位计数，Task 5 接真实数据后改为真实计数） */}
+        {/* Tab 栏：词典 | 语义网络（语义网络徽章为 relatedWords 真实计数） */}
         <div style={{ display: 'flex', gap: 2, borderBottom: '1px solid var(--color-border)', marginBottom: 16 }}>
           <button type="button" onClick={() => setTab('dict')} style={tabStyle(tab === 'dict')}>词典</button>
           <button type="button" onClick={() => setTab('network')} style={tabStyle(tab === 'network')}>
             语义网络
             <span style={{ marginLeft: 4, padding: '1px 8px', borderRadius: 'var(--radius-full)', fontSize: 11, fontWeight: 'var(--weight-medium)', background: 'var(--color-surface-sunken)', color: 'var(--color-text-secondary)' }}>
-              {NETWORK_BADGE_COUNT}
+              {networkCount}
             </span>
           </button>
         </div>
 
-        {tab === 'dict' && (
-          loading ? (
+        {/* 双 Tab 常驻挂载，display 切换隐藏而非卸载，保证卡片勾选跨 Tab 切换保留（Task 4 裁定） */}
+        <div style={{ display: tab === 'dict' ? 'block' : 'none' }}>
+          {loading ? (
             <div className="flex items-center justify-center py-8" style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
               加载中…
             </div>
@@ -201,14 +203,12 @@ export default function DictDetailPanel({ word }: Props) {
                 ><Icon name="close" size={13} /></button>
               </div>
             </>
-          )
-        )}
+          )}
+        </div>
 
-        {tab === 'network' && (
-          <div className="flex items-center justify-center py-8" style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
-            语义网络（待接入）
-          </div>
-        )}
+        <div style={{ display: tab === 'network' ? 'block' : 'none' }}>
+          <SemanticNetwork word={word} onCountChange={setNetworkCount} />
+        </div>
       </div>
     </div>
   )

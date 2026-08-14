@@ -3,6 +3,7 @@ import { WordNetProvider } from '../providers/wordnet'
 import { sortLemmasByRelevance } from '../lib/lemmaSort'
 import { rankChineseResults } from '../lib/chineseSearch'
 import type { DictionaryEntry } from '../types/dictionary'
+import type { RelatedWords } from '../providers/wordnet'
 
 const ecdict = new EcdictProvider()
 const wordnet = new WordNetProvider()
@@ -42,4 +43,9 @@ export async function searchChinese(query: string): Promise<string[]> {
   if (!query.trim()) return []
   const rows = await ecdict.searchByChinese(query)
   return rankChineseResults(rows, query)
+}
+
+// 阶段三·语义网络：WordNet 关系网络（上位词路径 + 同义/上位/下位/反义/整体·部分分组）
+export async function relatedWords(word: string): Promise<RelatedWords> {
+  return wordnet.relatedWords(word)
 }
