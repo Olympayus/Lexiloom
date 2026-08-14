@@ -19,9 +19,11 @@ interface Props {
   entries: DictionaryEntry[]
 }
 
-// 受控句柄：面板合并按钮经 ref 调用 buildInputs 取当前勾选构建的 merge 输入
+// 受控句柄：面板合并按钮经 ref 调用 buildInputs 取当前勾选构建的 merge 输入；
+// clear 清空本卡勾选（Task 4 浮动操作栏「清除选择」调用）
 export interface DictDetailCardHandle {
   buildInputs: () => MergeFieldInput[] | null
+  clear: () => void
 }
 
 // 来源名称映射
@@ -30,20 +32,10 @@ const SOURCE_NAMES: Record<string, string> = {
   wordnet: 'WordNet',
 }
 
-// 来源配色：颜色走 --color-* 变量；alpha 变体用 color-mix 生成（避免硬编码 hex，§11 视觉第 8 项）
-const SOURCE_ACCENTS: Record<string, { color: string; bg: string; border: string; headerBorder: string }> = {
-  ecdict: {
-    color: 'var(--color-brand)',
-    bg: 'color-mix(in srgb, var(--color-brand) 6%, transparent)',
-    border: 'color-mix(in srgb, var(--color-brand) 25%, transparent)',
-    headerBorder: 'color-mix(in srgb, var(--color-brand) 19%, transparent)',
-  },
-  wordnet: {
-    color: 'var(--color-wordnet)',
-    bg: 'color-mix(in srgb, var(--color-wordnet) 6%, transparent)',
-    border: 'color-mix(in srgb, var(--color-wordnet) 25%, transparent)',
-    headerBorder: 'color-mix(in srgb, var(--color-wordnet) 19%, transparent)',
-  },
+// V2 词典身份色：单一主色，白底卡片以左边框 + 徽章底色承载身份
+const SOURCE_ACCENTS: Record<string, { color: string }> = {
+  ecdict: { color: '#c17b5c' },
+  wordnet: { color: '#5b8a82' },
 }
 
 // 字段类型 → 展示标签（词性节点用胶囊，故此处不映射）
@@ -76,12 +68,7 @@ export default function DictDetailCard({
   const mergeWordFields = useWordStore(s => s.mergeWordFields)
   const displayFields = useSettingsStore(s => s.displayFields)
   const sourceLabel = SOURCE_NAMES[source_] || source_
-  const accent = SOURCE_ACCENTS[source_] || {
-    color: 'var(--color-text-secondary)',
-    bg: 'color-mix(in srgb, var(--color-text-secondary) 6%, transparent)',
-    border: 'color-mix(in srgb, var(--color-text-secondary) 25%, transparent)',
-    headerBorder: 'color-mix(in srgb, var(--color-text-secondary) 19%, transparent)',
-  }
+  const accent = SOURCE_ACCENTS[source_] || { color: 'var(--color-text-secondary)' }
 
   // 合并同词性父（跨 entry 显示为一窗格）
   const merged = useMemo(() => mergeEntryFields(entries.flatMap(e => e.fields)), [entries])
@@ -126,9 +113,31 @@ export default function DictDetailCard({
     setSelected(all)
   }, [word_, source_, flat])
 
-  // 受控句柄：面板合并按钮经 ref 取当前勾选构建的 merge 输入（无勾选返回 null）
+  // 卡片整体折叠；词性组默认折叠（换词时首次将所有容器 key 加入 collapsedKeys）
+  const [collapsed, setCollapsed] = useState(false)
+  const [collapsedKeys, setCollapsedKeys] = useState<Set<string>>(new Set())
+  useEffect(() => {
+    const keys = new Set<string>()
+    const walk = (nodes: FlatNode[]) => { for (const n of nodes) { if (n.children.length) { keys.add(n.key); walk(n.children) } } }
+    walk(flat)
+    setCollapsedKeys(keys)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [word_, source_])
+
+  const toggleCollapse = (key: string) =>
+    setCollapsedKeys(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key); else next.add(key)
+      return next
+    })
+
+  // 受控句柄：面板合并按钮经 ref 取当前勾选构建的 merge 输入（无勾选返回 null）；clear 清空勾选
   useImperativeHandle(ref, () => ({
     buildInputs: () => selected.size === 0 ? null : buildMergeInputs(visible, selected, source_ as FieldSource),
+    clear: () => {
+      setSelected(new Set())
+      onSelectionChange?.(source_, 0)
+    },
   }), [visible, selected, source_])
 
   // 勾选数变化上报面板（面板合并按钮 disabled 态）
@@ -197,55 +206,52 @@ export default function DictDetailCard({
     }
   }
 
-  // 递归渲染 flat 树：词性/容器节点整棵勾选，普通节点单项勾选
+  // 叶子/带值容器的「标题 + 值同行」内容（其余纯容器标题独占一行）
+  const inlineContent = (node: FlatNode, label: string) => (
+    <div className="flex items-baseline gap-1.5 flex-wrap" style={{ flex: 1, minWidth: 0 }}>
+      {label && <span style={{ color: 'var(--color-text-secondary)', fontSize: 12, fontWeight: 700, letterSpacing: '0.5px' }}>{label}</span>}
+      {(!node.children.length || shouldNumberField(node.field.key)) && renderValue(node)}
+    </div>
+  )
+
+  // 递归渲染 flat 树：容器/词性行整棵勾选、行点击或 chevron 折叠；叶子与带值容器「标题+值」同行；
+  // 子级 16px 缩进、无分割线；词性组默认折叠（collapsedKeys）。
   const renderFlat = (nodes: FlatNode[]): ReactNode => {
     const seen = new Map<string, number>()
+    const seenIndex = (key: string) => {
+      const idx = seen.get(key) ?? 0
+      seen.set(key, idx + 1)
+      return idx
+    }
 
     return nodes.map(node => {
       const isContainer = node.children.length > 0
       const isPos = node.field.key === 'part_of_speech'
-      const idx = seen.get(node.field.key) ?? 0
-      seen.set(node.field.key, idx + 1)
-      const label = fieldLabel(node.field.key)
-      // 编号规则：仅中/英释义带 (n)，按词性独立从 1 重计；近义词/例句等一律不加编号
       const isDefinition = shouldNumberField(node.field.key)
-      const showNum = isDefinition
-      const numLabel = showNum ? `${label}(${idx + 1})` : label
-      const onToggle = () => (isContainer ? toggleSubtree(node.key) : toggle(node.key))
+      const collapsed = isContainer && collapsedKeys.has(node.key)
+      const label = fieldLabel(node.field.key) + (isDefinition ? `(${seenIndex(node.field.key) + 1})` : '')
 
       return (
         <div key={node.key}>
-          <label className="flex items-start gap-2 cursor-pointer">
+          <div
+            className="flex items-start gap-2 cursor-pointer rounded px-1"
+            onClick={() => isContainer && toggleCollapse(node.key)}
+            style={{ padding: '6px 4px' }}
+          >
             <input
               type="checkbox"
               checked={selected.has(node.key)}
-              onChange={onToggle}
-              className="mt-0.5"
+              onClick={e => e.stopPropagation()}
+              onChange={isContainer ? () => toggleSubtree(node.key) : () => toggle(node.key)}
+              style={{ marginTop: 3 }}
             />
-            {isPos ? (
-              // 词性窗格：方角深蓝描边标签（⑤ 新语言）+ 计数
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <PosTag value={node.field.value} />
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
-                  {countItems(node)} 项
-                </span>
-              </div>
-            ) : (
-              <div className="flex-1">
-                {label && (
-                  <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px', fontWeight: 700, letterSpacing: '0.5px' }}>{numLabel}</span>
-                )}
-                {/* 释义节点即使带子级（wordnet 释义内嵌例句/近义词）也显示释义文字；其余容器不显示空值 */}
-                {(!isContainer || isDefinition) && renderValue(node)}
-              </div>
-            )}
-          </label>
-
-          {isContainer && (
-            <div className="ml-3 pl-2 mt-1 space-y-1"
-              style={{ borderLeft: '2px solid var(--color-border)' }}>
-              {renderFlat(node.children)}
-            </div>
+            {isPos
+              ? <div className="flex items-center gap-1.5"><PosTag value={node.field.value} /><span style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>{countItems(node)} 项</span></div>
+              : inlineContent(node, label)}
+            {isContainer && <span className="ml-auto" style={{ color: 'var(--color-text-tertiary)', fontSize: 11 }}>{collapsed ? '▸' : '▾'}</span>}
+          </div>
+          {isContainer && !collapsed && (
+            <div style={{ paddingLeft: 16 }}>{renderFlat(node.children)}</div>
           )}
         </div>
       )
@@ -255,41 +261,48 @@ export default function DictDetailCard({
   return (
     <div className="rounded-lg border overflow-hidden"
       style={{
-        borderColor: accent.border,
+        borderColor: 'var(--color-border)',
+        borderLeft: `3px solid ${accent.color}`,
         background: 'var(--color-surface)',
       }}>
-      {/* 卡片头部 */}
-      <div className="px-4 py-2.5 flex items-center justify-between"
-        style={{ background: accent.bg, borderBottom: '1px solid ' + accent.headerBorder }}>
-        <span className="text-xs font-semibold uppercase tracking-wider"
-          style={{ color: accent.color }}>
-          {sourceLabel}
+      {/* 卡片头部：来源徽章 + 名称 + 条目计数 + 「添加此词典」 + 折叠 */}
+      <div className="px-4 py-2.5 flex items-center gap-2">
+        <span style={{
+          width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          borderRadius: 'var(--radius-sm)', background: accent.color, color: 'white',
+          fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 13, flexShrink: 0,
+        }}>
+          {sourceLabel[0]}
         </span>
-        <span className="text-lg font-bold" style={{ fontFamily: 'var(--font-serif)' }}>
-          {word_}
+        <span className="text-sm font-semibold" style={{ letterSpacing: '0.02em' }}>{sourceLabel}</span>
+        <span style={{ fontSize: 11, color: 'var(--color-text-secondary)', background: 'var(--color-surface-sunken)', padding: '1px 8px', borderRadius: 'var(--radius-full)' }}>
+          {flat.length} 条
         </span>
-      </div>
-
-      {/* 卡片内容 - POS 分组树 */}
-      <div className="px-4 py-3 space-y-3 text-sm">
-        {renderFlat(flat)}
-      </div>
-
-      {/* 添加到词库按钮 */}
-      <div className="px-4 py-3 flex items-center justify-end gap-2"
-        style={{ borderTop: '1px solid var(--color-border)', background: 'var(--color-canvas)' }}>
-        {error && (
-          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger)' }}>添加失败，请重试</span>
-        )}
         <button
-          className="px-4 py-1.5 rounded text-sm font-medium transition-opacity hover:opacity-90"
-          style={{ background: accent.color, color: 'white' }}
+          className="ml-auto text-xs font-medium"
+          style={{ color: accent.color, padding: '4px 10px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', background: 'transparent', border: '1px solid transparent' }}
           onClick={handleAdd}
-          disabled={added || selected.size === 0}
+          disabled={added}
+        >{added ? '已添加 ✓' : '＋ 添加此词典'}</button>
+        <button
+          aria-label={collapsed ? '展开' : '折叠'}
+          onClick={() => setCollapsed(c => !c)}
+          style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-text-tertiary)' }}
         >
-          {added ? '已添加 ✓' : '添加到词库'}
+          <span style={{ display: 'inline-block', transform: collapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 200ms' }}>▾</span>
         </button>
       </div>
+
+      {error && (
+        <div className="px-4 pb-2" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger)' }}>添加失败，请重试</div>
+      )}
+
+      {/* 卡片内容 - POS 分组树（整卡折叠时隐藏） */}
+      {!collapsed && (
+        <div className="px-4 py-3 space-y-3 text-sm">
+          {renderFlat(flat)}
+        </div>
+      )}
     </div>
   )
 }
