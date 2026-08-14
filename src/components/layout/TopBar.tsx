@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import SearchSuggestions from '../search/SearchSuggestions'
-import { searchLemmas } from '../../services/searchService'
+import { searchLemmas, searchChinese } from '../../services/searchService'
+import { isChineseQuery } from '../../lib/chineseSearch'
 import { useViewStore } from '../../stores/viewStore'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { useUpdaterStore } from '../../stores/updaterStore'
@@ -20,6 +21,7 @@ export default function TopBar() {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [searchError, setSearchError] = useState(false)
   const [focused, setFocused] = useState(false)
+  const [isComposing, setIsComposing] = useState(false)
   const showDict = useViewStore(s => s.showDict)
   const showWorkbench = useViewStore(s => s.showWorkbench)
   const openSettings = useSettingsStore(s => s.openSettings)
@@ -48,7 +50,7 @@ export default function TopBar() {
 
   const toggleMaximize = () => { void appWindow.toggleMaximize() }
 
-  // 阶段一：防抖搜索建议（300ms），仅词典（searchLemmas 不查词库，D2）
+  // 阶段一：防抖搜索建议（300ms）；CJK 输入分发 searchChinese，输入法合成期（isComposing）跳过搜索
   useEffect(() => {
     if (!query.trim()) {
       setSuggestions([])
@@ -56,21 +58,22 @@ export default function TopBar() {
       setSearchError(false)
       return
     }
+    if (isComposing) return  // 输入法合成中不搜索，compositionend 会触发本 effect 重跑
     clearTimeout(timer.current)
     timer.current = setTimeout(async () => {
       try {
-        const result = await searchLemmas(query)
+        const result = isChineseQuery(query) ? await searchChinese(query) : await searchLemmas(query)
         setSuggestions(result)
         setShowSuggestions(result.length > 0)
         setSelectedIndex(-1)
         setSearchError(false)
       } catch (e) {
-        console.error('Lemma search failed:', e)
+        console.error('Search failed:', e)
         setSearchError(true)
       }
     }, 300)
     return () => clearTimeout(timer.current)
-  }, [query])
+  }, [query, isComposing])
 
   // 选中建议或回车 → 右侧区域切换为词典详情视图（D2：替换显示，非顶栏下方展开）
   const handleSelectWord = useCallback((word: string) => {
@@ -152,6 +155,8 @@ export default function TopBar() {
             <input
               value={query}
               onChange={e => { setQuery(e.target.value); setSelectedIndex(-1) }}
+              onCompositionStart={() => setIsComposing(true)}
+              onCompositionEnd={() => setIsComposing(false)}
               onFocus={() => { setFocused(true); if (suggestions.length > 0) setShowSuggestions(true) }}
               onBlur={() => setFocused(false)}
               onKeyDown={handleKeyDown}
