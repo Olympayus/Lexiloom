@@ -181,7 +181,7 @@ export default function DictDetailPanel({ word }: Props) {
                 </div>
               )}
 
-              {/* 浮动操作栏：仅在有勾选时渲染（消除隐藏时仍占位导致的底部空隙）；「清除选择」经各卡 clear 句柄清空勾选 */}
+              {/* 浮动操作栏：仅在有勾选时渲染（消除隐藏时仍占位导致的底部空隙） */}
               {anySelected && (
               <div style={{
                 position: 'sticky', bottom: 16, width: 'fit-content', margin: '0 auto', padding: 6,
@@ -193,12 +193,6 @@ export default function DictDetailPanel({ word }: Props) {
                   onClick={handleMergeAdd}
                   style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 18px', borderRadius: 'var(--radius-full)', border: 'none', background: 'var(--color-brand)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                 ><Icon name="plus" size={14} /> 合并添加</button>
-                <button
-                  type="button"
-                  aria-label="清除选择"
-                  onClick={() => Object.values(cardRefs.current).forEach(c => c?.clear?.())}
-                  style={{ width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'transparent', color: 'rgba(250,249,245,0.5)', cursor: 'pointer' }}
-                ><Icon name="close" size={13} /></button>
               </div>
               )}
             </>

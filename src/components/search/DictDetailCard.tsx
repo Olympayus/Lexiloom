@@ -19,11 +19,9 @@ interface Props {
   entries: DictionaryEntry[]
 }
 
-// 受控句柄：面板合并按钮经 ref 调用 buildInputs 取当前勾选构建的 merge 输入；
-// clear 清空本卡勾选（Task 4 浮动操作栏「清除选择」调用）
+// 受控句柄：面板合并按钮经 ref 调用 buildInputs 取当前勾选构建的 merge 输入
 export interface DictDetailCardHandle {
   buildInputs: () => MergeFieldInput[] | null
-  clear: () => void
 }
 
 // 来源名称映射
@@ -146,13 +144,9 @@ export default function DictDetailCard({
     else setCollapsedKeys(new Set(containerKeys))
   }
 
-  // 受控句柄：面板合并按钮经 ref 取当前勾选构建的 merge 输入（无勾选返回 null）；clear 清空勾选
+  // 受控句柄：面板合并按钮经 ref 取当前勾选构建的 merge 输入（无勾选返回 null）
   useImperativeHandle(ref, () => ({
     buildInputs: () => selected.size === 0 ? null : buildMergeInputs(visible, selected, source_ as FieldSource),
-    clear: () => {
-      setSelected(new Set())
-      onSelectionChange?.(source_, 0)
-    },
   }), [visible, selected, source_])
 
   // 勾选数变化上报面板（面板合并按钮 disabled 态）
