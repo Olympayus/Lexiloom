@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import DictDetailCard, { type DictDetailCardHandle } from './DictDetailCard'
 import { lookupWord } from '../../services/searchService'
 import { useViewStore } from '../../stores/viewStore'
@@ -17,13 +18,33 @@ interface Props {
   word: string
 }
 
+// 语义网络徽章计数：Task 5 接真实数据后改为真实计数，本 Task 暂为占位值
+const NETWORK_BADGE_COUNT = 24
+
+// Tab 栏样式：active 品牌蓝下边框（方案 B mockup）
+function tabStyle(active: boolean): CSSProperties {
+  return {
+    fontFamily: 'var(--font-sans)',
+    fontSize: 'var(--text-sm)',
+    color: active ? 'var(--color-brand)' : 'var(--color-text-secondary)',
+    fontWeight: active ? 'var(--weight-semibold)' : 'var(--weight-medium)',
+    padding: '7px 14px',
+    border: 'none',
+    borderBottom: `2px solid ${active ? 'var(--color-brand)' : 'transparent'}`,
+    marginBottom: -1,
+    background: 'transparent',
+    cursor: 'pointer',
+  }
+}
+
 // 词典详情视图（D2）：替换右侧区域。返回按钮/Esc 回词编辑视图（Task 5 追加「添加成功回编辑视图」）。
-// Task 13：面板底部 sticky「合并添加」栏，聚合全源勾选字段一次合并后跳编辑页（需求 2b 后半）。
+// 词典 | 语义网络 双 Tab；词典 Tab 底部浮动「合并添加」栏（有勾选才浮现、无计数），聚合全源勾选字段一次合并后跳编辑页（需求 2b 后半）。
 export default function DictDetailPanel({ word }: Props) {
   const [results, setResults] = useState<DetailResult[]>([])
   const [loading, setLoading] = useState(true)
   const [lookupError, setLookupError] = useState(false)
   const [mergeError, setMergeError] = useState(false)
+  const [tab, setTab] = useState<'dict' | 'network'>('dict')
   const showWorkbench = useViewStore(s => s.showWorkbench)
   const selectWord = useWordStore(s => s.selectWord)
   const mergeWordFields = useWordStore(s => s.mergeWordFields)
@@ -84,7 +105,7 @@ export default function DictDetailPanel({ word }: Props) {
   }, [showWorkbench])
 
   return (
-    <div className="h-full overflow-y-auto" style={{ background: 'var(--color-canvas)' }}>
+    <div className="h-full overflow-y-auto" style={{ background: 'var(--color-surface)' }}>
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '24px 32px' }}>
         {/* 返回按钮 + 单词标题 */}
         <div className="flex items-center gap-2 mb-4">
@@ -113,57 +134,80 @@ export default function DictDetailPanel({ word }: Props) {
           </span>
         </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-8" style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
-            加载中…
-          </div>
-        ) : lookupError ? (
-          <div className="flex items-center justify-center py-8" style={{ fontSize: 'var(--text-sm)', color: 'var(--color-accent)' }}>
-            词典查询出错，请确认词典文件是否存在
-          </div>
-        ) : results.length === 0 ? (
-          <div className="flex items-center justify-center py-8" style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
-            未找到 &ldquo;{word}&rdquo; 的词典结果
-          </div>
-        ) : (
-          <>
-            <div className="space-y-4">
-              {results.map(result => (
-                <DictDetailCard
-                  key={result.source}
-                  word={word}
-                  source={result.source}
-                  entries={result.entries}
-                  ref={el => { cardRefs.current[result.source] = el }}
-                  onSelectionChange={handleSelectionChange}
-                />
-              ))}
-            </div>
+        {/* Tab 栏：词典 | 语义网络（语义网络徽章为占位计数，Task 5 接真实数据后改为真实计数） */}
+        <div style={{ display: 'flex', gap: 2, borderBottom: '1px solid var(--color-border)', marginBottom: 16 }}>
+          <button type="button" onClick={() => setTab('dict')} style={tabStyle(tab === 'dict')}>词典</button>
+          <button type="button" onClick={() => setTab('network')} style={tabStyle(tab === 'network')}>
+            语义网络
+            <span style={{ marginLeft: 4, padding: '1px 8px', borderRadius: 'var(--radius-full)', fontSize: 11, fontWeight: 'var(--weight-medium)', background: 'var(--color-surface-sunken)', color: 'var(--color-text-secondary)' }}>
+              {NETWORK_BADGE_COUNT}
+            </span>
+          </button>
+        </div>
 
-            {/* 合并添加栏：聚合全源勾选，一次合并后跳编辑页（全无勾选时 disabled） */}
-            <div style={{ position: 'sticky', bottom: 0, marginTop: '16px', padding: '12px 0', background: 'var(--color-canvas)', borderTop: '1px solid var(--color-border)' }}>
+        {tab === 'dict' && (
+          loading ? (
+            <div className="flex items-center justify-center py-8" style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
+              加载中…
+            </div>
+          ) : lookupError ? (
+            <div className="flex items-center justify-center py-8" style={{ fontSize: 'var(--text-sm)', color: 'var(--color-accent)' }}>
+              词典查询出错，请确认词典文件是否存在
+            </div>
+          ) : results.length === 0 ? (
+            <div className="flex items-center justify-center py-8" style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
+              未找到 &ldquo;{word}&rdquo; 的词典结果
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4">
+                {results.map(result => (
+                  <DictDetailCard
+                    key={result.source}
+                    word={word}
+                    source={result.source}
+                    entries={result.entries}
+                    ref={el => { cardRefs.current[result.source] = el }}
+                    onSelectionChange={handleSelectionChange}
+                  />
+                ))}
+              </div>
+
               {mergeError && (
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger)', textAlign: 'center', paddingBottom: '8px' }}>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger)', textAlign: 'center', paddingTop: '12px' }}>
                   合并添加失败，请重试
                 </div>
               )}
-              <button
-                type="button"
-                disabled={!anySelected}
-                onClick={handleMergeAdd}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  padding: '10px', borderRadius: 'var(--radius-md)', cursor: anySelected ? 'pointer' : 'not-allowed',
-                  background: anySelected ? 'var(--color-brand)' : 'var(--color-border-strong)',
-                  color: 'white', border: 'none', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)',
-                  fontWeight: 'var(--weight-medium)', transition: 'background-color var(--duration-fast) var(--ease-smooth)',
-                }}
-              >
-                <Icon name="plus" size={16} />
-                合并添加
-              </button>
-            </div>
-          </>
+
+              {/* 浮动操作栏：有勾选才浮现、无计数；「清除选择」经各卡 clear 句柄清空勾选 */}
+              <div style={{
+                position: 'sticky', bottom: 16, width: 'fit-content', margin: '0 auto', padding: 6,
+                display: 'flex', alignItems: 'center', gap: 4,
+                background: '#2a2825', borderRadius: 'var(--radius-full)', boxShadow: 'var(--shadow-raised)',
+                transform: anySelected ? 'translateY(0)' : 'translateY(80px)',
+                opacity: anySelected ? 1 : 0, pointerEvents: anySelected ? 'auto' : 'none',
+                transition: 'transform 300ms, opacity 200ms',
+              }}>
+                <button
+                  type="button"
+                  onClick={handleMergeAdd}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 18px', borderRadius: 'var(--radius-full)', border: 'none', background: 'var(--color-brand)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                ><Icon name="plus" size={14} /> 合并添加</button>
+                <button
+                  type="button"
+                  aria-label="清除选择"
+                  onClick={() => Object.values(cardRefs.current).forEach(c => c?.clear?.())}
+                  style={{ width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'transparent', color: 'rgba(250,249,245,0.5)', cursor: 'pointer' }}
+                ><Icon name="close" size={13} /></button>
+              </div>
+            </>
+          )
+        )}
+
+        {tab === 'network' && (
+          <div className="flex items-center justify-center py-8" style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
+            语义网络（待接入）
+          </div>
         )}
       </div>
     </div>
