@@ -184,14 +184,13 @@ export default function DictDetailPanel({ word }: Props) {
               {/* 浮动操作栏：仅在有勾选时渲染（消除隐藏时仍占位导致的底部空隙） */}
               {anySelected && (
               <div style={{
-                position: 'sticky', bottom: 16, width: 'fit-content', margin: '0 auto', padding: 6,
-                display: 'flex', alignItems: 'center', gap: 4,
-                background: '#2a2825', borderRadius: 'var(--radius-full)', boxShadow: 'var(--shadow-raised)',
+                position: 'sticky', bottom: 16, width: 'fit-content', margin: '0 auto',
+                display: 'flex', alignItems: 'center',
               }}>
                 <button
                   type="button"
                   onClick={handleMergeAdd}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 18px', borderRadius: 'var(--radius-full)', border: 'none', background: 'var(--color-brand)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 18px', borderRadius: 'var(--radius-full)', border: '1px solid #2a2825', background: 'var(--color-brand)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', boxShadow: 'var(--shadow-raised)' }}
                 ><Icon name="plus" size={14} /> 合并添加</button>
               </div>
               )}
