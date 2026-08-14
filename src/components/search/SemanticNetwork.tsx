@@ -19,6 +19,8 @@ interface Props {
 export default function SemanticNetwork({ word, onCountChange }: Props) {
   const [data, setData] = useState<RelatedWords | null>(null)
   const [error, setError] = useState(false)
+  // 每组是否展开显示全部（默认折叠，只显示前 9 个）；按组标签 key
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const showDict = useViewStore(s => s.showDict)
 
   // 换词取消过期请求；数据就绪后上报徽章计数（全组词条总数）；失败进入 error 态（如 wordnet.db 未生成）
@@ -82,27 +84,27 @@ export default function SemanticNetwork({ word, onCountChange }: Props) {
       )}
 
       {entries.map(([key, items]) => {
-        // 空态按组区分：仅 antonyms 显示空态文案，其余空组不渲染标题行
-        if (items.length === 0 && key !== 'antonyms') return null
+        // 空组整组不渲染（含反义词：无反义词时不显示占位文案）
+        if (items.length === 0) return null
+        const isExpanded = expanded[key]
+        const shown = isExpanded ? items : items.slice(0, 9)
         return (
           <div key={key} style={{ marginBottom: 13 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 6 }}>
               {LABELS[key]} <span style={{ fontWeight: 400, color: 'var(--color-text-tertiary)', marginLeft: 4 }}>{items.length}</span>
             </div>
-            {items.length === 0
-              ? <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', fontStyle: 'italic', padding: '3px 2px' }}>
-                  该词无反义词 —— 反义词主要出现在形容词 / 动词
-                </div>
-              : (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {items.slice(0, 9).map(chip)}
-                  {items.length > 9 && (
-                    <span style={{ fontSize: 12, color: 'var(--color-brand)', padding: '3px 9px' }}>
-                      +{items.length - 9} 更多
-                    </span>
-                  )}
-                </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {shown.map(chip)}
+              {items.length > 9 && (
+                <button
+                  type="button"
+                  onClick={() => setExpanded(prev => ({ ...prev, [key]: !prev[key] }))}
+                  style={{ fontSize: 12, color: 'var(--color-brand)', padding: '3px 9px', border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
+                >
+                  {isExpanded ? '收起' : `+${items.length - 9} 更多`}
+                </button>
               )}
+            </div>
           </div>
         )
       })}

@@ -104,6 +104,14 @@ export default function DictDetailCard({
     return keys
   }, [flat])
 
+  // 容器节点（词性/分组，有 children）key 集合：头部「全部展开/收起」的作用对象
+  const containerKeys = useMemo(() => {
+    const keys = new Set<string>()
+    const walk = (nodes: FlatNode[]) => { for (const n of nodes) { if (n.children.length) { keys.add(n.key); walk(n.children) } } }
+    walk(flat)
+    return keys
+  }, [flat])
+
   // 勾选状态：Set<key>，key 为路径（'0'、'0-1'、'0-1-0'）
   const [selected, setSelected] = useState<Set<string>>(new Set())
   useEffect(() => {
@@ -130,6 +138,13 @@ export default function DictDetailCard({
       if (next.has(key)) next.delete(key); else next.add(key)
       return next
     })
+
+  // 全部展开/收起：当前全部折叠 → 展开（清空 collapsedKeys）；否则收起（加入所有容器 key）
+  const allCollapsed = containerKeys.size > 0 && [...containerKeys].every(k => collapsedKeys.has(k))
+  const toggleAll = () => {
+    if (allCollapsed) setCollapsedKeys(new Set())
+    else setCollapsedKeys(new Set(containerKeys))
+  }
 
   // 受控句柄：面板合并按钮经 ref 取当前勾选构建的 merge 输入（无勾选返回 null）；clear 清空勾选
   useImperativeHandle(ref, () => ({
@@ -276,7 +291,7 @@ export default function DictDetailCard({
         borderLeft: `3px solid ${accent.color}`,
         background: 'var(--color-surface)',
       }}>
-      {/* 卡片头部：来源徽章 + 名称 + 条目计数 + 「添加此词典」 + 折叠 */}
+      {/* 卡片头部：来源徽章 + 名称 + 条目计数 + 「全部展开/收起」 + 折叠 */}
       <div className="px-4 py-2.5 flex items-center gap-2">
         <span style={{
           width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -289,14 +304,17 @@ export default function DictDetailCard({
         <span style={{ fontSize: 11, color: 'var(--color-text-secondary)', background: 'var(--color-surface-sunken)', padding: '1px 8px', borderRadius: 'var(--radius-full)' }}>
           {flat.length} 条
         </span>
-        <button
-          className="ml-auto text-xs font-medium"
-          style={{ color: accent.color, padding: '4px 10px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', background: 'transparent', border: '1px solid transparent' }}
-          onClick={handleAdd}
-          disabled={added || selected.size === 0}
-        >{added ? '已添加 ✓' : '＋ 添加此词典'}</button>
+        {containerKeys.size > 0 && (
+          <button
+            type="button"
+            className="ml-auto text-xs font-medium"
+            style={{ color: 'var(--color-text-secondary)', padding: '4px 8px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', background: 'transparent', border: '1px solid transparent', fontFamily: 'var(--font-sans)' }}
+            onClick={toggleAll}
+          >{allCollapsed ? '全部展开' : '全部收起'}</button>
+        )}
         <button
           aria-label={collapsed ? '展开' : '折叠'}
+          className={containerKeys.size === 0 ? 'ml-auto' : undefined}
           onClick={() => setCollapsed(c => !c)}
           style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-text-tertiary)' }}
         >
@@ -314,6 +332,17 @@ export default function DictDetailCard({
           {renderFlat(flat)}
         </div>
       )}
+
+      {/* 底部：添加此词典（右下角），复用 handleAdd + added/error 反馈 */}
+      <div className="px-4 py-2 flex items-center justify-end" style={{ borderTop: '1px solid var(--color-border)' }}>
+        <button
+          type="button"
+          className="text-xs font-medium"
+          style={{ color: accent.color, padding: '4px 10px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', background: 'transparent', border: '1px solid transparent', fontFamily: 'var(--font-sans)' }}
+          onClick={handleAdd}
+          disabled={added || selected.size === 0}
+        >{added ? '已添加 ✓' : '＋ 添加此词典'}</button>
+      </div>
     </div>
   )
 }

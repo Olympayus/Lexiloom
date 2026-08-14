@@ -89,6 +89,8 @@ export default function TopBar() {
       if (e.key === 'ArrowDown') setSelectedIndex(i => Math.min(i + 1, suggestions.length - 1))
       else setSelectedIndex(i => Math.max(i - 1, 0))
     } else if (e.key === 'Enter') {
+      // 中文查询 / 输入法合成确认键的 Enter 不跳转：合成中的 Enter 是候选确认，中文词直接跳转会误触
+      if (isComposing || isChineseQuery(query.trim())) return
       // 回车：优先选中的建议，否则以输入词直接查询词典（规格 §3 步骤 3）
       const word = selectedIndex >= 0 ? suggestions[selectedIndex] : query.trim()
       if (word) { e.preventDefault(); handleSelectWord(word) }

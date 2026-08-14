@@ -39,14 +39,13 @@ export async function pickAndPlanImport(): Promise<{ ok: boolean; error?: string
 }
 
 export async function applyImport(path: string): Promise<{ ok: boolean; error?: string }> {
-  let txStarted = false
   try {
     const json = await readTextFile(path)
     const incoming = decodeLibrary(json)
     const db = getDb()
-    // 原子导入：整批写入包在一个事务里，任一行失败即 ROLLBACK，避免留下半合并词库
-    await db.execute('BEGIN')
-    txStarted = true
+    // 注意：不用事务包裹。tauri-plugin-sql 的连接池会把同一批 db.execute 分散到不同连接，
+    // BEGIN 与后续写入不在同一连接上会触发 SQLITE_BUSY（database is locked）。
+    // 每行独立提交（已知限制：中途失败会留下部分合并结果，JS API 无连接固定的跨行事务）。
     // LWW：仅当 incoming.updatedAt 严格大于库内值才覆盖；否则保留库内新数据（对应 planImport 的 skipped）
     const upsertLww = (table: string, cols: string[], values: any[]) =>
       db.execute(
@@ -73,15 +72,8 @@ export async function applyImport(path: string): Promise<{ ok: boolean; error?: 
         [wc.wordId, wc.categoryId]
       )
     }
-    await db.execute('COMMIT')
     return { ok: true }
   } catch (e) {
-    if (txStarted) {
-      try {
-        const db = getDb()
-        await db.execute('ROLLBACK')
-      } catch { /* ROLLBACK 失败不应掩盖原始错误 */ }
-    }
     return { ok: false, error: e instanceof Error ? e.message : String(e) }
   }
 }
