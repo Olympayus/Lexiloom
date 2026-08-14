@@ -1,5 +1,5 @@
 import type { DictionaryProvider } from './types'
-import type { DictionaryEntry } from '../types/dictionary'
+import type { DictionaryEntry, DictionaryField } from '../types/dictionary'
 import { getCachedDb } from './dbCache'
 import { buildWordnetFields } from '../lib/wordnetParse'
 import { resolveDictPath, toSqliteUrl } from './dictPath'
@@ -13,14 +13,14 @@ export interface RelatedGroup {
 
 export interface RelatedWords {
   path: string[]
-  groups: Record<'synonyms' | 'hypernyms' | 'hyponyms' | 'antonyms' | 'partWhole' | 'similarTo' | 'alsoSee', RelatedGroup[]>
+  groups: Record<'synonyms' | 'hypernyms' | 'hyponyms' | 'antonyms' | 'partWhole' | 'similarTo' | 'alsoSee' | 'derivatives', RelatedGroup[]>
 }
 
 const RELATED_LABEL: Record<string, keyof RelatedWords['groups']> = {
   '@': 'hypernyms', '@i': 'hypernyms',
   '~': 'hyponyms', '~i': 'hyponyms',
   '!': 'antonyms',
-  '&': 'similarTo', '^': 'alsoSee',
+  '&': 'similarTo', '^': 'alsoSee', '+': 'derivatives',
   '#m': 'partWhole', '#p': 'partWhole', '#s': 'partWhole',
   '%m': 'partWhole', '%p': 'partWhole', '%s': 'partWhole',
 }
@@ -64,6 +64,28 @@ export class WordNetProvider implements DictionaryProvider {
     }))
     const fields = buildWordnetFields(word, synsets)
 
+    // 派生词（+ derivationally related form）：解析目标 synset 词，作为可勾选的 derivatives 容器
+    const derivRels = await db.select<{ to_offset: number; to_pos: string }[]>(
+      'SELECT DISTINCT to_offset, to_pos FROM wn_relations WHERE from_offset IN (SELECT synset_offset FROM wn_words WHERE lemma = ?1) AND rel_type = ?2',
+      [normalized, '+']
+    )
+    if (derivRels.length) {
+      const items: DictionaryField[] = []
+      for (const r of derivRels) {
+        const target = await db.select<{ words: string | null }[]>(
+          'SELECT words FROM wn_synsets WHERE synset_offset = ?1 AND pos = ?2', [r.to_offset, r.to_pos]
+        )
+        if (target.length === 0) continue
+        for (const line of (target[0].words ?? '').split('\n')) {
+          const t = line.trim().toLowerCase()
+          if (t && t !== normalized) items.push({ key: 'derivatives_item', value: t })
+        }
+      }
+      const seenDeriv = new Set<string>()
+      const dedup = items.filter(i => { if (seenDeriv.has(i.value)) return false; seenDeriv.add(i.value); return true })
+      if (dedup.length) fields.push({ key: 'derivatives', value: '', children: dedup })
+    }
+
     return [{
       word,
       normalizedWord: normalized,
@@ -73,7 +95,7 @@ export class WordNetProvider implements DictionaryProvider {
   }
 
   async relatedWords(word: string): Promise<RelatedWords> {
-    const empty = () => ({ path: [], groups: { synonyms: [], hypernyms: [], hyponyms: [], antonyms: [], partWhole: [], similarTo: [], alsoSee: [] } })
+    const empty = () => ({ path: [], groups: { synonyms: [], hypernyms: [], hyponyms: [], antonyms: [], partWhole: [], similarTo: [], alsoSee: [], derivatives: [] } })
     if (!word.trim()) return empty()
     const normalized = word.toLowerCase().trim()
     const db = await getCachedDb(toSqliteUrl(await dbPath))
@@ -96,7 +118,7 @@ export class WordNetProvider implements DictionaryProvider {
       return { words: ws, definition: rows[0].definition ?? undefined }
     }
 
-    const groups: Record<string, RelatedGroup[]> = { synonyms: [], hypernyms: [], hyponyms: [], antonyms: [], partWhole: [], similarTo: [], alsoSee: [] }
+    const groups: Record<string, RelatedGroup[]> = { synonyms: [], hypernyms: [], hyponyms: [], antonyms: [], partWhole: [], similarTo: [], alsoSee: [], derivatives: [] }
     const seen = new Set<string>()
 
     for (const s of synsetRows) {
