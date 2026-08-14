@@ -6,6 +6,24 @@ import { resolveDictPath, toSqliteUrl } from './dictPath'
 
 const dbPath = resolveDictPath('wordnet.db')
 
+export interface RelatedGroup {
+  words: string[]
+  definition?: string
+}
+
+export interface RelatedWords {
+  path: string[]
+  groups: Record<'synonyms' | 'hypernyms' | 'hyponyms' | 'antonyms' | 'partWhole', RelatedGroup[]>
+}
+
+const RELATED_LABEL: Record<string, keyof RelatedWords['groups']> = {
+  '@': 'hypernyms', '@i': 'hypernyms',
+  '~': 'hyponyms', '~i': 'hyponyms',
+  '!': 'antonyms',
+  '#m': 'partWhole', '#p': 'partWhole', '#s': 'partWhole',
+  '%m': 'partWhole', '%p': 'partWhole', '%s': 'partWhole',
+}
+
 export class WordNetProvider implements DictionaryProvider {
   readonly name = 'wordnet'
 
@@ -51,5 +69,76 @@ export class WordNetProvider implements DictionaryProvider {
       source: 'wordnet',
       fields,
     }]
+  }
+
+  async relatedWords(word: string): Promise<RelatedWords> {
+    const empty = () => ({ path: [], groups: { synonyms: [], hypernyms: [], hyponyms: [], antonyms: [], partWhole: [] } })
+    if (!word.trim()) return empty()
+    const normalized = word.toLowerCase().trim()
+    const db = await getCachedDb(toSqliteUrl(await dbPath))
+
+    // 1) word → 所属 synsets
+    const synsetRows = await db.select<{ synset_offset: number; pos: string }[]>(
+      'SELECT synset_offset, pos FROM wn_words WHERE lemma = ?1', [normalized]
+    )
+    if (synsetRows.length === 0) return empty()
+
+    // 2) 解析每个 synset 的目标 synset 词（去重）
+    const resolve = async (off: number, pos: string): Promise<RelatedGroup | null> => {
+      const rows = await db.select<{ words: string | null; definition: string | null }[]>(
+        'SELECT words, definition FROM wn_synsets WHERE synset_offset = ?1 AND pos = ?2', [off, pos]
+      )
+      if (rows.length === 0) return null
+      const ws = (rows[0].words ?? '').split('\n').map(w => w.trim().toLowerCase()).filter(Boolean)
+      return { words: ws, definition: rows[0].definition ?? undefined }
+    }
+
+    const groups: Record<string, RelatedGroup[]> = { synonyms: [], hypernyms: [], hyponyms: [], antonyms: [], partWhole: [] }
+    const seen = new Set<string>()
+
+    for (const s of synsetRows) {
+      // 同义词：同 synset 内排除自身
+      const syn = await resolve(s.synset_offset, s.pos)
+      if (syn) {
+        const others = syn.words.filter(w => w !== normalized)
+        if (others.length) groups.synonyms.push({ ...syn, words: others })
+      }
+      // 关系指针
+      const rels = await db.select<{ rel_type: string; to_offset: number; to_pos: string }[]>(
+        'SELECT rel_type, to_offset, to_pos FROM wn_relations WHERE from_offset = ?1 AND from_pos = ?2',
+        [s.synset_offset, s.pos]
+      )
+      for (const r of rels) {
+        const label = RELATED_LABEL[r.rel_type]
+        if (!label) continue
+        const key = `${label}:${r.to_offset}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        const target = await resolve(r.to_offset, r.to_pos)
+        if (target) groups[label].push(target)
+      }
+    }
+
+    // 3) 上位词链（深度上限 4）：从 word 的第一个 synset 沿 @ 上溯
+    const path: string[] = []
+    const chain = new Set<number>()
+    let cur = synsetRows[0]
+    for (let i = 0; i < 4; i++) {
+      const rels = await db.select<{ to_offset: number; to_pos: string }[]>(
+        'SELECT to_offset, to_pos FROM wn_relations WHERE from_offset = ?1 AND from_pos = ?2 AND rel_type = ?3 LIMIT 1',
+        [cur.synset_offset, cur.pos, '@']
+      )
+      if (rels.length === 0) break
+      const t = rels[0]
+      if (chain.has(t.to_offset)) break
+      chain.add(t.to_offset)
+      const tg = await resolve(t.to_offset, t.to_pos)
+      if (!tg || tg.words.length === 0) break
+      path.unshift(tg.words[0])
+      cur = { synset_offset: t.to_offset, pos: t.to_pos }
+    }
+    path.push(normalized)
+
+    return { path, groups }
   }
 }
