@@ -1,6 +1,7 @@
 import { EcdictProvider } from '../providers/ecdict'
 import { WordNetProvider } from '../providers/wordnet'
 import { sortLemmasByRelevance } from '../lib/lemmaSort'
+import { rankChineseResults } from '../lib/chineseSearch'
 import type { DictionaryEntry } from '../types/dictionary'
 
 const ecdict = new EcdictProvider()
@@ -34,4 +35,11 @@ export async function lookupWord(word: string): Promise<{ source: string; entrie
   if (ecdictEntries.length > 0) results.push({ source: 'ecdict', entries: ecdictEntries })
   if (wordnetEntries.length > 0) results.push({ source: 'wordnet', entries: wordnetEntries })
   return results
+}
+
+// 阶段一·中文：查询 ECDICT 中文释义，返回匹配的英文单词建议
+export async function searchChinese(query: string): Promise<string[]> {
+  if (!query.trim()) return []
+  const rows = await ecdict.searchByChinese(query)
+  return rankChineseResults(rows, query)
 }
