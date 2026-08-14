@@ -51,12 +51,24 @@ function parseDataLine(line) {
     examples.push(m[1])
   }
 
+  // 指针段：p_cnt 个 (symbol, target_offset, target_pos, source_target) 四元组
+  const pointers = []
+  const pcnt = parseInt(headParts[idx++], 10)
+  for (let i = 0; i < pcnt && idx + 3 < headParts.length; i++) {
+    const symbol = headParts[idx++]
+    const offset = parseInt(headParts[idx++], 10)
+    const pos = headParts[idx++]
+    idx++ // source_target，本表不需要
+    pointers.push({ symbol, offset, pos })
+  }
+
   return {
     synsetOffset,
     pos,
     words,
     definition: gloss,
     examples,
+    pointers,
   }
 }
 
@@ -82,8 +94,18 @@ async function main() {
     PRIMARY KEY (synset_offset, pos)
   )`)
 
+  db.run(`CREATE TABLE wn_relations (
+    rel_type TEXT NOT NULL,
+    from_offset INTEGER NOT NULL,
+    from_pos TEXT NOT NULL,
+    to_offset INTEGER NOT NULL,
+    to_pos TEXT NOT NULL
+  )`)
+  db.run(`CREATE INDEX idx_rel_from ON wn_relations(from_offset, from_pos)`)
+
   const wordInsert = db.prepare('INSERT INTO wn_words VALUES (?, ?, ?)')
   const synsetInsert = db.prepare('INSERT OR IGNORE INTO wn_synsets VALUES (?, ?, ?, ?, ?)')
+  const relInsert = db.prepare('INSERT INTO wn_relations VALUES (?, ?, ?, ?, ?)')
   let totalWords = 0
 
   for (const [posName, posCode] of Object.entries(POS_MAP)) {
@@ -127,6 +149,9 @@ async function main() {
       const wordsStr = synset.words.join('\n')
       const examplesStr = synset.examples.join('\n')
       synsetInsert.run([synset.synsetOffset, posCode, synset.definition, examplesStr || null, wordsStr])
+      for (const p of synset.pointers) {
+        relInsert.run([p.symbol, synset.synsetOffset, posCode, p.offset, p.pos])
+      }
     }
 
     console.log(`  → ${wordToOffsets.size} words, ${offsetToSynset.size} synsets`)
@@ -134,6 +159,7 @@ async function main() {
 
   wordInsert.free()
   synsetInsert.free()
+  relInsert.free()
 
   const buffer = db.export()
   mkdirSync(dirname(OUTPUT), { recursive: true })
