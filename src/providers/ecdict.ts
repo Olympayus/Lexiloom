@@ -45,4 +45,15 @@ export class EcdictProvider implements DictionaryProvider {
       fields,
     }]
   }
+
+  async searchByChinese(query: string): Promise<Array<{ word: string; translation: string }>> {
+    if (!query.trim()) return []
+    const db = await getCachedDb(toSqliteUrl(await dbPath))
+    const q = `%${query.trim()}%`
+    const rows = await db.select<{ word: string; translation: string }[]>(
+      'SELECT word, translation FROM entries WHERE translation LIKE ?1 LIMIT 50',
+      [q]
+    )
+    return rows
+  }
 }
