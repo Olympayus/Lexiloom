@@ -7,6 +7,7 @@ Lexiloom 是一款个人词汇知识管理桌面应用。它把**离线词典查
 ![version](https://img.shields.io/badge/version-0.4.1-4A6FA5)
 ![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 ![offline](https://img.shields.io/badge/offline-first-yes-6B8E7F)
+![license](https://img.shields.io/badge/license-MIT-4A6FA5)
 
 ## 简介
 
@@ -120,4 +121,4 @@ Lexiloom 是一款个人词汇知识管理桌面应用。它把**离线词典查
 
 ## 许可
 
-**Private** —— 个人项目，保留所有权利。
+**MIT License** —— 代码采用 MIT 协议开源（详见 [`LICENSE`](LICENSE)）。内置词典数据（ECDiCT / WordNet 3.0）保留各自的第三方许可与署名要求，见 LICENSE 文件的 Third-Party Notices 部分。
