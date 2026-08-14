@@ -1,11 +1,11 @@
 {
-  "version": "0.4.1",
-  "notes": "v0.4.1 — 更新弹窗独立设计：应用级模态、下载进度可视化、超时/取消、代理放行提示；删除确认统一为应用内确认弹窗。编辑视图大升级：词性+补充合并为主标签页，短语/词形变化/派生词独立标签页（内容平铺、直接添加项、右键菜单删除）；标题区音标内联编辑、支持多音标；删除单词改为标题旁垃圾桶按钮。",
-  "pub_date": "2026-08-12T13:54:56.248Z",
+  "version": "0.4.2",
+  "notes": "v0.4.2 — 语义网络（同义/上位/下位/相似词/反义词/派生词/整体部分/参见分组 + 路径导航，点胶囊继续探索）；词典返回页重设计（白底、词典↔语义网络双标签、词性组折叠、词典身份色、浮动合并操作栏）；中→英搜索（中文反查英文）；导入导出（版本化 JSON 备份、按 ID 合并、导入前 dry-run 预览）；MIT 开源协议。",
+  "pub_date": "2026-08-14T17:01:48.340Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRRThYcVB4eXdQZGY3NjR5YkNzbWVPLzB0ZEtsbE1McW9hMFBPZ0JIeFNrQWpoaEwveW1QSGgyaVY1OCs1eHR2b0lQT2phT3ZmMTdCM1pSa2gvQXNnREVlV0V0Nk0rMEFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTQyODg1CWZpbGU6TGV4aWxvb21fMC40LjFfeDY0LXNldHVwLmV4ZQpwVHJCKzZ4c2RqY0M0VjMzZUVxcmVNQ0lCT2g5WDNFbVFXR0pydGh1L3lySmJiUDZYY2N3K3cwbUs1Vk1QTGhpVjNub1pZM0tLT3BHa2ErWmw1Q3hCdz09Cg==",
-      "url": "https://github.com/Olympayus/Lexiloom/releases/download/v0.4.1/Lexiloom_0.4.1_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRRThYcVB4eXdQZFJteURTekwwSHhPU2lwcVlKQnB5RjVqUnFJT0JtVWJBVzhzZzhWMXBmWXhWQjJXUVUyRzQ0dXhkcU5Mc1htNGEvdDhXUFBjV21BK1cyOEtzaG1RNFF3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NzI2ODgzCWZpbGU6TGV4aWxvb21fMC40LjJfeDY0LXNldHVwLmV4ZQoyQmdVMms4QkNZSVg4MjRPNTJIZXdnMzBDZmE3ai8vdFA3RWNhY2xYdE9PeUlZa3huVHBZblpPblFmRmxGTTdyVmhvWE1UTjlnRitsUVNsbXd4dmhDZz09Cg==",
+      "url": "https://github.com/Olympayus/Lexiloom/releases/download/v0.4.2/Lexiloom_0.4.2_x64-setup.exe"
     }
   }
 }
