@@ -107,7 +107,11 @@ export default function DictDetailPanel({ word }: Props) {
 
   return (
     <div className="h-full overflow-y-auto" style={{ background: 'var(--color-surface)' }}>
-      <div style={{ maxWidth: '720px', margin: '0 auto', padding: '24px 32px' }}>
+      <div style={{
+        maxWidth: '720px', margin: '0 auto', padding: '24px 32px',
+        // 内容不足一屏时仍让浮动操作栏贴底：flex 列 + 操作栏 margin-top:auto（v0.4.3 修复）
+        minHeight: '100%', display: 'flex', flexDirection: 'column',
+      }}>
         {/* 返回按钮 + 单词标题 */}
         <div className="flex items-center gap-2 mb-4">
           <button
@@ -180,20 +184,6 @@ export default function DictDetailPanel({ word }: Props) {
                   合并添加失败，请重试
                 </div>
               )}
-
-              {/* 浮动操作栏：仅在有勾选时渲染（消除隐藏时仍占位导致的底部空隙） */}
-              {anySelected && (
-              <div style={{
-                position: 'sticky', bottom: 16, width: 'fit-content', margin: '0 auto',
-                display: 'flex', alignItems: 'center',
-              }}>
-                <button
-                  type="button"
-                  onClick={handleMergeAdd}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 18px', borderRadius: 'var(--radius-full)', border: '1px solid #2a2825', background: 'var(--color-brand)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', boxShadow: 'var(--shadow-raised)' }}
-                ><Icon name="plus" size={14} /> 合并添加</button>
-              </div>
-              )}
             </>
           )}
         </div>
@@ -201,6 +191,22 @@ export default function DictDetailPanel({ word }: Props) {
         <div style={{ display: tab === 'network' ? 'block' : 'none' }}>
           <SemanticNetwork word={word} onCountChange={setNetworkCount} />
         </div>
+
+        {/* 浮动操作栏：仅词典 tab + 有勾选时渲染；flex 列末位 margin-top:auto 保证内容不足时贴底、
+            内容超长时 position:sticky 钉在可视区底部（v0.4.3 修复：单词典关闭后不再居中悬空） */}
+        {tab === 'dict' && anySelected && (
+          <div style={{
+            position: 'sticky', bottom: 16, width: 'fit-content',
+            marginLeft: 'auto', marginRight: 'auto', marginTop: 'auto',
+            display: 'flex', alignItems: 'center',
+          }}>
+            <button
+              type="button"
+              onClick={handleMergeAdd}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 18px', borderRadius: 'var(--radius-full)', border: '1px solid #2a2825', background: 'var(--color-brand)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', boxShadow: 'var(--shadow-raised)' }}
+            ><Icon name="plus" size={14} /> 合并添加</button>
+          </div>
+        )}
       </div>
     </div>
   )

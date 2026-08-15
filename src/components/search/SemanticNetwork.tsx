@@ -6,8 +6,11 @@ import { useViewStore } from '../../stores/viewStore'
 const LABELS: Record<keyof RelatedWords['groups'], string> = {
   synonyms: '同义词', hypernyms: '上位词', hyponyms: '下位词',
   antonyms: '反义词', partWhole: '整体 · 部分',
-  similarTo: '相似词（相近但不同）', alsoSee: '参见', derivatives: '派生词',
+  similarTo: '相似词（相近但不同）', alsoSee: '参见', derivatives: '词源相关词',
 }
+
+// 词源相关词组的小字说明（v0.4.3 §6：WordNet 词源相关形式 ≠ 构词派生）
+const DERIVATIVES_NOTE = '源自 WordNet 词源相关形式，含同义集合成员，并非全部构词派生'
 
 interface Props {
   word: string
@@ -50,19 +53,39 @@ export default function SemanticNetwork({ word, onCountChange }: Props) {
     return <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', padding: '20px 0' }}>加载中…</div>
   }
 
+  // 胶囊保留整组视觉，但每个单词是独立可点的 token（v0.4.3 §7：单击该词跳转到对应词面板）
   const chip = (g: RelatedGroup) => (
-    <button
+    <span
       key={g.words.join('·')}
       title={g.definition}
-      onClick={() => showDict(g.words[0])}
       style={{
-        fontSize: 13, padding: '3px 11px', borderRadius: 'var(--radius-full)', cursor: 'pointer',
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        fontSize: 13, padding: '3px 11px', borderRadius: 'var(--radius-full)',
         border: '1px solid var(--color-border-strong)', background: 'var(--color-surface)',
         color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)',
       }}
     >
-      {g.words.join(' · ')}
-    </button>
+      {g.words.map((w, i) => (
+        <span key={w} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          {i > 0 && <span style={{ color: 'var(--color-text-tertiary)', opacity: 0.7 }}>·</span>}
+          <button
+            type="button"
+            title={`查询「${w}」`}
+            onClick={() => showDict(w)}
+            style={{
+              border: 'none', background: 'transparent', padding: 0, cursor: 'pointer',
+              fontSize: 13, color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)',
+              borderRadius: 'var(--radius-sm)',
+              transition: 'color var(--duration-fast) var(--ease-smooth), text-decoration-color var(--duration-fast) var(--ease-smooth)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-brand)'; e.currentTarget.style.textDecoration = 'underline'; e.currentTarget.style.textUnderlineOffset = '2px' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-primary)'; e.currentTarget.style.textDecoration = 'none' }}
+          >
+            {w}
+          </button>
+        </span>
+      ))}
+    </span>
   )
 
   const entries = Object.entries(data.groups) as Array<[keyof RelatedWords['groups'], RelatedGroup[]]>
@@ -106,6 +129,11 @@ export default function SemanticNetwork({ word, onCountChange }: Props) {
                 </button>
               )}
             </div>
+            {key === 'derivatives' && (
+              <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginTop: 4, lineHeight: 1.5 }}>
+                {DERIVATIVES_NOTE}
+              </div>
+            )}
           </div>
         )
       })}

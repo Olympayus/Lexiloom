@@ -17,4 +17,7 @@ export async function ensureSchema(db: DbHandle): Promise<void> {
   }
   // 版本一致：仍幂等补全新内置字段定义（INSERT OR IGNORE），不重建表、不丢数据
   await db.execute(seedFieldDefinitionsSQL())
+  // v0.4.3 §6：派生词 → 词源相关词 字段名迁移（幂等；新库种子已是新名，此处兼容老库）
+  await db.execute("UPDATE field_definitions SET name = '词源相关词' WHERE key = 'derivatives'")
+  await db.execute("UPDATE field_definitions SET name = '词源相关词项' WHERE key = 'derivatives_item'")
 }

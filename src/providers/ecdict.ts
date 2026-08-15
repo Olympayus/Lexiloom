@@ -13,8 +13,10 @@ export class EcdictProvider implements DictionaryProvider {
     if (!query.trim()) return []
     const db = await getCachedDb(toSqliteUrl(await dbPath))
     const q = `${query.toLowerCase().trim()}%`
+    // 仅返回 entries 中存在详情的词：lemma.json 含 entries 缺失的孤儿词（如 applejacks），
+    // 直接 LIKE 会把它们送进建议列表但点进去查无结果（v0.4.3 §2）
     const rows = await db.select<{ word: string }[]>(
-      'SELECT word FROM lemmas WHERE word LIKE ?1 LIMIT 20',
+      'SELECT word FROM lemmas WHERE word LIKE ?1 AND EXISTS (SELECT 1 FROM entries WHERE entries.word = lemmas.word) LIMIT 20',
       [q]
     )
     return rows.map(r => r.word)

@@ -270,10 +270,98 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
     </>
   )
 
+  // 「+ 添加子词条/释义」控件：按钮 + 选项浮层（编者模式容器可用）。多行容器换行显示、单行容器内联于行尾（v0.4.3 §2）
+  const addChildControl = (
+    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+      <button
+        type="button"
+        onClick={() => onToggleChildMenu(fv.id)}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '4px',
+          padding: '2px 8px',
+          border: '1px dashed var(--color-border-strong)',
+          borderRadius: 'var(--radius-full)',
+          background: 'transparent',
+          fontSize: 'var(--text-xs)',
+          color: 'var(--color-text-tertiary)',
+          cursor: 'pointer',
+          fontFamily: 'var(--font-sans)',
+          transition: 'color var(--duration-fast) var(--ease-smooth), border-color var(--duration-fast) var(--ease-smooth), background-color var(--duration-fast) var(--ease-smooth)',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.color = 'var(--color-brand)'
+          e.currentTarget.style.borderColor = 'var(--color-brand)'
+          e.currentTarget.style.background = 'var(--color-brand-softer)'
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.color = 'var(--color-text-tertiary)'
+          e.currentTarget.style.borderColor = 'var(--color-border-strong)'
+          e.currentTarget.style.background = 'transparent'
+        }}
+      >
+        <Icon name="plus" size={14} />
+        {childMenuLabel}
+      </button>
+      {childMenuId === fv.id && (
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            bottom: 'calc(100% + 4px)',
+            minWidth: '120px',
+            padding: '4px',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: 'var(--shadow-overlay)',
+            zIndex: 'var(--z-dropdown)',
+          }}
+        >
+          {childDefs.map(childDef => (
+            <button
+              key={childDef.id}
+              type="button"
+              onClick={() => onAddChild(fv, childDef)}
+              style={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                padding: '6px 10px',
+                border: 'none',
+                background: 'transparent',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer',
+                color: 'var(--color-text-primary)',
+                fontSize: 'var(--text-sm)',
+                fontFamily: 'var(--font-sans)',
+                whiteSpace: 'nowrap',
+                transition: 'background-color var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
+            >
+              {childDef.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+
   return (
     <div
       ref={setRefs}
+      data-field-id={fv.id}
       onMouseEnter={() => onHover(fv.id)}
+      onMouseLeave={(e) => {
+        // 卡片移出：把 hover 移交到指针进入的目标卡片（relatedTarget 最近卡片），
+        // 完全离开任何卡片则清空——修掉原「横向移出卡片到两侧留白仍在容器内导致按钮残留」（v0.4.3 §5）
+        const rt = (e as React.MouseEvent<HTMLDivElement>).relatedTarget as HTMLElement | null
+        const next = rt ? (rt.closest('[data-field-id]') as HTMLElement | null) : null
+        onHover(next?.dataset.fieldId ?? null)
+      }}
       data-field-edit={isEditing ? 'true' : undefined}
       style={
         isPosPane
@@ -533,6 +621,40 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
                 <Icon name="trash" size={16} />
               </button>
             )}
+            {/* 单行容器（无子项、非词性）：添加 + 删除内联该行右端，删除在最右、添加在删除左侧，不再另起一行（v0.4.3 §2） */}
+            {!hasChildren && !isPosPane && childDefs.length > 0 && showsButtons && (
+              <>
+                {/* 容器键字段无值格，需 spacer 把操作推到行尾；非容器字段的值格 flex:1 已起同样作用，
+                    再加 spacer 会平分宽度导致值格内容被挤换行（v0.4.3 修复） */}
+                {isContainer && <span style={{ flex: 1 }} />}
+                {addChildControl}
+                <button
+                  type="button"
+                  title="删除"
+                  aria-label="删除"
+                  onClick={() => onDelete(fv)}
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: 'none',
+                    background: 'transparent',
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                    color: 'var(--color-text-tertiary)',
+                    flexShrink: 0,
+                    alignSelf: 'center',
+                    transition: 'color var(--duration-fast) var(--ease-smooth)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-danger)' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-tertiary)' }}
+                >
+                  <Icon name="trash" size={16} />
+                </button>
+              </>
+            )}
           </>
         ) : (
           // 普通模式三点：叶子节点保留 flex 行内最右；容器节点移到卡片右上角（见下方卡片直接子级）
@@ -549,8 +671,9 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
           {threeDotMenu}
         </div>
       )}
-      {/* 容器节点垃圾桶：卡片直接子级，绝对定位锚定卡片（卡片恒 position: relative）右下角，与左下「+ 添加」按钮对侧 */}
-      {editorMode && childDefs.length > 0 && showsButtons && (
+      {/* 容器节点垃圾桶：卡片直接子级，绝对定位锚定卡片（卡片恒 position: relative）右下角，与左下「+ 添加」按钮对侧。
+          仅多行容器（有子项或词性）使用；单行容器改为内联行尾（见上方头部行内联簇） */}
+      {editorMode && childDefs.length > 0 && (hasChildren || isPosPane) && showsButtons && (
         <button
           type="button"
           title="删除"
@@ -586,84 +709,10 @@ function FieldCard({ fv, depth, ...rest }: FieldCardProps) {
           {renderedChildren}
         </div>
       )}
-      {/* 每卡「+ 添加子词条」菜单（Task 10 §Step 2）：编者模式可用，按 ALLOWED_CHILD_KEYS 过滤 */}
-      {editorMode && childDefs.length > 0 && showsButtons && (
-        <div style={{ position: 'relative', marginTop: '8px' }}>
-          <button
-            type="button"
-            onClick={() => onToggleChildMenu(fv.id)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '2px 8px',
-              border: '1px dashed var(--color-border-strong)',
-              borderRadius: 'var(--radius-full)',
-              background: 'transparent',
-              fontSize: 'var(--text-xs)',
-              color: 'var(--color-text-tertiary)',
-              cursor: 'pointer',
-              fontFamily: 'var(--font-sans)',
-              transition: 'color var(--duration-fast) var(--ease-smooth), border-color var(--duration-fast) var(--ease-smooth), background-color var(--duration-fast) var(--ease-smooth)',
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.color = 'var(--color-brand)'
-              e.currentTarget.style.borderColor = 'var(--color-brand)'
-              e.currentTarget.style.background = 'var(--color-brand-softer)'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.color = 'var(--color-text-tertiary)'
-              e.currentTarget.style.borderColor = 'var(--color-border-strong)'
-              e.currentTarget.style.background = 'transparent'
-            }}
-          >
-            <Icon name="plus" size={14} />
-            {childMenuLabel}
-          </button>
-          {childMenuId === fv.id && (
-            <div
-              style={{
-                position: 'absolute',
-                left: 0,
-                bottom: 'calc(100% + 4px)',
-                minWidth: '120px',
-                padding: '4px',
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
-                boxShadow: 'var(--shadow-overlay)',
-                zIndex: 'var(--z-dropdown)',
-              }}
-            >
-              {childDefs.map(childDef => (
-                <button
-                  key={childDef.id}
-                  type="button"
-                  onClick={() => onAddChild(fv, childDef)}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '6px 10px',
-                    border: 'none',
-                    background: 'transparent',
-                    borderRadius: 'var(--radius-sm)',
-                    cursor: 'pointer',
-                    color: 'var(--color-text-primary)',
-                    fontSize: 'var(--text-sm)',
-                    fontFamily: 'var(--font-sans)',
-                    whiteSpace: 'nowrap',
-                    transition: 'background-color var(--duration-fast) var(--ease-smooth), color var(--duration-fast) var(--ease-smooth)',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-brand)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
-                >
-                  {childDef.name}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+      {/* 每卡「+ 添加子词条」菜单（Task 10 §Step 2）：编者模式可用，按 ALLOWED_CHILD_KEYS 过滤。
+          多行容器（有子项或词性）换行显示于内容下方；单行容器走头部行内联簇（v0.4.3 §2） */}
+      {editorMode && childDefs.length > 0 && (hasChildren || isPosPane) && showsButtons && (
+        <div style={{ marginTop: '8px' }}>{addChildControl}</div>
       )}
     </div>
   )

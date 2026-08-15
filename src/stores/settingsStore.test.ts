@@ -6,7 +6,9 @@ const DEFAULT = {
   displayFields: {
     phonetic: true, part_of_speech: true, chinese_definition: true,
     english_definition: true, example: true, exchange: true, synonyms: true,
+    derivatives: true,
   },
+  dictionaries: { ecdict: true, wordnet: true },
   onlineDictEnabled: false,
   onlineSources: { oxford: true, longman: true, collins: true, merriam: true },
   sidebarMode: 'alphabet',
@@ -17,13 +19,25 @@ describe('settingsStore（规格 §7）', () => {
     useSettingsStore.setState(JSON.parse(JSON.stringify(DEFAULT)))
   })
 
-  it('默认值：字段开关全开、在线词典关闭、字母模式、抽屉关闭', () => {
+  it('默认值：字段开关全开（含词源相关词）、词典开关全开、在线词典关闭、字母模式、抽屉关闭', () => {
     const s = useSettingsStore.getState()
     expect(s.settingsOpen).toBe(false)
     expect(s.onlineDictEnabled).toBe(false)
     expect(s.sidebarMode).toBe('alphabet')
     expect(Object.values(s.displayFields).every(Boolean)).toBe(true)
+    expect(s.displayFields.derivatives).toBe(true)
+    expect(s.dictionaries.ecdict).toBe(true)
+    expect(s.dictionaries.wordnet).toBe(true)
     expect(Object.values(s.onlineSources).every(Boolean)).toBe(true)
+  })
+
+  it('setDictionary 切换单词典开关', () => {
+    useSettingsStore.getState().setDictionary('wordnet', false)
+    const s = useSettingsStore.getState()
+    expect(s.dictionaries.wordnet).toBe(false)
+    expect(s.dictionaries.ecdict).toBe(true)
+    useSettingsStore.getState().setDictionary('ecdict', false)
+    expect(useSettingsStore.getState().dictionaries.ecdict).toBe(false)
   })
 
   it('openSettings/closeSettings 切换抽屉', () => {
@@ -65,7 +79,7 @@ describe('settingsStore（规格 §7）', () => {
     expect(parsed.state.settingsOpen).toBeUndefined()
   })
 
-  it('恢复：localStorage v1 数据 rehydrate 并迁移（剔除 etymology、补齐 synonyms）', async () => {
+  it('恢复：localStorage v1 数据 rehydrate 并迁移（剔除 etymology、补齐 synonyms、派生词与词典开关默认开）', async () => {
     localStorage.setItem('lexiloom-settings', JSON.stringify({
       state: {
         displayFields: { phonetic: false, part_of_speech: true, chinese_definition: true, english_definition: true, example: true, exchange: true, etymology: true },
@@ -80,6 +94,9 @@ describe('settingsStore（规格 §7）', () => {
     expect(s.onlineDictEnabled).toBe(true)
     expect(s.displayFields.phonetic).toBe(false)
     expect(s.displayFields.synonyms).toBe(true)
+    expect(s.displayFields.derivatives).toBe(true)
+    expect(s.dictionaries.ecdict).toBe(true)
+    expect(s.dictionaries.wordnet).toBe(true)
     expect('etymology' in s.displayFields).toBe(false)
   })
 })

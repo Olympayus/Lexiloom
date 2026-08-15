@@ -22,6 +22,7 @@ export const FIELD_TREE: FieldTreeNode[] = [
     ],
   },
   { key: 'exchange', label: '词形变化' },
+  { key: 'derivatives', label: '词源相关词' },
 ]
 
 // key → 祖先链（含自身）

@@ -104,6 +104,8 @@ export const useWordStore = create<WordStore>((set, get) => ({
     if (ok) {
       const values = await fieldService.getValues(wordId)
       set({ fieldValues: values })
+      // 刷新侧边栏预览（音标/词性即时显示，无需手动刷新；v0.4.3 §4）
+      await get().loadWords()
     }
     return ok
   },

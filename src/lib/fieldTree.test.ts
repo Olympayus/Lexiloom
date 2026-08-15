@@ -1,15 +1,26 @@
 import { describe, it, expect } from 'vitest'
-import { getAncestors, isFieldVisible, isAncestorOff } from './fieldTree'
+import { FIELD_TREE, getAncestors, isFieldVisible, isAncestorOff } from './fieldTree'
 
 const ALL_ON = {
   phonetic: true, part_of_speech: true, chinese_definition: true,
   english_definition: true, example: true, synonyms: true, exchange: true,
+  derivatives: true,
 } as const
 
 describe('getAncestors', () => {
   it('返回含自身的祖先链', () => {
     expect(getAncestors('example')).toEqual(['part_of_speech', 'english_definition', 'example'])
     expect(getAncestors('phonetic')).toEqual(['phonetic'])
+    expect(getAncestors('derivatives')).toEqual(['derivatives'])
+  })
+})
+
+describe('FIELD_TREE', () => {
+  it('顶级包含「词源相关词」节点（派生词改名后的显示名）', () => {
+    const keys = FIELD_TREE.map(n => n.key)
+    expect(keys).toContain('derivatives')
+    expect(FIELD_TREE.find(n => n.key === 'derivatives')?.label).toBe('词源相关词')
+    expect(FIELD_TREE.find(n => n.key === 'derivatives')?.children ?? []).toHaveLength(0)
   })
 })
 
@@ -41,6 +52,7 @@ describe('isAncestorOff 祖先关闭判定', () => {
     expect(isAncestorOff('example', ALL_ON)).toBe(false)
     expect(isAncestorOff('synonyms', ALL_ON)).toBe(false)
     expect(isAncestorOff('exchange', ALL_ON)).toBe(false)
+    expect(isAncestorOff('derivatives', ALL_ON)).toBe(false)
   })
   it('english_definition 关 → example/synonyms 为 true（祖先关）；chinese_definition 为 false（兄弟不受影响）', () => {
     const f = { ...ALL_ON, english_definition: false }

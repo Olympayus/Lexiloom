@@ -1,5 +1,6 @@
 import { EcdictProvider } from '../providers/ecdict'
 import { WordNetProvider } from '../providers/wordnet'
+import { useSettingsStore } from '../stores/settingsStore'
 import { sortLemmasByRelevance } from '../lib/lemmaSort'
 import { rankChineseResults } from '../lib/chineseSearch'
 import type { DictionaryEntry } from '../types/dictionary'
@@ -24,13 +25,14 @@ export async function searchLemmas(query: string): Promise<string[]> {
   return sortLemmasByRelevance(query, deduped).slice(0, 20)
 }
 
-// 阶段二：精确查询单词详情
+// 阶段二：精确查询单词详情（按设置中词典开关过滤：关闭的词典不查询、不返回；语义网络不受此开关影响）
 export async function lookupWord(word: string): Promise<{ source: string; entries: DictionaryEntry[] }[]> {
   if (!word.trim()) return []
   const normalized = word.toLowerCase().trim()
+  const { dictionaries } = useSettingsStore.getState()
   const [ecdictEntries, wordnetEntries] = await Promise.all([
-    ecdict.lookup(normalized),
-    wordnet.lookup(normalized),
+    dictionaries.ecdict ? ecdict.lookup(normalized) : Promise.resolve([] as DictionaryEntry[]),
+    dictionaries.wordnet ? wordnet.lookup(normalized) : Promise.resolve([] as DictionaryEntry[]),
   ])
   const results: { source: string; entries: DictionaryEntry[] }[] = []
   if (ecdictEntries.length > 0) results.push({ source: 'ecdict', entries: ecdictEntries })

@@ -6,7 +6,7 @@ export const TAB_GROUPS: Record<TabKey, { roots: string[]; label: string }> = {
   main:        { roots: ['part_of_speech', 'supplementary'], label: '词性' },
   phrase:      { roots: ['phrase'],      label: '短语' },
   exchange:    { roots: ['exchange'],    label: '词形变化' },
-  derivatives: { roots: ['derivatives'], label: '派生词' },
+  derivatives: { roots: ['derivatives'], label: '词源相关词' },
 }
 
 export const TAB_ORDER: TabKey[] = ['main', 'phrase', 'exchange', 'derivatives']

@@ -54,4 +54,14 @@ describe('db/init ensureSchema', () => {
     const words = await adapter.select<{ c: number }>('SELECT count(*) as c FROM words')
     expect(words[0].c).toBe(1)
   })
+
+  it('版本一致：老库派生词字段名幂等迁移为「词源相关词」', async () => {
+    const { adapter } = await createRawTestDb()
+    await ensureSchema(adapter)
+    // 模拟老库（v0.4.2）：字段定义仍是旧名「派生词」
+    await adapter.execute("UPDATE field_definitions SET name = '派生词' WHERE key = 'derivatives'")
+    await ensureSchema(adapter)
+    const rows = await adapter.select<{ name: string }>("SELECT name FROM field_definitions WHERE key = 'derivatives'")
+    expect(rows[0].name).toBe('词源相关词')
+  })
 })

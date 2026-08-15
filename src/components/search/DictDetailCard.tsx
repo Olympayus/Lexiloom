@@ -45,7 +45,7 @@ function fieldLabel(key: string): string {
     case 'synonyms': return '近义词'
     case 'example_sentence': return '例句'
     case 'exchange': return '词形变化'
-    case 'derivatives': return '派生词'
+    case 'derivatives': return '词源相关词'
     case 'supplementary': return '补充'
     default: return ''
   }
@@ -81,6 +81,7 @@ export default function DictDetailCard({
         example: 'example', example_sentence: 'example',
         synonyms: 'synonyms', synonym_item: 'synonyms',
         exchange: 'exchange',
+        derivatives: 'derivatives', derivatives_item: 'derivatives',
       }
       const c = control[key]
       return c ? isFieldVisible(c, displayFields) : true

@@ -25,7 +25,7 @@ export const BUILTIN_FIELDS: Record<FieldKey, {
   chinese_definition:  { name: '中文释义', fieldType: 'text',      displayOrder: 1 },
   english_definition:  { name: '英文释义', fieldType: 'multiline', displayOrder: 2 },
   part_of_speech:      { name: '词性',     fieldType: 'text',      displayOrder: 3 },
-  derivatives:         { name: '派生词',   fieldType: 'text',      displayOrder: 4 },
+  derivatives:         { name: '词源相关词', fieldType: 'text',      displayOrder: 4 },
   synonyms:            { name: '近义词',   fieldType: 'text',      displayOrder: 5 },
   example_sentence:    { name: '例句',     fieldType: 'multiline', displayOrder: 6 },
   usage_scenario:      { name: '使用场景', fieldType: 'multiline', displayOrder: 7 },
@@ -37,7 +37,7 @@ export const BUILTIN_FIELDS: Record<FieldKey, {
   supplementary_item: { name: '补充项',   fieldType: 'text', displayOrder: 13 },
   phrase:             { name: '短语',     fieldType: 'text', displayOrder: 14 },
   phrase_item:        { name: '短语项',   fieldType: 'text', displayOrder: 15 },
-  derivatives_item:   { name: '派生词项', fieldType: 'text', displayOrder: 16 },
+  derivatives_item:   { name: '词源相关词项', fieldType: 'text', displayOrder: 16 },
   synonym_item:       { name: '近义词项', fieldType: 'text', displayOrder: 17 },
 }
 
